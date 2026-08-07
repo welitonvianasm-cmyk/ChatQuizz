@@ -605,10 +605,8 @@
           <option value="reagendado">Reagendado</option>
           <option value="cancelado">✕ Cancelado</option>
         </select>
-        <select id="uaTrilhaSel" title="Origem / destino do lead">
-          <option value="">Origem: Todas</option>
-          <option value="comunidade">Comunidade</option>
-          <option value="premium">WhatsApp</option>
+        <select id="uaTrilhaSel" title="Qualificador do lead">
+          <option value="">Qualificador: Todos</option>
         </select>
         <button class="fmais" id="uaMaisBtn" title="Filtros menos usados">Mais filtros</button>
         <span id="upCount" class="muted-cell" style="margin-left:auto;"></span>
@@ -1842,7 +1840,7 @@ async function cmAgendado(e) {
   r.agendado = true;
   r.status = 'agendado';
   r.agendamento_status = '';
-  // a trilha (call_track) NÃO muda: é a classificação por renda do lead — a agenda agora é única
+  // a trilha (call_track) NÃO muda aqui: é o qualificador do lead, decidido no quiz
   if (startISO) r.agendamento_em = new Date(startISO).toISOString();
   if (uid) r.booking_uid = String(uid);
   if (d && d.equipe_json) r.equipe_json = d.equipe_json;
@@ -2781,7 +2779,8 @@ function kbRender() {
         if (bloqueado) k.style.opacity = '.6';
         if (lead) k.onclick = () => abrirLeadModal(lead);
         const nm = el('b'); nm.textContent = (bloqueado ? '' : '') + (lead ? lead.nome : card.lead_ref);
-        const sm = el('small'); sm.textContent = lead ? [(lead.whatsapp || ''), (lead.call_track === 'premium' ? 'WhatsApp' : lead.call_track === 'comunidade' ? 'Comunidade' : '')].filter(Boolean).join(' · ') : '';
+        const qualifNome = lead && lead.call_track ? (qualificadoresOuFallback().find((x) => x.chave === lead.call_track) || {}).nome || lead.call_track : '';
+        const sm = el('small'); sm.textContent = lead ? [(lead.whatsapp || ''), qualifNome].filter(Boolean).join(' · ') : '';
         const x = el('button', 'x'); x.textContent = '✕'; x.title = 'Tirar do quadro';
         x.onclick = async (e) => {
           e.stopPropagation();
@@ -2916,8 +2915,6 @@ function renderKpis(rows) {
   const agendRows = rows.filter((r) => r.agendado).length;                     // linhas marcadas (inclui restart/duplicata)
   const semBooking = rows.filter((r) => r.agendado && !r.booking_uid).length;  // marcou mas o Cal não confirmou
   const qualificados = rows.filter((r) => r.qualificado === true).length;
-  const premium = rows.filter((r) => r.call_track === 'premium').length;
-  const premAgend = pessoasAgendadas(rows.filter((r) => r.call_track === 'premium'));
   const futuras = pessoasAgendadas(rows.filter((r) => r.agendamento_em && new Date(r.agendamento_em).getTime() > Date.now()));
 
   const agendSub = pct(agendados, completos) + '% dos que completaram · pessoas (dedupe por e-mail)'
@@ -2928,9 +2925,14 @@ function renderKpis(rows) {
     kpiCard('Agendaram conversa', nf(agendados), agendSub, { hero: true }),
     kpiCard('Completaram o quiz', nf(completos), pct(completos, total) + '% do total', { color: 'blue' }),
     kpiCard('Pararam no meio', nf(Math.max(0, total - completos)), 'responderam só uma parte', { color: 'amber' }),
-    kpiCard('WhatsApp (R$15 mil+)', nf(premium), premAgend + ' agendaram', { color: 'green' }),
-    kpiCard('Conversas futuras', nf(futuras), 'a partir de agora'),
   );
+  // 1 card por qualificador configurado (substitui o antigo card fixo "WhatsApp R$15 mil+")
+  qualificadoresOuFallback().forEach((q) => {
+    const n = rows.filter((r) => r.call_track === q.chave).length;
+    const nAgend = pessoasAgendadas(rows.filter((r) => r.call_track === q.chave));
+    box.appendChild(kpiCard(q.nome || q.chave, nf(n), nAgend + ' agendaram', { color: 'green' }));
+  });
+  box.appendChild(kpiCard('Conversas futuras', nf(futuras), 'a partir de agora'));
   // monitor do bug latente: lead marcou agendado mas sem booking_uid (Cal falhou / modo local)
   if (semBooking) box.append(kpiCard('Sem código do Cal', nf(semBooking), 'agendaram pelo chat, mas o código de confirmação não foi salvo. Confira na sua agenda do Google/Cal se estão lá', { color: 'amber' }));
 }
@@ -3009,19 +3011,22 @@ function renderVendedores(rows) {
 function renderTrilha(rows) {
   const box = $('#trilha'); clear(box);
   const cnt = (t) => rows.filter((r) => r.call_track === t).length;
-  // trilha 'imersao' foi extinta em 29/07/2026 (leads antigos viraram comunidade no banco)
-  const prem = cnt('premium'), pad = cnt('comunidade');
-  const tot = prem + pad;
+  const itens = qualificadoresOuFallback().map((q) => ({ q, n: cnt(q.chave) }));
+  const tot = itens.reduce((s, it) => s + it.n, 0);
   if (!tot) { const e = el('div', 'empty'); e.textContent = 'Nenhum lead chegou à etapa de agendamento ainda.'; box.appendChild(e); return; }
   const stack = el('div', 'stack');
-  const seg = (cls, n) => { const s = el('div', cls); s.style.width = (n / tot * 100) + '%'; if (n) s.textContent = pct(n, tot) + '%'; return s; };
-  stack.append(seg('seg-prem', prem), seg('seg-pad', pad));
+  itens.forEach(({ q, n }) => {
+    if (!n) return;
+    const s = el('div'); s.style.width = (n / tot * 100) + '%'; s.style.background = q.cor || '#6B7280'; s.textContent = pct(n, tot) + '%';
+    stack.appendChild(s);
+  });
   const stats = el('div', 'trilha-stats');
-  const mk = (cls, n, l) => { const c = el('div', 'ts-card' + cls); const nn = el('div', 'n'); nn.textContent = nf(n); const ll = el('div', 'l'); ll.textContent = l; c.append(nn, ll); return c; };
-  stats.append(
-    mk(' prem', prem, 'WhatsApp (R$15 mil+)'),
-    mk('', pad, 'Comunidade (até R$15 mil)'),
-  );
+  itens.forEach(({ q, n }) => {
+    const c = el('div', 'ts-card');
+    const nn = el('div', 'n'); nn.style.color = q.cor || 'var(--ink)'; nn.textContent = nf(n);
+    const ll = el('div', 'l'); ll.textContent = q.nome || q.chave;
+    c.append(nn, ll); stats.appendChild(c);
+  });
   box.append(stack, stats);
 }
 
@@ -3305,12 +3310,27 @@ function popularUaAtendente(list) {
   UA.atendente = (atual === '(sem)' || nomes.includes(atual)) ? atual : '';
   sel.value = UA.atendente;
 }
+function popularUaTrilha() {
+  const sel = $('#uaTrilhaSel');
+  const qualifs = qualificadoresOuFallback();
+  const want = qualifs.map((q) => q.chave).join(',');
+  if (sel.dataset.opts === want) return;
+  sel.dataset.opts = want;
+  const atual = UA.trilha;
+  clear(sel);
+  const add = (v, tx) => { const o = document.createElement('option'); o.value = v; o.textContent = tx; sel.appendChild(o); };
+  add('', 'Qualificador: Todos');
+  qualifs.forEach((q) => add(q.chave, q.nome || q.chave));
+  UA.trilha = [...sel.options].some((o) => o.value === atual) ? atual : '';
+  sel.value = UA.trilha;
+}
 function renderUpcoming() {
   const t = $('#upcoming'); clear(t);
   const agora = Date.now();
   const todas = ALL.filter((r) => r.agendado && r.agendamento_em)
     .sort((a, b) => new Date(a.agendamento_em) - new Date(b.agendamento_em));
   popularUaAtendente(todas);
+  popularUaTrilha();
   UA.uf = popularDistintos($('#uaUf'), todas.map((r) => r.uf), 'Estado (UF): Todos', UA.uf);
   UA.renda = popularDistintos($('#uaRenda'), todas.map((r) => r.renda), 'Renda familiar: Todas', UA.renda);
   let filtradas = todas.filter(uaInPeriodo);
@@ -3359,10 +3379,23 @@ function renderUpcoming() {
   });
   t.appendChild(tb);
 }
+/* qualificadores configurados (ou o fallback fixo comunidade/premium, se a
+   config ainda não carregou) — usado por trilhaPill/renderTrilha/uaTrilhaSel */
+function qualificadoresOuFallback() {
+  return ORIGEM_QUALIFICADORES.length ? ORIGEM_QUALIFICADORES : [
+    { chave: 'comunidade', nome: 'Comunidade', cor: '#6B7280' },
+    { chave: 'premium', nome: 'WhatsApp', cor: '#005355' },
+  ];
+}
 function trilhaPill(t) {
-  if (t === 'premium') { const p = el('span', 'pill prem'); p.textContent = 'WhatsApp'; return p; }
-  if (t === 'comunidade') { const p = el('span', 'pill pad'); p.textContent = 'Comunidade'; return p; }
-  return document.createTextNode('—');
+  if (!t) return document.createTextNode('—');
+  const q = qualificadoresOuFallback().find((x) => x.chave === t);
+  const p = el('span', 'pill');
+  p.textContent = q ? (q.nome || q.chave) : t;
+  const cor = (q && q.cor) || '#6B7280';
+  p.style.background = cor + '22';
+  p.style.color = cor;
+  return p;
 }
 
 let LEADS_VIEW = [];
@@ -4101,7 +4134,8 @@ $('#btn-csv').onclick = () => {
   const rows = ALL.filter(inRange);
   const cols = ['created_at', 'updated_at', 'status', 'nome', 'email', 'whatsapp', 'uf', 'instagram',
     'nicho', 'nicho_detectado', 'seguidores', 'ig_followers', 'dificuldade', 'renda', 'lead_score',
-    'qualificado', 'call_track', 'atendente', 'agendamento_status', 'agendado', 'agendamento_em',
+    'qualificado', 'call_track', 'qualificador', 'nivel_consciencia', 'roteamento_tipo',
+    'atendente', 'agendamento_status', 'agendado', 'agendamento_em',
     'resultado', 'resultado_motivo', 'resultado_em', 'resultado_por',
     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'referrer'];
   const head = cols.join(',');
