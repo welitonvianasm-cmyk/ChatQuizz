@@ -33,7 +33,7 @@
   force = true
 
 [[redirects]]
-  from = "/setup.sql"
+  from = "/setup*.sql"
   to = "/404.html"
   status = 404
   force = true
@@ -45,38 +45,7 @@
   force = true
 
 [[redirects]]
-  from = "/package-lock.json"
-  to = "/404.html"
-  status = 404
-  force = true
-
-[[redirects]]
   from = "/README.md"
-  to = "/404.html"
-  status = 404
-  force = true
-
-# arquivos internos do projeto SUAVIS (documentação e scripts) — nunca públicos
-[[redirects]]
-  from = "/PERSONALIZACAO.md"
-  to = "/404.html"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/QUIZ-SUAVIS.md"
-  to = "/404.html"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/setup-fix.sql"
-  to = "/404.html"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/setup-equipe.sql"
   to = "/404.html"
   status = 404
   force = true
@@ -88,7 +57,7 @@
   force = true
 
 # CORS das funções (mantido aberto p/ o funil; restringir a origem é parte do
-# endurecimento anti-abuso ainda a decidir com o Fabio).
+# endurecimento anti-abuso a decidir depois).
 [[headers]]
   for = "/api/*"
   [headers.values]

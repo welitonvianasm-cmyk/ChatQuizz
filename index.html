@@ -577,7 +577,6 @@ const CONFIG = {
   IMERSAO_ATE: '2026-08-13',  // última data da turma da Imersão — depois disso, leads dessa faixa vão pra COMUNIDADE
   API_SAVE: '/api/save-lead',
   API_AGENDA: '/api/agenda',              // usado só pela agenda local de emergência
-  API_FB_EVENT: '/api/fb-event',          // desativado (sem Pixel próprio por enquanto)
   /* Agenda local de emergência — só aparece se o embed do cal.com falhar */
   AGENDA: {
     diasSemana: [1, 2, 3, 4, 5],          // 0=dom ... 6=sáb
@@ -1068,29 +1067,6 @@ function askChipsMulti(options, onDone) {
   chipsEl.classList.add('show');
   scrollDown();
 }
-function askReels(reels, onPick) {
-  hideDock(); ensureDockLast();
-  reelsEl.textContent = '';
-  reels.forEach((r) => {
-    const c = document.createElement('button');
-    c.className = 'reel-card';
-    if (r.thumb) c.style.backgroundImage = `url("/api/proxy-image?url=${encodeURIComponent(r.thumb)}")`;
-    const v = document.createElement('span');
-    v.className = 'reel-views';
-    v.textContent = r.views != null ? `▶ ${fmtNum(r.views)}` : '🎬 Reel';
-    c.appendChild(v);
-    c.onclick = async () => { hideDock(); await onPick(r); };
-    reelsEl.appendChild(c);
-  });
-  reelsEl.classList.add('show');
-  chipsEl.textContent = '';
-  const skip = document.createElement('button');
-  skip.className = 'chip'; skip.textContent = 'Prefiro pular a análise de reel';
-  skip.onclick = async () => { hideDock(); await onPick(null); };
-  chipsEl.appendChild(skip);
-  chipsEl.classList.add('show');
-  scrollDown();
-}
 /* caixa de seleção p/ perguntas com muitas opções (options são constantes deste arquivo) */
 function askSelect({ label, placeholder, options, onOk }) {
   hideDock(); ensureDockLast();
@@ -1153,12 +1129,6 @@ const vEmail = (v) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t)) return { ok: false, erro: '' };
   return { ok: true, valor: t };
 };
-const vInsta = (v) => {
-  const t = v.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[\/\?].*$/, '').toLowerCase();
-  if (!/^[\w.]{2,30}$/.test(t)) return { ok: false, erro: t.length > 1 ? 'Só letras, números, ponto e underline' : '' };
-  return { ok: true, valor: t };
-};
-
 /* ================================================================
    CAPTURA PROGRESSIVA — nunca trava a UX
    ================================================================ */
@@ -1180,7 +1150,7 @@ function salvarLead(status) {
     body: JSON.stringify({
       lead_ref: state.leadRef, status,
       nome: d.nome || '', whatsapp: d.whatsapp || '', email: d.email || '',
-      instagram: '', uf: d.uf || '',
+      uf: d.uf || '',
       nicho: respostaLabel('q2'),            // como se sente
       nicho_detectado: respostaLabel('q5'),  // já buscou ajuda?
       seguidores: respostaLabel('q1'),       // idade
@@ -1194,9 +1164,6 @@ function salvarLead(status) {
       video_url: d.videoUrl || '',
       call_track: d.callTrack || '',
       vendedor: d.vendedor || '',
-      profile: null,
-      reel: null,
-      reel_transcript: '',
       utm_source: (d.utm && d.utm.source) || '',
       utm_medium: (d.utm && d.utm.medium) || '',
       utm_campaign: (d.utm && d.utm.campaign) || '',
@@ -1208,49 +1175,6 @@ function salvarLead(status) {
   }).catch((e) => console.warn('[lead] salvar falhou (seguindo normal):', e.message));
 }
 
-/* Conversão Meta (Pixel + CAPI) — dispara p/ lead QUALIFICADO 10k+ em ambas
-   as trilhas: premium (médico) e audience (10k+ não-médico). 1x por lead.
-   Evento de Lead puro (SEM valor). Mesmo eventID no Pixel e na CAPI → o Meta
-   deduplica. Hash dos dados e token da CAPI ficam no backend (/api/fb-event). */
-// Eventos Meta (Pixel browser + CAPI server, deduplicados por eventID) — só leads 10k+.
-//  • Lead     → dispara na CLASSIFICAÇÃO (virou closer/audience, logo após reel+renda).
-//               Meta otimiza pelo LEAD QUALIFICADO e captura até quem não agenda.
-//  • Schedule → dispara no AGENDAMENTO (booking confirmado). Mede quem fechou horário.
-// Cada um tem sua própria flag de 1x-por-lead (persistida), então não se atrapalham.
-function dispararEventoMeta(eventName, flagKey, contentName) {
-  if (MODO_DEMO) return;   // demonstração: nenhum pixel dispara
-  const d = state.data;
-  if (d.callTrack !== 'premium' && d.callTrack !== 'audience') return;  // só 10k+
-  if (d[flagKey]) return;                       // evita duplicar (1x por lead)
-  d[flagKey] = true; persist();
-
-  const eventId = `${eventName.toLowerCase()}_${state.leadRef || 'x'}_${Date.now()}`;
-  const custom = { content_name: contentName, currency: 'BRL' };  // evento de lead/schedule — sem value
-
-  // 1) Pixel (navegador)
-  try { if (window.fbq) fbq('track', eventName, custom, { eventID: eventId }); } catch (e) {}
-
-  // 2) CAPI (servidor) — mesmo eventID; manda dados p/ matching (hash é no backend)
-  const cookie = (n) => (document.cookie.match('(^|;)\\s*' + n + '=([^;]+)') || [])[2] || '';
-  postJSON(CONFIG.API_FB_EVENT, {
-    event_name: eventName, event_id: eventId, track: d.callTrack,
-    content_name: contentName,
-    email: d.email || '', phone: d.whatsapp || '', nome: d.nome || '',
-    fbp: cookie('_fbp'), fbc: cookie('_fbc'),
-    event_source_url: location.href, currency: 'BRL',
-  }, 6000);
-}
-function contentNameTrilha() {
-  return state.data.callTrack === 'premium' ? 'Sessão Estratégica (closers)' : 'Call de Raio X';
-}
-// Lead na classificação (lead qualificado 10k+ — mesmo que não agende depois).
-function dispararLeadQualificado() { dispararEventoMeta('Lead', 'leadPixelEnviado', contentNameTrilha()); }
-// Schedule no agendamento (booking confirmado).
-function dispararAgendamento() { dispararEventoMeta('Schedule', 'schedulePixelEnviado', contentNameTrilha()); }
-
-/* ================================================================
-   APIFY — perfil + reels (assíncrono: start + polling)
-   ================================================================ */
 async function postJSON(url, payload, timeoutMs = 9000) {
   try {
     const ctl = new AbortController();
@@ -1494,7 +1418,6 @@ async function onEmbedAgendado(e, row, info) {
   state.data.vendedor = info.vendor || state.data.vendedor || '';
   persist();
   salvarLead('agendado');
-  dispararAgendamento();
 
   const pageUrl = state.data.agendamentoEm
     ? `call.html?t=${encodeURIComponent(state.data.agendamentoEm)}&n=${encodeURIComponent(state.data.nome || '')}`
@@ -1759,7 +1682,6 @@ async function confirmarAgendamento(card, dia, hora, iso) {
   state.data.videoUrl = videoUrl;
   persist();
   salvarLead('agendado');
-  dispararAgendamento();
 
   const quando = new Date(quandoISO);
   const diaTxt = `${capitalizar(fmtSemana.format(quando))}, ${fmtDiaLongo.format(quando)}`;
