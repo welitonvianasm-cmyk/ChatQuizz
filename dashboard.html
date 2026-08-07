@@ -2257,10 +2257,11 @@ async function apCarregar(box) {
   AP = (r && r.ok) ? {
     whatsapp_numero: r.whatsapp_numero || '', avatar_url: r.avatar_url || '',
     avatar_fallback: r.avatar_fallback || '', site_url: r.site_url || '',
-    cor_primaria: r.cor_primaria || '#005355', tem_presente: !!r.tem_presente,
+    cor_primaria: r.cor_primaria || '#005355', mensagem_boas_vindas: r.mensagem_boas_vindas || '',
+    tem_presente: !!r.tem_presente,
     presente_imagem: r.presente_imagem || '', presente_nome: r.presente_nome || '',
     presente_descricao: r.presente_descricao || '',
-  } : { whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '', cor_primaria: '#005355', tem_presente: false, presente_imagem: '', presente_nome: '', presente_descricao: '' };
+  } : { whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '', cor_primaria: '#005355', mensagem_boas_vindas: '', tem_presente: false, presente_imagem: '', presente_nome: '', presente_descricao: '' };
   if (QE_TAB === 'aparencia') qeRenderAparencia(box || $('#qeLista'));
 }
 function apCampo(label, valor, onInput, tipo) {
@@ -2281,6 +2282,14 @@ function qeRenderAparencia(box) {
   box.appendChild(apCampo('Avatar (URL da imagem exibida no chat)', AP.avatar_url, (v) => { AP.avatar_url = v; }));
   box.appendChild(apCampo('Logo (URL — usada se o avatar não carregar)', AP.avatar_fallback, (v) => { AP.avatar_fallback = v; }));
   box.appendChild(apCampo('Site (URL — opcional)', AP.site_url, (v) => { AP.site_url = v; }));
+
+  const bvWrap = el('label'); bvWrap.style.cssText = 'display:block;font-size:11.5px;font-weight:600;margin-bottom:12px;';
+  bvWrap.textContent = 'Mensagem de boas-vindas (a primeira coisa que o lead lê, antes de perguntar o nome)';
+  const bvTa = el('textarea'); bvTa.value = AP.mensagem_boas_vindas || ''; bvTa.rows = 3;
+  bvTa.style.cssText = 'display:block;width:100%;max-width:420px;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--card);font-family:inherit;';
+  bvTa.oninput = () => { AP.mensagem_boas_vindas = bvTa.value; };
+  bvWrap.appendChild(bvTa);
+  box.appendChild(bvWrap);
 
   const corWrap = el('label'); corWrap.style.cssText = 'display:block;font-size:11.5px;font-weight:600;margin-bottom:12px;';
   corWrap.textContent = 'Cor primária do quiz';

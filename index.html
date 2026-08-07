@@ -588,7 +588,9 @@ const CONFIG = {
    ================================================================ */
 const APARENCIA_PADRAO = {
   whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '',
-  cor_primaria: '#005355', tem_presente: false,
+  cor_primaria: '#005355',
+  mensagem_boas_vindas: 'Oi! Eu estou aqui pra te ajudar a entender melhor o seu momento. Responda com sinceridade! 💚',
+  tem_presente: false,
   presente_imagem: '', presente_nome: '', presente_descricao: '',
 };
 let APARENCIA = APARENCIA_PADRAO;
@@ -606,6 +608,7 @@ async function carregarAparencia() {
       whatsapp_numero: j.whatsapp_numero || '', avatar_url: j.avatar_url || '',
       avatar_fallback: j.avatar_fallback || '', site_url: j.site_url || '',
       cor_primaria: /^#[0-9a-fA-F]{6}$/.test(j.cor_primaria || '') ? j.cor_primaria : APARENCIA_PADRAO.cor_primaria,
+      mensagem_boas_vindas: j.mensagem_boas_vindas || APARENCIA_PADRAO.mensagem_boas_vindas,
       tem_presente: !!j.tem_presente, presente_imagem: j.presente_imagem || '',
       presente_nome: j.presente_nome || '', presente_descricao: j.presente_descricao || '',
     };
@@ -1284,7 +1287,7 @@ async function postJSON(url, payload, timeoutMs = 9000) {
    ================================================================ */
 async function etapaNome(replay = false) {
   if (!replay) {
-    await bot('Você se sente exausta pelos cuidados que tem enfrentado? Eu estou aqui para te mostrar o quanto você está preparada para transformar sua realidade e reconquistar sua vida. Responda com sinceridade! 💚', { delay: 1100 });
+    await bot(APARENCIA.mensagem_boas_vindas, { delay: 1100 });
     await bot('Antes de tudo, me conta: como você se chama?');
   }
   askText({
@@ -1838,7 +1841,7 @@ function replayUserLabel(st) {
 /* mensagens do bot que antecedem a resposta do passo st */
 function replayBotBefore(st) {
   if (st === 0) return [
-    'Você se sente exausta pelos cuidados que tem enfrentado? Eu estou aqui para te mostrar o quanto você está preparada para transformar sua realidade e reconquistar sua vida. Responda com sinceridade! 💚',
+    APARENCIA.mensagem_boas_vindas,
     'Pra começar, me diz: qual seu nome?',
   ];
   if (st === 1) return [`Que bom ter você aqui, <b>${esc((state.data.nome || '').split(' ')[0])}</b> 💚 Me passa seu WhatsApp? É por ele que eu te envio suas orientações depois da nossa conversa.`];
