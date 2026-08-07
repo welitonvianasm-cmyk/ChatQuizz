@@ -567,15 +567,13 @@ const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
    CONFIG — ajuste aqui antes de publicar
    ================================================================ */
 const CONFIG = {
-  WHATSAPP_NUMERO: '5511993746788',       // WhatsApp da Suely (leads acima de R$20 mil)
-  AVATAR_URL: 'suely.png',                // foto da Suely (cai no logo.png se o arquivo não existir)
+  WHATSAPP_NUMERO: '5511993746788',       // número usado no botão de fallback (wa.me) do roteamento WhatsApp
+  AVATAR_URL: 'suely.png',                // foto exibida no chat (cai no logo.png se o arquivo não existir)
   AVATAR_FALLBACK: 'logo.png',
-  PRODUTO_IMG: 'ebook.png',               // capa real do ebook "7 Dicas"
+  PRODUTO_IMG: 'ebook.png',               // capa do presente entregue ao final do quiz
   SITE_URL: 'https://www.suavitatisterapias.com.br',
-  CAL_COMUNIDADE: 'https://cal.com/suavitatisterapias/comunidade',  // agenda COMUNIDADE (R$1.500–5.000)
-  CAL_IMERSAO: 'https://cal.com/suavitatisterapias/comunidade',     // agenda IMERSÃO foi UNIFICADA na Comunidade (29/07/2026) — a trilha do lead continua 'imersao'
-  IMERSAO_ATE: '2026-08-13',  // última data da turma da Imersão — depois disso, leads dessa faixa vão pra COMUNIDADE
   API_SAVE: '/api/save-lead',
+  API_QUIZ_CONFIG: '/api/quiz-config',
   API_AGENDA: '/api/agenda',              // usado só pela agenda local de emergência
   /* Agenda local de emergência — só aparece se o embed do cal.com falhar */
   AGENDA: {
@@ -587,106 +585,210 @@ const CONFIG = {
 };
 
 /* ================================================================
-   QUIZ SUAVIS — 8 perguntas com pontuação em 3 perfis (low/mid/high).
-   Resultado = perfil com mais pontos. Qualificada = perfil 'high'
-   (e a resposta "sem orçamento" corta a qualificação — `corta`).
+   QUIZ CONFIGURÁVEL — perguntas, qualificadores, níveis de consciência,
+   textos de resultado e roteamento vêm do painel (Editor do Quiz).
+   Os valores abaixo são só o PADRÃO embutido: usado até alguém publicar
+   uma config pelo painel, e usado como rede de segurança se a config do
+   backend vier inválida (o quiz NUNCA trava por causa disso).
+   Mantido em sincronia manualmente com netlify/_quiz.mjs (PADRAO) —
+   não há bundler neste projeto pra compartilhar o módulo de verdade.
    ================================================================ */
 const QUIZ_PADRAO = [
-  { id: 'q1', q: 'Pra começar: qual a sua idade?', multi: false, opts: [
-    { t: '🌻 30-45', s: { low: 1, mid: 2, high: 2 } },
-    { t: '🌳 46-60', s: { low: 1, mid: 2, high: 2 } },
-    { t: '🕊️ 61+', s: { low: 2, mid: 1, high: 2 } },
+  { id: 'q1', q: 'Pra começar: qual a sua idade?', multi: false, ativo: true, desempate: false, opts: [
+    { t: '🌻 30-45', nivel: 'high' },
+    { t: '🌳 46-60', nivel: 'high' },
+    { t: '🕊️ 61+', nivel: 'high' },
   ]},
-  { id: 'q2', q: 'Como você se sente cuidando de seus pais?', multi: false, opts: [
-    { t: '😩 Exausta', s: { low: 4, mid: 1, high: 0 } },
-    { t: '🤯 Sobrecarregada', s: { low: 2, mid: 3, high: 0 } },
-    { t: '🧘‍♀️ Em Paz', s: { low: 0, mid: 1, high: 4 } },
+  { id: 'q2', q: 'Como você se sente cuidando de seus pais?', multi: false, ativo: true, desempate: false, opts: [
+    { t: '😩 Exausta', nivel: 'low' },
+    { t: '🤯 Sobrecarregada', nivel: 'mid' },
+    { t: '🧘‍♀️ Em Paz', nivel: 'high' },
   ]},
-  { id: 'q3', q: 'Quais áreas da sua vida você sente que estão sendo <b>mais afetadas</b>? Pode marcar mais de uma 🙂', multi: true, opts: [
-    { t: '💪 Saúde física', s: { low: 1, mid: 2, high: 2 } },
-    { t: '🧠 Saúde mental', s: { low: 1, mid: 2, high: 2 } },
-    { t: '❤️ Relacionamentos', s: { low: 1, mid: 2, high: 2 } },
-    { t: '💼 Carreira/Trabalho', s: { low: 1, mid: 2, high: 2 } },
-    { t: '🎨 Tempo livre/Hobbies', s: { low: 1, mid: 2, high: 2 } },
+  { id: 'q3', q: 'Quais áreas da sua vida você sente que estão sendo <b>mais afetadas</b>? Pode marcar mais de uma 🙂', multi: true, ativo: true, desempate: false, opts: [
+    { t: '💪 Saúde física', nivel: 'high' },
+    { t: '🧠 Saúde mental', nivel: 'high' },
+    { t: '❤️ Relacionamentos', nivel: 'high' },
+    { t: '💼 Carreira/Trabalho', nivel: 'high' },
+    { t: '🎨 Tempo livre/Hobbies', nivel: 'high' },
   ]},
-  { id: 'q4', q: 'Em uma escala de 1 a 5, o quanto você se sente <b>culpada</b> por não conseguir "dar conta de tudo"?', multi: false, opts: [
-    { t: '😊 1 - Nada culpada', s: { low: 0, mid: 1, high: 4 } },
-    { t: '🙂 2', s: { low: 1, mid: 2, high: 2 } },
-    { t: '😐 3', s: { low: 2, mid: 2, high: 1 } },
-    { t: '🙁 4', s: { low: 3, mid: 1, high: 1 } },
-    { t: '😔 5 - Extremamente culpada', s: { low: 4, mid: 0, high: 1 } },
+  { id: 'q4', q: 'Em uma escala de 1 a 5, o quanto você se sente <b>culpada</b> por não conseguir "dar conta de tudo"?', multi: false, ativo: true, desempate: false, opts: [
+    { t: '😊 1 - Nada culpada', nivel: 'high' },
+    { t: '🙂 2', nivel: 'high' },
+    { t: '😐 3', nivel: 'mid' },
+    { t: '🙁 4', nivel: 'low' },
+    { t: '😔 5 - Extremamente culpada', nivel: 'low' },
   ]},
-  { id: 'q5', q: 'Você já buscou ajuda profissional (terapia, grupos de apoio...) pra lidar com o estresse do cuidado?', multi: false, opts: [
-    { t: '🌱 Sim, e estou em acompanhamento', s: { low: 1, mid: 2, high: 2 } },
-    { t: '💔 Sim, mas não funcionou', s: { low: 2, mid: 3, high: 0 } },
-    { t: '🤔 Não, nunca busquei', s: { low: 3, mid: 1, high: 1 } },
+  { id: 'q5', q: 'Você já buscou ajuda profissional (terapia, grupos de apoio...) pra lidar com o estresse do cuidado?', multi: false, ativo: true, desempate: false, opts: [
+    { t: '🌱 Sim, e estou em acompanhamento', nivel: 'high' },
+    { t: '💔 Sim, mas não funcionou', nivel: 'mid' },
+    { t: '🤔 Não, nunca busquei', nivel: 'low' },
   ]},
-  { id: 'q6', q: '🌻 Qual é a renda média <b>mensal</b> da sua família?', multi: false, opts: [
-    { t: 'Entre R$ 1.500,00 e R$ 2.500,00', s: { low: 2, mid: 2, high: 1 }, destino: 'comunidade' },
-    { t: 'Entre R$ 2.500,00 e R$ 5.000,00', s: { low: 1, mid: 2, high: 2 }, destino: 'comunidade' },
-    { t: 'Entre R$ 5.000,00 e R$ 10.000,00', s: { low: 1, mid: 2, high: 3 }, destino: 'comunidade' },
-    { t: 'Entre R$ 10.000,00 e R$ 20.000,00', s: { low: 0, mid: 1, high: 4 }, destino: 'comunidade' },
-    { t: 'Acima de R$ 20.000,00', s: { low: 0, mid: 1, high: 4 }, destino: 'premium' },
+  { id: 'q6', q: '🌻 Qual é a renda média <b>mensal</b> da sua família?', multi: false, ativo: true, desempate: true, opts: [
+    { t: 'Entre R$ 1.500,00 e R$ 2.500,00', nivel: 'mid', qualificador: 'comunidade' },
+    { t: 'Entre R$ 2.500,00 e R$ 5.000,00', nivel: 'high', qualificador: 'comunidade' },
+    { t: 'Entre R$ 5.000,00 e R$ 10.000,00', nivel: 'high', qualificador: 'comunidade' },
+    { t: 'Entre R$ 10.000,00 e R$ 20.000,00', nivel: 'high', qualificador: 'comunidade' },
+    { t: 'Acima de R$ 20.000,00', nivel: 'high', qualificador: 'premium' },
   ]},
-  { id: 'q7', q: 'Em qual <b>prazo</b> você gostaria de começar a sentir uma melhora significativa na sua vida?', multi: false, opts: [
-    { t: '🚨 O mais rápido possível, preciso de uma mudança urgente!', s: { low: 0, mid: 1, high: 4 } },
-    { t: '⏳ Em até 3 meses', s: { low: 1, mid: 3, high: 1 } },
-    { t: '🕰️ Não tenho pressa', s: { low: 4, mid: 1, high: 0 } },
+  { id: 'q7', q: 'Em qual <b>prazo</b> você gostaria de começar a sentir uma melhora significativa na sua vida?', multi: false, ativo: true, desempate: false, opts: [
+    { t: '🚨 O mais rápido possível, preciso de uma mudança urgente!', nivel: 'high' },
+    { t: '⏳ Em até 3 meses', nivel: 'mid' },
+    { t: '🕰️ Não tenho pressa', nivel: 'low' },
   ]},
-  { id: 'q8', q: 'Última: qual o <b>orçamento disponível</b> pra investir em um programa de desenvolvimento pessoal?', multi: false, opts: [
-    { t: '💰 Já tenho um orçamento definido e estou pronta para investir.', s: { low: 0, mid: 1, high: 4 } },
-    { t: '🤔 Preciso entender melhor o programa para avaliar o investimento.', s: { low: 1, mid: 3, high: 1 } },
-    { t: '💸 Não tenho orçamento disponível no momento.', s: { low: 4, mid: 1, high: 0 } },
+  { id: 'q8', q: 'Última: qual o <b>orçamento disponível</b> pra investir em um programa de desenvolvimento pessoal?', multi: false, ativo: true, desempate: false, opts: [
+    { t: '💰 Já tenho um orçamento definido e estou pronta para investir.', nivel: 'high' },
+    { t: '🤔 Preciso entender melhor o programa para avaliar o investimento.', nivel: 'mid' },
+    { t: '💸 Não tenho orçamento disponível no momento.', nivel: 'low' },
   ]},
 ];
+const QUALIFICADORES_PADRAO = [
+  { chave: 'comunidade', nome: 'Comunidade', cor: '#22A55E', ordem: 0, ativo: true },
+  { chave: 'premium', nome: 'Premium (WhatsApp)', cor: '#8B5CF6', ordem: 1, ativo: true },
+];
+const NIVEIS_PADRAO = [
+  { chave: 'low', nome: 'Baixa Consciência', ordem: 0 },
+  { chave: 'mid', nome: 'Média Consciência', ordem: 1 },
+  { chave: 'high', nome: 'Alta Consciência', ordem: 2 },
+];
+const RESULTADOS_PADRAO = {
+  por_nivel: {
+    low: { texto:
+      '{nome}, li tudo o que você me contou, e li com muito carinho 🌿\n\n' +
+      'O que eu percebo é que você está num momento de <b>Baixa Consciência</b>. Você ainda não entendeu que precisa mergulhar fundo na transformação. Talvez ainda esteja resistindo à ideia de priorizar a si mesma.\n\n' +
+      "<b>Você está no modo 'piloto automático' do cuidado.</b> A rotina te engoliu, e você se sente presa a um ciclo de obrigações. A ideia de mudar parece distante e até um pouco assustadora.\n\n" +
+      '<b>A raiz do problema: a dificuldade em se priorizar.</b> Você se sente culpada ao pensar em si mesma, como se estivesse negligenciando seus pais. Essa culpa te impede de buscar soluções e perpetua o ciclo de exaustão.\n\n' +
+      '<b>Se você continuar nesse caminho, 3 coisas podem acontecer:</b><br>• Sua saúde física e mental se deteriorarão cada vez mais.<br>• Seus relacionamentos se desgastarão, gerando isolamento e ressentimento.<br>• Você perderá sua identidade e seus sonhos, vivendo apenas em função do cuidado.\n\n' +
+      '<b>É possível cuidar sem se perder de si mesma.</b> Priorizar seu bem-estar não é egoísmo, mas sim uma necessidade para que você possa oferecer o melhor cuidado aos seus pais. Ao se fortalecer emocionalmente, você se torna uma cuidadora mais presente, equilibrada e feliz.\n\n' +
+      '💬 <i>"Cuidar de si não é egoísmo, é autopreservação, e autopreservação é um ato de guerra."</i>' },
+    mid: { texto:
+      '{nome}, li tudo o que você me contou, e li com muito carinho 🌿\n\n' +
+      'O que eu percebo é que você está num momento de <b>Média Consciência</b>. Você já reconhece que precisa de ajuda, mas ainda está hesitante em investir tempo e recursos em si mesma. Você está no caminho certo, mas precisa de um empurrãozinho.\n\n' +
+      "<b>Você está no 'meio do caminho' da transformação.</b> Você sente o peso do cuidado, mas também vislumbra a possibilidade de uma vida mais equilibrada. A dúvida é: como chegar lá?\n\n" +
+      '<b>A hesitação em investir em si mesma te impede de avançar.</b> Você sabe que precisa de ajuda, mas se sente insegura em gastar tempo e dinheiro em um programa. O medo de não funcionar te paralisa e te mantém presa à rotina.\n\n' +
+      '<b>Se você não tomar uma atitude agora, 3 coisas podem acontecer:</b><br>• O estresse crônico se intensificará, afetando sua saúde e bem-estar.<br>• A sobrecarga emocional te deixará mais irritada e impaciente com seus pais.<br>• Você perderá oportunidades de se reconectar com seus hobbies e paixões.\n\n' +
+      '<b>Investir em você é investir no melhor cuidado para seus pais.</b> Ao se fortalecer emocionalmente, você se torna uma cuidadora mais eficiente, presente e amorosa.\n\n' +
+      '💬 <i>"Seja a mudança que você quer ver no mundo."</i>' },
+    high: { texto:
+      '{nome}, li tudo o que você me contou, e li com muito carinho 🌿\n\n' +
+      'O que eu percebo é que você está num momento de <b>Alta Consciência</b>. Você está decidida a transformar sua vida e reconquistar sua felicidade. Você sabe que precisa de um suporte especializado e está pronta para investir em si mesma. Parabéns!\n\n' +
+      '<b>Você está no ponto ideal para a transformação!</b> Você já reconhece a importância de priorizar seu bem-estar e está disposta a investir tempo e recursos em um programa que te ajude a reconquistar sua vida.\n\n' +
+      '<b>Ainda existe uma lacuna entre o desejo e a ação.</b> Você já sabe o que precisa fazer, mas sente que precisa de um suporte especializado para te guiar e te manter motivada ao longo do processo.\n\n' +
+      '<b>Se você não agir agora, o custo da espera pode ser alto:</b><br>• Perder a oportunidade de viver uma vida plena e realizada.<br>• Ver seus sonhos e projetos pessoais se distanciarem cada vez mais.<br>• Arrepender-se de não ter tomado uma atitude antes que a situação se tornasse insustentável.\n\n' +
+      '<b>A hora de agir é agora! Não espere mais para reconquistar sua vida.</b>\n\n' +
+      '💬 <i>"O melhor momento para plantar uma árvore foi há 20 anos. O segundo melhor momento é agora."</i>' },
+  },
+  por_qualificador: {
+    comunidade: { texto:
+      '<b>Você não precisa continuar carregando isso sozinha.</b>\n\n' +
+      'A <b>Comunidade</b> é o espaço para filhos cuidadores que precisam de apoio, direção e força para cuidar sem se perder no processo. Aqui você vai sair do modo <i>"eu não aguento mais e não sei o que fazer"</i> para o modo <i>"eu tenho direção, apoio e ferramentas para cuidar melhor sem me abandonar pelo caminho."</i>' },
+    premium: { texto:
+      '{nome}, pelo que você me contou, eu quero marcar nossa conversa pessoalmente com você. Clica no botão aqui embaixo que a gente combina o melhor horário. Pode vir, é comigo mesma que você vai falar 👇' },
+  },
+};
+const ROTEAMENTO_PADRAO = {
+  comunidade: { tipo: 'calcom', calLink: 'https://cal.com/suavitatisterapias/comunidade' },
+  premium: { tipo: 'whatsapp', mensagem: 'Olá {nome}! Vi que você concluiu o quiz 💚 Vamos marcar nossa conversa?' },
+};
+
 let QUIZ = QUIZ_PADRAO;                                // perguntas em uso (podem vir do painel)
+let QUALIFICADORES = QUALIFICADORES_PADRAO;
+let NIVEIS = NIVEIS_PADRAO;
+let RESULTADOS = RESULTADOS_PADRAO;
+let ROTEAMENTO = ROTEAMENTO_PADRAO;
+let WHATSAPP_CONECTADO = false;                        // vem do backend — decide a UX do roteamento WhatsApp
 const PASSOS_CONTATO = 3;                              // nome, whatsapp, e-mail
 let TOTAL_PASSOS = PASSOS_CONTATO + QUIZ.length;
 
-/* Perguntas editadas no painel (Configurações → Quiz). Qualquer problema na
-   carga (rede, config inválida, sem pergunta-chave) → usa o PADRÃO embutido
-   acima e o quiz NUNCA trava. */
+/* Config editada no painel (Editor do Quiz). Qualquer problema na carga
+   (rede, config inválida, incompleta) → usa o PADRÃO embutido acima e o
+   quiz NUNCA trava. */
 async function carregarQuizConfig() {
   try {
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), 3500);
-    const r = await fetch('/api/quiz-config', { signal: ctl.signal });
+    const r = await fetch(CONFIG.API_QUIZ_CONFIG, { signal: ctl.signal });
     clearTimeout(t);
     if (!r.ok) return;
     const j = await r.json();
-    const ps = j && j.ok && Array.isArray(j.perguntas) ? j.perguntas : null;
-    if (!ps) return;
+    if (!j || !j.ok) return;
+    WHATSAPP_CONECTADO = !!j.whatsappConectado;
+    const ps = Array.isArray(j.perguntas) ? j.perguntas : null;
+    const qs = Array.isArray(j.qualificadores) ? j.qualificadores : null;
+    const ns = Array.isArray(j.niveis) ? j.niveis : null;
+    if (!ps || !qs || !ns) return;
     const ativas = ps.filter((p) => p && p.ativo !== false && p.q && Array.isArray(p.opts) && p.opts.length >= 2);
     if (!ativas.length) return;
-    if (!ativas.some((p) => p.opts.some((o) => o && o.destino))) return;  // sem pergunta-chave, não troca
+    const qAtivos = new Set(qs.filter((q) => q && q.ativo !== false).map((q) => q.chave));
+    const nChaves = new Set(ns.map((n) => n && n.chave));
+    if (!qAtivos.size || !nChaves.size) return;
+    // toda opção que aponta pra qualificador/nível precisa apontar pra algo que existe
+    for (const p of ativas) for (const o of p.opts) {
+      if (o.qualificador && !qAtivos.has(o.qualificador)) return;
+      if (o.nivel && !nChaves.has(o.nivel)) return;
+    }
+    if (!ativas.some((p) => p.desempate)) return;                 // precisa de 1 critério de desempate
+    if (!j.roteamento || !qs.every((q) => j.roteamento[q.chave])) return;  // todo qualificador precisa de roteamento
+    if (!j.resultados || !j.resultados.por_nivel || !j.resultados.por_qualificador) return;
+
     QUIZ = ativas;
+    QUALIFICADORES = qs;
+    NIVEIS = ns;
+    RESULTADOS = j.resultados;
+    ROTEAMENTO = j.roteamento;
     TOTAL_PASSOS = PASSOS_CONTATO + QUIZ.length;
   } catch (e) { /* mantém o padrão embutido */ }
 }
 
-/* o destino do agendamento (comunidade/imersão/premium) vem da resposta
-   de renda familiar — campo `destino` nas opções da pergunta q6 */
-
-/* O placar low/mid/high serve SÓ pra escolher qual texto de resultado a
-   pessoa lê (personalização). A qualificação/destino vem APENAS da renda
-   familiar (q6): comunidade, imersão ou WhatsApp — todo mundo segue. */
-function calcularResultado() {
-  const r = state.data.respostas || {};
-  const tot = { low: 0, mid: 0, high: 0 };
+/* ================================================================
+   VOTAÇÃO POR MAIORIA — por eixo ('qualificador' | 'nivel'). Cada
+   pergunta respondida vota 1x nesse eixo (múltipla escolha vota pela
+   opção mais marcada dentro da própria pergunta, pra não pesar mais
+   que uma pergunta de escolha única). Empate é resolvido pela pergunta
+   marcada como critério de desempate — a mesma lógica do backend
+   (netlify/_quiz.mjs), mantida em sincronia manualmente.
+   ================================================================ */
+function votar(eixo) {
+  const respostas = state.data.respostas || {};
+  const contagem = {};
+  let valorDesempate = null;
   QUIZ.forEach((p) => {
-    const sel = r[p.id];
+    if (!p || p.ativo === false) return;
+    const sel = respostas[p.id];
     const escolhidas = p.multi ? (Array.isArray(sel) ? sel : []) : (sel != null ? [sel] : []);
-    escolhidas.forEach((idx) => {
-      const o = p.opts[idx];
-      if (!o) return;
-      tot.low += o.s.low; tot.mid += o.s.mid; tot.high += o.s.high;
-    });
+    if (!escolhidas.length) return;
+    let valorPergunta = null;
+    if (p.multi) {
+      const sub = {};
+      escolhidas.forEach((idx) => {
+        const o = p.opts[idx];
+        const v = o && o[eixo];
+        if (!v) return;
+        sub[v] = (sub[v] || 0) + 1;
+      });
+      let max = -1;
+      Object.keys(sub).forEach((v) => { if (sub[v] > max) { max = sub[v]; valorPergunta = v; } });
+    } else {
+      const o = p.opts[escolhidas[0]];
+      valorPergunta = (o && o[eixo]) || null;
+    }
+    if (!valorPergunta) return;
+    contagem[valorPergunta] = (contagem[valorPergunta] || 0) + 1;
+    if (p.desempate) valorDesempate = valorPergunta;
   });
-  const soma = tot.low + tot.mid + tot.high || 1;
-  let perfil = 'low';
-  if (tot.mid >= tot.low) perfil = 'mid';
-  if (tot.high >= tot.mid && tot.high >= tot.low) perfil = 'high';
-  return { perfil, score: Math.round((tot.high / soma) * 100) };
+  const chaves = Object.keys(contagem);
+  if (!chaves.length) return null;
+  const max = Math.max(...chaves.map((k) => contagem[k]));
+  const empatados = chaves.filter((k) => contagem[k] === max);
+  if (empatados.length > 1 && valorDesempate && empatados.includes(valorDesempate)) return valorDesempate;
+  return empatados[0];
+}
+
+function calcularResultado() {
+  return { qualificador: votar('qualificador'), nivel: votar('nivel') };
+}
+
+function interpolar(texto, vars) {
+  return String(texto || '').replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] != null ? String(vars[k]) : ''));
 }
 
 /* ================================================================
@@ -724,104 +826,24 @@ function sugerirEmail(email) {
   return null;
 }
 
-/* ================================================================
-   RESULTADOS SUAVIS — copy dos 3 perfis (extraída do quiz original)
-   ================================================================ */
-const OUTCOMES = {
-  low: {
-    titulo: 'Baixa Consciência',
-    resumo: 'Você ainda não entendeu que precisa mergulhar fundo na transformação. Talvez ainda esteja resistindo à ideia de priorizar a si mesma.',
-    situacaoH: "Você está no modo 'piloto automático' do cuidado.",
-    situacaoB: 'A rotina te engoliu, e você se sente presa a um ciclo de obrigações. A ideia de mudar parece distante e até um pouco assustadora.',
-    problemaH: 'A raiz do problema: a dificuldade em se priorizar.',
-    problemaB: 'Você se sente culpada ao pensar em si mesma, como se estivesse negligenciando seus pais. Essa culpa te impede de buscar soluções e perpetua o ciclo de exaustão.',
-    implicacaoH: 'Se você continuar nesse caminho, 3 coisas podem acontecer:',
-    implicacaoItens: [
-      'Sua saúde física e mental se deteriorarão cada vez mais.',
-      'Seus relacionamentos se desgastarão, gerando isolamento e ressentimento.',
-      'Você perderá sua identidade e seus sonhos, vivendo apenas em função do cuidado.',
-    ],
-    perspectivaH: 'É possível cuidar sem se perder de si mesma.',
-    perspectivaB: 'Priorizar seu bem-estar não é egoísmo, mas sim uma necessidade para que você possa oferecer o melhor cuidado aos seus pais. Ao se fortalecer emocionalmente, você se torna uma cuidadora mais presente, equilibrada e feliz.',
-    quote: 'Cuidar de si não é egoísmo, é autopreservação, e autopreservação é um ato de guerra.',
-  },
-  mid: {
-    titulo: 'Média Consciência',
-    resumo: 'Você já reconhece que precisa de ajuda, mas ainda está hesitante em investir tempo e recursos em si mesma. Você está no caminho certo, mas precisa de um empurrãozinho.',
-    situacaoH: "Você está no 'meio do caminho' da transformação.",
-    situacaoB: 'Você sente o peso do cuidado, mas também vislumbra a possibilidade de uma vida mais equilibrada. A dúvida é: como chegar lá?',
-    problemaH: 'A hesitação em investir em si mesma te impede de avançar.',
-    problemaB: 'Você sabe que precisa de ajuda, mas se sente insegura em gastar tempo e dinheiro em um programa. O medo de não funcionar te paralisa e te mantém presa à rotina.',
-    implicacaoH: 'Se você não tomar uma atitude agora, 3 coisas podem acontecer:',
-    implicacaoItens: [
-      'O estresse crônico se intensificará, afetando sua saúde e bem-estar.',
-      'A sobrecarga emocional te deixará mais irritada e impaciente com seus pais.',
-      'Você perderá oportunidades de se reconectar com seus hobbies e paixões.',
-    ],
-    perspectivaH: 'Investir em você é investir no melhor cuidado para seus pais.',
-    perspectivaB: 'Ao se fortalecer emocionalmente, você se torna uma cuidadora mais eficiente, presente e amorosa. Um programa de desenvolvimento pessoal não é um luxo, mas sim um investimento estratégico no seu bem-estar e no bem-estar de seus pais.',
-    quote: 'Seja a mudança que você quer ver no mundo.',
-  },
-  high: {
-    titulo: 'Alta Consciência',
-    resumo: 'Você está decidida a transformar sua vida e reconquistar sua felicidade. Você sabe que precisa de um suporte especializado e está pronta para investir em si mesma. Parabéns!',
-    situacaoH: 'Você está no ponto ideal para a transformação!',
-    situacaoB: 'Você já reconhece a importância de priorizar seu bem-estar e está disposta a investir tempo e recursos em um programa que te ajude a reconquistar sua vida. Você está no caminho certo!',
-    problemaH: 'Ainda existe uma lacuna entre o desejo e a ação.',
-    problemaB: 'Você já sabe o que precisa fazer, mas sente que precisa de um suporte especializado para te guiar e te manter motivada ao longo do processo. Sozinha, pode ser difícil superar os obstáculos e manter o foco nos seus objetivos.',
-    implicacaoH: 'Se você não agir agora, o custo da espera pode ser alto:',
-    implicacaoItens: [
-      'Perder a oportunidade de viver uma vida plena e realizada.',
-      'Ver seus sonhos e projetos pessoais se distanciarem cada vez mais.',
-      'Arrepender-se de não ter tomado uma atitude antes que a situação se tornasse insustentável.',
-    ],
-    perspectivaH: 'A hora de agir é agora! Não espere mais para reconquistar sua vida.',
-    perspectivaB: '',
-    quote: 'O melhor momento para plantar uma árvore foi há 20 anos. O segundo melhor momento é agora.',
-  },
-};
-
-/* pergunta-chave = a da renda (opções com `destino`) — pode ter qualquer id */
-function perguntaChave() {
-  return QUIZ.find((p) => (p.opts || []).some((o) => o && o.destino)) || null;
-}
-/* destino da lead pela renda familiar: comunidade | imersao | premium.
-   A Imersão tem data-limite (CONFIG.IMERSAO_ATE): passou, a lead vai pra
-   Comunidade — o convite e a agenda seguem juntos, sem tela vazia. */
-function destinoQ6() {
-  const p = perguntaChave();
-  const o = (p && p.opts[(state.data.respostas || {})[p.id]]) || {};
-  let d = o.destino || 'comunidade';
-  if (d === 'imersao' && CONFIG.IMERSAO_ATE &&
-      new Date() > new Date(CONFIG.IMERSAO_ATE + 'T23:59:59-03:00')) d = 'comunidade';
-  return d;
-}
-
-/* convite final: o nome do produto acompanha o destino da lead */
-const NOME_DESTINO = {
-  comunidade: 'A <b>Comunidade SUAVIS</b> é o espaço',
-  imersao: 'A <b>Imersão Terapêutica</b> é o espaço',
-  premium: 'O <b>Programa de Desenvolvimento SUAVIS</b> é o espaço',
-};
-function conviteSuavis() {
-  return '<b>Você não precisa continuar carregando isso sozinha.</b><br><br>' +
-    NOME_DESTINO[destinoQ6()] + ' para filhos cuidadores que precisam de apoio, direção e força para cuidar sem se perder no processo. ' +
-    'Aqui você vai sair do modo <i>"eu não aguento mais e não sei o que fazer"</i> para o modo <i>"eu tenho direção, apoio e ferramentas para cuidar melhor sem me abandonar pelo caminho."</i>';
-}
-
 function safeData() {
   const d = state.data;
   return { primeiro: esc((d.nome || '').split(' ')[0]) };
 }
 
-/* mostra o resultado do perfil (copy do OUTCOMES) como sequência de mensagens */
-async function mostrarResultado(res) {
-  const o = OUTCOMES[res.perfil];
+/* renderiza um texto de RESULTADOS (nível ou qualificador) como sequência
+   de balões — cada parágrafo separado por linha em branco vira 1 mensagem,
+   com {nome} interpolado. */
+async function mostrarTemplate(texto, delay = 1000) {
   const s = safeData();
-  await bot(`<b>${s.primeiro}</b>, li tudo o que você me contou, e li com muito carinho 🌿<br><br>O que eu percebo é que você está num momento de <b>${o.titulo}</b>.<br><br>${o.resumo}`, { delay: 1000 });
-  await bot(`<b>${o.situacaoH}</b><br><br>${o.situacaoB}<br><br><b>${o.problemaH}</b><br><br>${o.problemaB}`, { delay: 1100 });
-  await bot(`<b>${o.implicacaoH}</b><br><br>• ${o.implicacaoItens.join('<br>• ')}<br><br><b>${o.perspectivaH}</b>${o.perspectivaB ? '<br><br>' + o.perspectivaB : ''}<br><br>💬 <i>"${o.quote}"</i>`, { delay: 1200 });
-  await bot(conviteSuavis(), { delay: 1000 });
+  const paragrafos = interpolar(texto, { nome: s.primeiro }).split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  for (const p of paragrafos) await bot(p, { delay });
+}
+
+/* mostra o diagnóstico (texto do nível de consciência) como sequência de mensagens */
+async function mostrarResultado(res) {
+  const nivel = RESULTADOS.por_nivel[res.nivel] || Object.values(RESULTADOS.por_nivel)[0];
+  if (nivel) await mostrarTemplate(nivel.texto, 1050);
 }
 
 /* ================================================================
@@ -1141,6 +1163,13 @@ function respostaLabel(id) {
   return p.opts[v] ? p.opts[v].t : '';
 }
 
+/* pergunta marcada como critério de desempate — usada só como aproximação
+   pro campo legado `faturamento` (histórico: era sempre a pergunta de
+   renda). Sem pergunta de desempate configurada, o campo fica vazio. */
+function perguntaDesempate() {
+  return QUIZ.find((p) => p && p.desempate) || null;
+}
+
 function salvarLead(status) {
   if (MODO_DEMO) return;   // demonstração: nenhum lead vai pro banco
   const d = state.data;
@@ -1155,9 +1184,12 @@ function salvarLead(status) {
       nicho_detectado: respostaLabel('q5'),  // já buscou ajuda?
       seguidores: respostaLabel('q1'),       // idade
       dificuldade: respostaLabel('q3'),      // áreas afetadas
-      faturamento: respostaLabel((perguntaChave() || {}).id),  // renda média mensal da família
+      faturamento: respostaLabel((perguntaDesempate() || {}).id),
       score: d.score ?? null,
       qualificado: d.qualificado ?? null,
+      qualificador: d.qualificador || '',      // recalculado no servidor quando status='completo'
+      nivel_consciencia: d.nivel || '',        // idem
+      respostas: d.respostas || null,
       agendado: d.agendado === true,
       agendamento_em: d.agendamentoEm || null,
       booking_uid: d.bookingUid || '',
@@ -1290,12 +1322,15 @@ async function etapaQuiz(i, replay = false) {
 async function etapaResultado() {
   lgpdEl.style.display = 'none';
   const res = calcularResultado();
-  state.data.score = res.score;
-  state.data.qualificado = true;   // todo mundo segue — o destino vem da renda (q6)
-  state.data.perfil = res.perfil;
-  state.data.callTrack = destinoQ6();  // grava o destino JÁ — mesmo que a lead saia antes da agenda
+  state.data.qualificado = true;   // todo mundo segue — o roteamento vem do qualificador
+  state.data.nivel = res.nivel;
+  state.data.qualificador = res.qualificador;
+  state.data.callTrack = res.qualificador;  // mantém a coluna legada preenchida (compatibilidade com o painel)
+  // score informativo: posição do nível atingido na escala configurada (não gate de qualificação)
+  const idxNivel = NIVEIS.findIndex((n) => n.chave === res.nivel);
+  state.data.score = idxNivel >= 0 ? Math.round(((idxNivel + 1) / NIVEIS.length) * 100) : null;
   persist();
-  salvarLead('completo');
+  salvarLead('completo');  // aqui o backend recalcula qualificador/nível e dispara o roteamento automático, se houver
 
   const loader = showLoader('💚 Um instante, estou te lendo com atenção...',
     ['Acolhendo o que você me contou', 'Entendendo o seu momento emocional', 'Preparando suas orientações personalizadas'], 800);
@@ -1308,7 +1343,7 @@ async function etapaResultado() {
   state.done = true; persist();
 }
 
-/* ---------- FINAL (todas): presente + destino pela renda ---------- */
+/* ---------- FINAL (todas): presente + roteamento pelo qualificador ---------- */
 async function finalPresente() {
   const s = safeData();
   await sleep(400);
@@ -1319,30 +1354,47 @@ async function finalPresente() {
   renderProdutoCard();
   await sleep(800);
   await bot('Ele já é seu! 🗝️ E a <b>chave pra destravar</b> eu te entrego pessoalmente no final do nosso <b>Encontro</b>: um encontro gratuito, ao vivo comigo. É o espaço pra você se sentir acolhido e ouvido de verdade, sem compromisso nenhum 💚', { delay: 900 });
-  // o destino vem da resposta de renda familiar (q6)
-  const destino = destinoQ6();
-  if (destino === 'premium') await ctaWhatsPremium();
-  else if (destino === 'imersao') await renderAgendaSuavis(CONFIG.CAL_IMERSAO, 'imersao');
-  else await renderAgendaSuavis(CONFIG.CAL_COMUNIDADE, 'comunidade');
+
+  const qualificador = state.data.qualificador;
+  const convite = RESULTADOS.por_qualificador[qualificador];
+  if (convite) await mostrarTemplate(convite.texto, 1000);
+
+  const rota = (qualificador && ROTEAMENTO[qualificador]) || { tipo: 'crm' };
+  if (rota.tipo === 'calcom' && rota.calLink) await renderAgendaSuavis(rota.calLink, qualificador);
+  else if (rota.tipo === 'whatsapp') await ctaWhatsAutomatico();
+  else await ctaCRM();
 }
 
-/* agenda embutida do cal.com (COMUNIDADE ou IMERSÃO) */
-async function renderAgendaSuavis(link, track) {
-  state.data.callTrack = track; persist();
+/* agenda embutida do cal.com (link configurado no roteamento do qualificador) */
+async function renderAgendaSuavis(link, qualificador) {
+  state.data.callTrack = qualificador; persist();
   salvarLead('completo');
   await bot('Escolhe aqui embaixo o dia e o horário que ficam melhores pra você 👇 Vou te esperar com muito carinho e com seu ebook 💚', { delay: 1100 });
   // demonstração: agenda simulada (local) no lugar do Cal.com de verdade
-  if (MODO_DEMO) { renderAgendaInline({ track }); return; }
-  renderAgendaEmbed({ embedLink: link, track, vendor: '' });
+  if (MODO_DEMO) { renderAgendaInline({ track: qualificador }); return; }
+  renderAgendaEmbed({ embedLink: link, track: qualificador, vendor: '' });
 }
 
-/* faixa acima de R$20 mil → contato direto no WhatsApp da Suely */
-async function ctaWhatsPremium() {
-  state.data.callTrack = 'premium'; persist();
+/* roteamento "WhatsApp automático" — o backend já enfileirou o disparo em
+   save-lead.mjs; aqui só decidimos o que o lead VÊ na tela: se o WhatsApp
+   está conectado, mensagem passiva + botão de fallback (wa.me); se não,
+   só a mensagem passiva (prometer o botão sem conexão seria enganoso). */
+async function ctaWhatsAutomatico() {
+  persist();
   salvarLead('completo');
   const s = safeData();
-  await bot(`${s.primeiro}, pelo que você me contou, eu quero marcar nossa conversa pessoalmente com você. Clica no botão aqui embaixo que a gente combina o melhor horário. Pode vir, é comigo mesma que você vai falar 👇`, { delay: 1300 });
-  addRow('bot', `<a class="ag-link" href="${waLink()}" target="_blank" rel="noopener">💬&nbsp; Agendar minha conversa no WhatsApp</a>`);
+  await bot(`${s.primeiro}, recebi tudo certinho! Você vai receber uma mensagem no WhatsApp em instantes pra a gente combinar o melhor horário 💚`, { delay: 1200 });
+  if (WHATSAPP_CONECTADO) {
+    addRow('bot', `<a class="ag-link" href="${waLink()}" target="_blank" rel="noopener">💬&nbsp; Ou já chama agora no WhatsApp</a>`);
+  }
+}
+
+/* roteamento "CRM" — sem ação automática, a equipe entra em contato depois */
+async function ctaCRM() {
+  persist();
+  salvarLead('completo');
+  const s = safeData();
+  await bot(`${s.primeiro}, recebi tudo certinho! Nossa equipe vai entrar em contato com você em breve 💚`, { delay: 1200 });
 }
 
 /* botão para o site da Suavitatis (reservado p/ produtos low-ticket no futuro) */
@@ -1449,11 +1501,12 @@ async function onEmbedAgendado(e, row, info) {
 
 function waLink() {
   const d = state.data;
-  const perfilNome = d.perfil === 'high' ? 'Alta Consciência' : d.perfil === 'mid' ? 'Média Consciência' : 'Baixa Consciência';
+  const nivelInfo = NIVEIS.find((n) => n.chave === d.nivel);
+  const perfilNome = (nivelInfo && nivelInfo.nome) || 'Baixa Consciência';
   const msg = encodeURIComponent(
-    `Olá, Suely! Acabei de fazer o quiz "Reconstrua Suas Emoções".\n\n` +
+    `Olá! Acabei de fazer o quiz "Reconstrua Suas Emoções".\n\n` +
     `Nome: ${d.nome}\nResultado: ${perfilNome}\n\n` +
-    `Quero agendar minha conversa sobre o Programa SUAVIS! 💚`
+    `Quero agendar minha conversa! 💚`
   );
   return `https://wa.me/${CONFIG.WHATSAPP_NUMERO}?text=${msg}`;
 }
