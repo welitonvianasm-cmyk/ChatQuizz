@@ -20,14 +20,21 @@
  * Env: CALCOM_API_KEY, CALCOM_BASE_URL (=https://<sua-instancia-cal>/interno),
  *      CALCOM_EVENT_TYPE_ID (event type único da trilha PADRÃO — opcional, ligar depois),
  *      CALCOM_EVENT_TYPE_ID_AUDIENCE (trilha 10k+ NÃO-médico → "Conheça o Método Core Audience"),
- *      CAL_EMBED_VENDEDORES (override do pool premium, JSON).
+ *      CAL_EMBED_VENDEDORES (pool de vendedores/closers, JSON — opcional).
  * Sem CALCOM_API_KEY → actions de slots/book/info devolvem {ok:false,reason:'no_key'} e o funil usa a agenda local.
+ *
+ * Este proxy é só pra agenda LOCAL de emergência (quando o embed do Cal.com
+ * falha) e pro roteamento por pool de vendedores — recurso não usado pelo
+ * roteamento normal do ChatQuizz (que usa o link de Cal.com configurado
+ * direto no Editor do Quiz → Roteamento). Por isso não depende de nenhum
+ * arquivo privado: sem CAL_EMBED_VENDEDORES configurado, a lista de
+ * vendedores fica vazia e o resto funciona normalmente.
  */
-import { CAL_BASE as PRIV_CAL_BASE, VENDEDORES } from '../_private.mjs';
 const TZ = 'America/Sao_Paulo';
 
-/* Base da API interna (proxy próprio do Fabio). NÃO leva /v2. */
-const CAL_BASE = (process.env.CALCOM_BASE_URL || PRIV_CAL_BASE).replace(/\/+$/, '');
+/* Base da API interna (proxy externo, se você tiver um). Sem env, fica vazia
+   (as actions que dependem dela exigem CALCOM_API_KEY de qualquer forma). */
+const CAL_BASE = (process.env.CALCOM_BASE_URL || '').replace(/\/+$/, '');
 
 /* Supabase (mesmo projeto do funil) — usado só pra reaproveitar o link de
    vídeo do 1º booking de um horário em GRUPO (seats): nos assentos seguintes
@@ -74,7 +81,7 @@ export function escolherTrilha({ renda, nicho, bio }) {
    dividem o restante igual. Hoje SEM percent em ninguém = 25% pra cada um dos 4 (divisão igual).
    Override via env CAL_EMBED_VENDEDORES (JSON, mesmo formato).
    ================================================================ */
-const VENDEDORES_DEFAULT = VENDEDORES;
+const VENDEDORES_DEFAULT = [];
 
 export function vendedoresDaTrilha(trilha) {
   let lista = VENDEDORES_DEFAULT;

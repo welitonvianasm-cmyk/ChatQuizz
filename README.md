@@ -22,25 +22,25 @@ dashboard.html               painel administrativo (CRM)
 netlify.toml                config de deploy, redirects e headers de segurança
 netlify/functions/*.mjs      backend (uma function por arquivo)
 netlify/_tokens.mjs          autenticação compartilhada do painel
-netlify/_private.example.mjs modelo de `_private.mjs` (não versionado — ver abaixo)
-setup*.sql                   migrações do schema do Supabase, em ordem de criação
+netlify/_quiz.mjs            config padrão + votação por maioria do quiz (compartilhado entre functions)
+setup*.sql                   migrações do schema do Supabase, em ordem de criação (ver ordem abaixo)
 ```
 
 ## Setup local
 
 1. `netlify dev` (requer [Netlify CLI](https://docs.netlify.com/cli/get-started/)) — sobe o site + as functions localmente.
-2. Rode os arquivos `setup*.sql` (na ordem que aparecem) num projeto Supabase novo.
-3. Copie `netlify/_private.example.mjs` para `netlify/_private.mjs` e preencha com os dados reais (não é versionado — fica de fora do git).
-4. Configure as variáveis de ambiente abaixo no painel do Netlify (ou num `.env` local pro `netlify dev`).
+2. Num projeto Supabase novo, rode os arquivos `setup*.sql` nesta ordem: `setup.sql`, `setup-fix.sql`, `setup-card.sql`, `setup-crm.sql`, `setup-kanban2.sql`, `setup-kanban3.sql`, `setup-equipe.sql`, `setup-posvenda.sql`, `setup-resultado.sql`, `setup-alertas.sql`, `setup-whatsapp.sql`, `setup-quiz-config.sql`.
+3. Configure as variáveis de ambiente abaixo no painel do Netlify (ou num `.env` local pro `netlify dev`).
 
 ## Variáveis de ambiente
 
 | Variável | Uso |
 |---|---|
-| `SUPABASE_URL` / `SUPABASE_DIAG_SERVICE` | conexão com o Supabase (chave `service_role`, nunca exposta ao navegador) |
-| `DASHBOARD_TOKEN` | senha do admin do painel |
-| `CALCOM_API_KEY` | integração oficial com a API do Cal.com (opcional — o embed público funciona sem isso) |
+| `SUPABASE_DIAG_URL` / `SUPABASE_DIAG_SERVICE` | conexão com o Supabase (Project URL + chave `service_role`, nunca exposta ao navegador) — **obrigatórias** |
+| `DASHBOARD_TOKEN` | senha do admin do painel — **obrigatória** |
+| `CALCOM_API_KEY` / `CALCOM_BASE_URL` | integração oficial com a API do Cal.com (opcional — o roteamento normal usa o link público configurado no Editor do Quiz, não precisa disso) |
 | `EVOLUTION_URL` / `EVOLUTION_KEY` / `EVOLUTION_INSTANCE` | conexão com o WhatsApp (Evolution API), só necessário pra automação de mensagens |
+| `WA_WEBHOOK_SECRET` | segurança do webhook de mensagens recebidas do WhatsApp (opcional) |
 
 ## Segurança
 
