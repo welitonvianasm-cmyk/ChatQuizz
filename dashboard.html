@@ -951,9 +951,10 @@
         <button data-tab="resultados">Resultados</button>
         <button data-tab="roteamento">Roteamento</button>
         <button data-tab="conexoes">Conexões</button>
+        <button data-tab="aparencia">Aparência</button>
       </div>
       <div id="qeLista" style="margin-top:14px;"></div>
-      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;">
+      <div id="qeFooter" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn" id="qeNova">+ Nova pergunta</button>
         <span style="flex:1"></span>
         <button class="btn" id="qeRestaurar">Restaurar padrão</button>
@@ -2005,6 +2006,7 @@ async function qeCarregar() {
 function qeRenderTudo() {
   document.querySelectorAll('#qeTabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === QE_TAB));
   $('#qeNova').style.display = QE_TAB === 'perguntas' ? '' : 'none';
+  $('#qeFooter').style.display = QE_TAB === 'aparencia' ? 'none' : 'flex';
   const box = $('#qeLista'); clear(box);
   if (QE_TAB === 'perguntas') qeRenderPerguntas(box);
   else if (QE_TAB === 'qualificadores') qeRenderLista(box, 'qualificadores', true);
@@ -2012,6 +2014,7 @@ function qeRenderTudo() {
   else if (QE_TAB === 'resultados') qeRenderResultados(box);
   else if (QE_TAB === 'roteamento') qeRenderRoteamento(box);
   else if (QE_TAB === 'conexoes') qeRenderConexoes(box);
+  else if (QE_TAB === 'aparencia') { if (!AP_CARREGADO) apCarregar(box); else qeRenderAparencia(box); }
 }
 $('#qeTabs').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-tab]'); if (!b) return;
@@ -2243,6 +2246,80 @@ function qeRenderConexoes(box) {
   nota.textContent = 'A mensagem enviada por qualificador é editada na aba Roteamento.';
   wa.appendChild(nota);
   box.appendChild(wa);
+}
+
+/* ===== APARÊNCIA — número/avatar/logo/site/cor/presente (só administradora) ===== */
+let AP = null;
+let AP_CARREGADO = false;
+async function apCarregar(box) {
+  AP_CARREGADO = true;
+  const r = await fetch('/api/aparencia').then((x) => x.json()).catch(() => null);
+  AP = (r && r.ok) ? {
+    whatsapp_numero: r.whatsapp_numero || '', avatar_url: r.avatar_url || '',
+    avatar_fallback: r.avatar_fallback || '', site_url: r.site_url || '',
+    cor_primaria: r.cor_primaria || '#005355', tem_presente: !!r.tem_presente,
+    presente_imagem: r.presente_imagem || '', presente_nome: r.presente_nome || '',
+    presente_descricao: r.presente_descricao || '',
+  } : { whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '', cor_primaria: '#005355', tem_presente: false, presente_imagem: '', presente_nome: '', presente_descricao: '' };
+  if (QE_TAB === 'aparencia') qeRenderAparencia(box || $('#qeLista'));
+}
+function apCampo(label, valor, onInput, tipo) {
+  const wrap = el('label'); wrap.style.cssText = 'display:block;font-size:11.5px;font-weight:600;margin-bottom:12px;';
+  wrap.textContent = label;
+  const inp = el('input'); inp.type = tipo || 'text'; inp.value = valor || '';
+  inp.style.cssText = 'display:block;width:100%;max-width:420px;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--card);';
+  inp.oninput = () => onInput(inp.value);
+  wrap.appendChild(inp);
+  return wrap;
+}
+function qeRenderAparencia(box) {
+  const sub = el('div', 'sub'); sub.style.marginBottom = '10px';
+  sub.textContent = 'Identidade do quiz: número de WhatsApp (fallback), avatar/logo, presente e cor. Salva separado do resto (botão próprio abaixo).';
+  box.appendChild(sub);
+
+  box.appendChild(apCampo('Número de WhatsApp (DDI+DDD+número, só dígitos — ex: 5511999999999)', AP.whatsapp_numero, (v) => { AP.whatsapp_numero = v; }));
+  box.appendChild(apCampo('Avatar (URL da imagem exibida no chat)', AP.avatar_url, (v) => { AP.avatar_url = v; }));
+  box.appendChild(apCampo('Logo (URL — usada se o avatar não carregar)', AP.avatar_fallback, (v) => { AP.avatar_fallback = v; }));
+  box.appendChild(apCampo('Site (URL — opcional)', AP.site_url, (v) => { AP.site_url = v; }));
+
+  const corWrap = el('label'); corWrap.style.cssText = 'display:block;font-size:11.5px;font-weight:600;margin-bottom:12px;';
+  corWrap.textContent = 'Cor primária do quiz';
+  const corRow = el('div'); corRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:4px;';
+  const corPicker = el('input'); corPicker.type = 'color'; corPicker.value = /^#[0-9a-fA-F]{6}$/.test(AP.cor_primaria) ? AP.cor_primaria : '#005355';
+  corPicker.style.cssText = 'width:44px;height:36px;border:1.5px solid var(--line);border-radius:8px;cursor:pointer;padding:2px;';
+  const corTexto = el('input'); corTexto.value = AP.cor_primaria || '#005355'; corTexto.placeholder = '#005355';
+  corTexto.style.cssText = 'width:110px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--card);font-family:monospace;';
+  corPicker.oninput = () => { AP.cor_primaria = corPicker.value; corTexto.value = corPicker.value; };
+  corTexto.oninput = () => { AP.cor_primaria = corTexto.value; if (/^#[0-9a-fA-F]{6}$/.test(corTexto.value)) corPicker.value = corTexto.value; };
+  corRow.append(corPicker, corTexto);
+  corWrap.appendChild(corRow);
+  box.appendChild(corWrap);
+
+  const lp = el('label'); lp.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin:14px 0 10px;cursor:pointer;';
+  const cp = el('input'); cp.type = 'checkbox'; cp.checked = !!AP.tem_presente;
+  cp.onchange = () => { AP.tem_presente = cp.checked; qeRenderTudo(); };
+  lp.append(cp, 'Tem presente (ebook, brinde etc.)');
+  box.appendChild(lp);
+  if (AP.tem_presente) {
+    box.appendChild(apCampo('Nome do presente (ex: 7 DICAS)', AP.presente_nome, (v) => { AP.presente_nome = v; }));
+    box.appendChild(apCampo('Descrição curta', AP.presente_descricao, (v) => { AP.presente_descricao = v; }));
+    box.appendChild(apCampo('Imagem do presente (URL — opcional, sem ela usa um card estilizado)', AP.presente_imagem, (v) => { AP.presente_imagem = v; }));
+  }
+
+  const btnRow = el('div'); btnRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:6px;';
+  const btnSalvar = el('button'); btnSalvar.textContent = 'Salvar aparência';
+  btnSalvar.style.cssText = 'padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--ink);font-weight:700;font-size:13.5px;cursor:pointer;';
+  const status = el('span', 'muted-cell'); status.style.marginLeft = '4px';
+  btnSalvar.onclick = async () => {
+    status.textContent = 'salvando…';
+    const r = await fetch('/api/aparencia', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', ...AP }),
+    }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+    status.textContent = r.ok ? '✓ Salvo!' : ('' + (r.error || 'Erro ao salvar.'));
+  };
+  btnRow.append(btnSalvar, status);
+  box.appendChild(btnRow);
 }
 
 $('#qeNova').onclick = () => {

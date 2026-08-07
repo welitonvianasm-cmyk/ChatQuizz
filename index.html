@@ -567,13 +567,9 @@ const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
    CONFIG — ajuste aqui antes de publicar
    ================================================================ */
 const CONFIG = {
-  WHATSAPP_NUMERO: '5511993746788',       // número usado no botão de fallback (wa.me) do roteamento WhatsApp
-  AVATAR_URL: 'suely.png',                // foto exibida no chat (cai no logo.png se o arquivo não existir)
-  AVATAR_FALLBACK: 'logo.png',
-  PRODUTO_IMG: 'ebook.png',               // capa do presente entregue ao final do quiz
-  SITE_URL: 'https://www.suavitatisterapias.com.br',
   API_SAVE: '/api/save-lead',
   API_QUIZ_CONFIG: '/api/quiz-config',
+  API_APARENCIA: '/api/aparencia',
   API_AGENDA: '/api/agenda',              // usado só pela agenda local de emergência
   /* Agenda local de emergência — só aparece se o embed do cal.com falhar */
   AGENDA: {
@@ -583,6 +579,56 @@ const CONFIG = {
     minHorasAntecedencia: 3,
   },
 };
+
+/* ================================================================
+   APARÊNCIA / IDENTIDADE — número de WhatsApp, avatar, logo, presente
+   (opcional) e cor primária. Tudo editável pelo painel (Editor do Quiz →
+   Aparência); os valores abaixo são só o padrão de segurança usado até
+   alguém publicar uma config, ou se o backend estiver fora do ar.
+   ================================================================ */
+const APARENCIA_PADRAO = {
+  whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '',
+  cor_primaria: '#005355', tem_presente: false,
+  presente_imagem: '', presente_nome: '', presente_descricao: '',
+};
+let APARENCIA = APARENCIA_PADRAO;
+
+async function carregarAparencia() {
+  try {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 3500);
+    const r = await fetch(CONFIG.API_APARENCIA, { signal: ctl.signal });
+    clearTimeout(t);
+    if (!r.ok) return;
+    const j = await r.json();
+    if (!j || !j.ok) return;
+    APARENCIA = {
+      whatsapp_numero: j.whatsapp_numero || '', avatar_url: j.avatar_url || '',
+      avatar_fallback: j.avatar_fallback || '', site_url: j.site_url || '',
+      cor_primaria: /^#[0-9a-fA-F]{6}$/.test(j.cor_primaria || '') ? j.cor_primaria : APARENCIA_PADRAO.cor_primaria,
+      tem_presente: !!j.tem_presente, presente_imagem: j.presente_imagem || '',
+      presente_nome: j.presente_nome || '', presente_descricao: j.presente_descricao || '',
+    };
+    aplicarCorPrimaria(APARENCIA.cor_primaria);
+  } catch (e) { /* mantém o padrão embutido */ }
+}
+
+/* deriva as variantes claro/escuro/transparente da cor primária (mesma
+   proporção que o tema fixo já usava) e aplica via CSS custom properties */
+function aplicarCorPrimaria(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const mix = (c, alvo, p) => Math.round(c + (alvo - c) * p);
+  const paraHex = (rr, gg, bb) => '#' + [rr, gg, bb].map((c) => c.toString(16).padStart(2, '0')).join('');
+  const bright = paraHex(mix(r, 255, 0.28), mix(g, 255, 0.28), mix(b, 255, 0.28));
+  const dark = paraHex(mix(r, 0, 0.25), mix(g, 0, 0.25), mix(b, 0, 0.25));
+  const root = document.documentElement.style;
+  root.setProperty('--accent', hex);
+  root.setProperty('--accent-bright', bright);
+  root.setProperty('--accent-dark', dark);
+  root.setProperty('--accent-soft', `rgba(${r}, ${g}, ${b}, 0.09)`);
+  root.setProperty('--accent-glow', `rgba(${r}, ${g}, ${b}, 0.28)`);
+}
 
 /* ================================================================
    QUIZ CONFIGURÁVEL — perguntas, qualificadores, níveis de consciência,
@@ -904,9 +950,15 @@ const scrollDown = () => { main.scrollTo({ top: main.scrollHeight, behavior: 'sm
 const fmtNum = (n) => n == null ? '—' : new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
 
 let lastSide = null;
-/* avatar com fallback: foto → logo (classe is-logo ajusta o encaixe) */
-const avatarHtml = () =>
-  `<div class="avatar"><img src="${CONFIG.AVATAR_URL}" alt="" onerror="this.onerror=null;this.src='${CONFIG.AVATAR_FALLBACK}';this.classList.add('is-logo')"></div>`;
+/* avatar com fallback: foto → logo (classe is-logo ajusta o encaixe). Sem
+   nenhuma das duas configuradas, fica só o círculo vazio (cor de fundo). */
+const avatarHtml = () => {
+  const url = APARENCIA.avatar_url || APARENCIA.avatar_fallback;
+  if (!url) return '<div class="avatar"></div>';
+  const fallback = APARENCIA.avatar_fallback && APARENCIA.avatar_fallback !== url
+    ? `this.onerror=null;this.src='${esc(APARENCIA.avatar_fallback)}';this.classList.add('is-logo')` : 'this.onerror=null;this.style.display=\'none\'';
+  return `<div class="avatar"><img src="${esc(url)}" alt="" onerror="${fallback}"></div>`;
+};
 
 /* html aqui é sempre template estático deste arquivo com valores já escapados */
 function addRow(side, html, extraClass = '') {
@@ -1347,13 +1399,17 @@ async function etapaResultado() {
 async function finalPresente() {
   const s = safeData();
   await sleep(400);
-  await bot('Ah, e antes que eu me esqueça... preparei uma coisinha pra você 👀', { delay: 800 });
-  await sleep(300);
-  addRow('bot', `🎁 <b>É seu, ${s.primeiro}!</b> Meu ebook<br><b class="gift-prod">7 DICAS<br>COMO MANTER SEU IDOSO FELIZ E VOCÊ MENOS ESTRESSADA</b>`, 'gift-announce');
-  await sleep(700);
-  renderProdutoCard();
-  await sleep(800);
-  await bot('Ele já é seu! 🗝️ E a <b>chave pra destravar</b> eu te entrego pessoalmente no final do nosso <b>Encontro</b>: um encontro gratuito, ao vivo comigo. É o espaço pra você se sentir acolhido e ouvido de verdade, sem compromisso nenhum 💚', { delay: 900 });
+  if (APARENCIA.tem_presente) {
+    await bot('Ah, e antes que eu me esqueça... preparei uma coisinha pra você 👀', { delay: 800 });
+    await sleep(300);
+    addRow('bot', `🎁 <b>É seu, ${s.primeiro}!</b><br><b class="gift-prod">${esc(APARENCIA.presente_nome || 'Seu presente')}${APARENCIA.presente_descricao ? '<br>' + esc(APARENCIA.presente_descricao) : ''}</b>`, 'gift-announce');
+    await sleep(700);
+    renderProdutoCard();
+    await sleep(800);
+    await bot('Ele já é seu! 🗝️ E a <b>chave pra destravar</b> eu te entrego pessoalmente no final do nosso <b>Encontro</b>: um encontro gratuito, ao vivo comigo. É o espaço pra você se sentir acolhido e ouvido de verdade, sem compromisso nenhum 💚', { delay: 900 });
+  } else {
+    await bot('Preparei um <b>Encontro</b> gratuito, ao vivo, pra conversarmos com calma. É o espaço pra você se sentir acolhida e ouvida de verdade, sem compromisso nenhum 💚', { delay: 900 });
+  }
 
   const qualificador = state.data.qualificador;
   const convite = RESULTADOS.por_qualificador[qualificador];
@@ -1397,29 +1453,28 @@ async function ctaCRM() {
   await bot(`${s.primeiro}, recebi tudo certinho! Nossa equipe vai entrar em contato com você em breve 💚`, { delay: 1200 });
 }
 
-/* botão para o site da Suavitatis (reservado p/ produtos low-ticket no futuro) */
+/* botão para o site configurado (reservado p/ produtos low-ticket no futuro) */
 async function ctaSite(intro) {
+  if (!APARENCIA.site_url) return;
   if (intro) await bot(intro, { delay: 1300 });
-  addRow('bot', `<a class="ag-link" href="${CONFIG.SITE_URL}" target="_blank" rel="noopener">🌿&nbsp; Conhecer a Suavitatis Terapias</a>`);
+  addRow('bot', `<a class="ag-link" href="${esc(APARENCIA.site_url)}" target="_blank" rel="noopener">🌿&nbsp; Conhecer o site</a>`);
 }
 
 /* ================================================================
-   PREVIEW DO PRESENTE — ebook "7 Dicas" da Suavitatis.
-   Se CONFIG.PRODUTO_IMG estiver preenchido, usa a capa real.
+   PREVIEW DO PRESENTE — nome/descrição/imagem vêm da Aparência.
    ================================================================ */
 function renderProdutoCard() {
-  if (CONFIG.PRODUTO_IMG) {
-    addRow('bot', `<img class="produto-img" src="${esc(CONFIG.PRODUTO_IMG)}" alt="Ebook 7 Dicas Suavitatis">`, 'produto-bubble');
+  if (APARENCIA.presente_imagem) {
+    addRow('bot', `<img class="produto-img" src="${esc(APARENCIA.presente_imagem)}" alt="${esc(APARENCIA.presente_nome || 'Presente')}">`, 'produto-bubble');
     return;
   }
   addRow('bot', `
     <div class="pr-body">
       <div class="pr-glow"></div>
       <span class="pr-badge">🎁 PRESENTE DESBLOQUEADO</span>
-      <div class="pr-kicker">EBOOK SUAVITATIS</div>
-      <div class="pr-title">7 DICAS</div>
-      <div class="pr-sub">Como manter seu idoso <b>feliz</b> e você <b>menos estressada</b>. Um guia prático da Suavitatis Terapias Integrativas.</div>
-      <div class="pr-foot"><b>GRÁTIS</b> <span>no seu Encontro com a Suely</span></div>
+      <div class="pr-title">${esc(APARENCIA.presente_nome || 'Seu presente')}</div>
+      <div class="pr-sub">${esc(APARENCIA.presente_descricao || '')}</div>
+      <div class="pr-foot"><b>GRÁTIS</b> <span>no seu Encontro</span></div>
     </div>
   `, 'produto-bubble');
 }
@@ -1496,7 +1551,8 @@ async function onEmbedAgendado(e, row, info) {
   scrollDown();
 
   const s = safeData();
-  await bot(`Prontinho, <b>${s.primeiro}</b> 💚 Seu Encontro está marcado! Guardei sua <a href="${pageUrl}" target="_blank" rel="noopener"><b>página do Encontro</b></a> com todos os detalhes, e seu ebook <b>7 Dicas</b> já está separado pra você. Até lá!`, { delay: 900 });
+  const presenteMsg = APARENCIA.tem_presente ? `, e seu presente <b>${esc(APARENCIA.presente_nome || '')}</b> já está separado pra você` : '';
+  await bot(`Prontinho, <b>${s.primeiro}</b> 💚 Seu Encontro está marcado! Guardei sua <a href="${pageUrl}" target="_blank" rel="noopener"><b>página do Encontro</b></a> com todos os detalhes${presenteMsg}. Até lá!`, { delay: 900 });
 }
 
 function waLink() {
@@ -1504,11 +1560,11 @@ function waLink() {
   const nivelInfo = NIVEIS.find((n) => n.chave === d.nivel);
   const perfilNome = (nivelInfo && nivelInfo.nome) || 'Baixa Consciência';
   const msg = encodeURIComponent(
-    `Olá! Acabei de fazer o quiz "Reconstrua Suas Emoções".\n\n` +
+    `Olá! Acabei de fazer o quiz.\n\n` +
     `Nome: ${d.nome}\nResultado: ${perfilNome}\n\n` +
     `Quero agendar minha conversa! 💚`
   );
-  return `https://wa.me/${CONFIG.WHATSAPP_NUMERO}?text=${msg}`;
+  return `https://wa.me/${APARENCIA.whatsapp_numero}?text=${msg}`;
 }
 
 /* ================================================================
@@ -1795,7 +1851,10 @@ function replayBotBefore(st) {
 async function boot() {
   sendBtn.onclick = () => onSubmit && onSubmit();
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); onSubmit && onSubmit(); } });
-  await carregarQuizConfig();   // perguntas do painel (ou padrão embutido)
+  await Promise.all([
+    carregarQuizConfig(),   // perguntas do painel (ou padrão embutido)
+    carregarAparencia(),    // avatar/logo/presente/whatsapp/site/cor (ou padrão embutido)
+  ]);
 
   if (state.step > 0 && state.data.nome && !state.done) {
     const ate = Math.min(state.step, TOTAL_PASSOS);
