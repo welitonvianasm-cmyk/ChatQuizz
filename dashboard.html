@@ -563,10 +563,8 @@
       </div>
     </div>
 
-    <!-- Origem dos leads (UTM): oculto a pedido da Suely em 17/07/2026 — todos
-         os leads chegam sem UTM por enquanto. Reativar quando houver anúncios:
-         basta remover o display:none abaixo. -->
-    <div class="panel" style="display:none">
+    <!-- Origem dos leads (UTM) — reativado junto com os Links de Rastreio -->
+    <div class="panel" id="pOrigemUtm" hidden>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
         <div>
           <h2>Origem dos leads (UTM)</h2>
@@ -941,20 +939,39 @@
 
     <!-- ===== EDITOR DO QUIZ — só a administradora vê ===== -->
     <div class="panel" id="pQuizEditor" hidden>
-      <h2>Quiz — perguntas</h2>
+      <h2>Editor do Quiz</h2>
       <div class="sub">
-        Edite os textos, ative/inative, crie e exclua perguntas do quiz publicado. Nada muda no site até você clicar em <b>Publicar perguntas</b>.<br>
-        A <b>pergunta-chave da renda</b> não pode ser excluída nem inativada: são os <b>destinos</b> dela (Comunidade/WhatsApp) que decidem para qual agenda cada lead vai.<br>
-        Os pontos <b>B / M / A</b> de cada opção alimentam o texto do resultado (Baixa/Média/Alta consciência) — na dúvida, deixe como está.
+        Perguntas, Qualificadores, Níveis de Consciência, os textos de resultado e o roteamento de cada qualificador — tudo é editado aqui e publicado junto. Nada muda no site até você clicar em <b>Publicar</b>.<br>
+        Cada pergunta pode apontar suas opções pra um <b>Qualificador</b> e/ou um <b>Nível</b>; o lead é classificado pela resposta mais votada em cada eixo (empate é resolvido pela pergunta marcada como <b>critério de desempate</b>).
       </div>
-      <div id="qeLista" style="margin-top:12px;"></div>
+      <div class="seg" id="qeTabs" style="margin-top:12px;">
+        <button data-tab="perguntas" class="on">Perguntas</button>
+        <button data-tab="qualificadores">Qualificadores</button>
+        <button data-tab="niveis">Níveis</button>
+        <button data-tab="resultados">Resultados</button>
+        <button data-tab="roteamento">Roteamento</button>
+        <button data-tab="conexoes">Conexões</button>
+      </div>
+      <div id="qeLista" style="margin-top:14px;"></div>
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn" id="qeNova">+ Nova pergunta</button>
         <span style="flex:1"></span>
         <button class="btn" id="qeRestaurar">Restaurar padrão</button>
-        <button id="qePublicar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--ink);font-weight:700;font-size:13.5px;cursor:pointer;">Publicar perguntas</button>
+        <button id="qePublicar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--ink);font-weight:700;font-size:13.5px;cursor:pointer;">Publicar</button>
       </div>
       <div class="muted-cell" id="qeStatus" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- ===== LINKS DE RASTREIO — só a administradora vê ===== -->
+    <div class="panel" id="pLinks" hidden>
+      <h2>Links de Rastreio</h2>
+      <div class="sub">Crie um link curto por origem (Instagram, Facebook, um grupo de WhatsApp...) — quem entra no quiz por ele já chega marcado com essa origem no painel. Pode criar quantos quiser, ou nenhum.</div>
+      <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;align-items:end;">
+        <label style="font-size:11.5px;font-weight:600;">Nome<input id="lkNome" style="width:220px;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Ex: Instagram Bio"></label>
+        <button id="lkCriar" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:var(--ink);font-weight:700;font-size:13px;cursor:pointer;">+ Criar link</button>
+      </div>
+      <span class="muted-cell" id="lkStatus"></span>
+      <div class="tbl-wrap"><table id="lkTable"></table></div>
     </div>
 
     <!-- ===== ÁREA EQUIPE — só a administradora vê ===== -->
@@ -1089,6 +1106,7 @@ async function doLogin(token) {
     render();
     carregarPrioridade();
     carregarRendaCfg();   // faixas de renda atuais do quiz (pro quadro de renda)
+    carregarQualificadoresOrigem();   // qualificadores + links de rastreio (pro filtro de Origem)
     aplicarPerfil();
     carregarAlertas(true);   // alertas pendentes → popup obrigatório a cada acesso
     iniciarSync();           // sincronização automática entre atendentes (sem F5)
@@ -1291,7 +1309,7 @@ function render() {
 const SECTIONS = {
   /* Visão Geral concentra TODOS os quadros analíticos; cada módulo fica
      só com o seu card essencial (pedido da Suely em 21/07/2026) */
-  geral: ['#kpis', '#pFunil', '#pRenda', '#pNicho', '#pIdadeAreas', '#pDiaUF', '#pDestino', '#pAgendaram', '#pPorAtendente'],
+  geral: ['#kpis', '#pFunil', '#pRenda', '#pNicho', '#pIdadeAreas', '#pDiaUF', '#pOrigemUtm', '#pDestino', '#pAgendaram', '#pPorAtendente'],
   agendaDash: ['#pAgendaDash'],      // só o Calendário
   agendados: ['#pUpcoming'],         // só Leads Agendados
   reunioes: ['#pReunioes'],          // reuniões por data + presença
@@ -1304,7 +1322,7 @@ const SECTIONS = {
   conversas: ['#pConversas'],        // Inbox do WhatsApp
   automacoes: ['#pAutomacoes'],      // automações de mensagens
   disparos: ['#pDisparos'],          // fila de disparos agendados
-  config: ['#pWhats', '#pConfigExtras', '#pQuizEditor', '#equipePanel'],
+  config: ['#pWhats', '#pConfigExtras', '#pQuizEditor', '#pLinks', '#equipePanel'],
 };
 const TODOS_PANEIS = [...new Set(Object.values(SECTIONS).flat())];
 let NAV_ATUAL = 'geral';
@@ -1317,12 +1335,14 @@ function navGo(sec) {
   if (cal) { if (CAL_BOOKINGS === null) carregarCal(); return; }
   const mostrar = new Set(SECTIONS[sec] || []);
   TODOS_PANEIS.forEach((sel) => { const e = $(sel); if (e) e.hidden = !mostrar.has(sel); });
-  if (sec === 'config') {   // Equipe, Editor do Quiz e WhatsApp: só administradora
+  if (sec === 'config') {   // Equipe, Editor do Quiz, Links de Rastreio e WhatsApp: só administradora
     $('#equipePanel').hidden = !IS_ADMIN;
     $('#pQuizEditor').hidden = !IS_ADMIN;
+    $('#pLinks').hidden = !IS_ADMIN;
     $('#pWhats').hidden = !IS_ADMIN;
     if (IS_ADMIN) carregarWaStatus();
     if (IS_ADMIN && !QE_CARREGADO) qeCarregar();
+    if (IS_ADMIN && !LINKS_CARREGADO) linksCarregar();
   }
   if (sec === 'conversas') carregarWaStatus().then(carregarInbox);
   if (sec === 'automacoes') carregarAutomacoes();
@@ -1370,14 +1390,14 @@ const DS_PATHS = {
 const DS_CORES = { azul: '#4F8CFF', verde: '#2ECC71', laranja: '#F59E0B', lima: 'var(--lime-icon)', cinza: '#6B7280', roxo: '#A78BFA' };
 const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verde · Vendas laranja · Usuários lima · Config cinza · gráficos roxo claro) */
   pFunil: ['grafico', 'roxo'], pRenda: ['carteira', 'verde'], pNicho: ['grafico', 'roxo'],
-  pIdadeAreas: ['grafico', 'roxo'], pDiaUF: ['grafico', 'roxo'], pDestino: ['envio', 'azul'],
+  pIdadeAreas: ['grafico', 'roxo'], pDiaUF: ['grafico', 'roxo'], pOrigemUtm: ['grafico', 'roxo'], pDestino: ['envio', 'azul'],
   pAgendaram: ['calendario', 'azul'], pPorAtendente: ['usuarios', 'lima'],
   pAgendaDash: ['calendario', 'azul'], pUpcoming: ['calendario', 'azul'], pReunioes: ['usuarios', 'azul'],
   pQuadro: ['kanban', 'azul'], pLeads: ['usuarios', 'lima'],
   pPosConv: ['trofeu', 'laranja'], pPosAtend: ['medalha', 'laranja'], pPosFin: ['carteira', 'verde'],
   pConversas: ['conversa', 'verde'], pAutomacoes: ['raio', 'laranja'], pDisparos: ['envio', 'laranja'],
   pWhats: ['conversa', 'verde'], pConfigExtras: ['engrenagem', 'cinza'], pQuizEditor: ['lista', 'cinza'],
-  equipePanel: ['usuarios', 'lima'],
+  pLinks: ['envio', 'cinza'], equipePanel: ['usuarios', 'lima'],
 };
 document.querySelectorAll('.panel h2').forEach((h) => {
   const dono = h.closest('[id]');
@@ -1955,44 +1975,104 @@ $('#agPrev').onclick = () => { AG_REF = AG_MODO === 'mes' ? new Date(AG_REF.getF
 $('#agNext').onclick = () => { AG_REF = AG_MODO === 'mes' ? new Date(AG_REF.getFullYear(), AG_REF.getMonth() + 1, 1) : new Date(AG_REF.getTime() + 7 * 864e5); renderAgendaCal(); };
 $('#agHoje').onclick = () => { AG_REF = new Date(); AG_DIA = diaBRT(new Date()); renderAgendaCal(); renderAgDia(); };
 
-/* ===== EDITOR DO QUIZ (só administradora) ===== */
-let QE = [];             // perguntas em edição (rascunho local)
+/* ===== EDITOR DO QUIZ (só administradora) =====
+   Rascunho único (QE) com perguntas + qualificadores + níveis + resultados
+   + roteamento — tudo editado e publicado junto, em abas dentro do mesmo
+   painel (mesmo padrão de "rascunho → publicar" do editor antigo). */
+let QE = { perguntas: [], qualificadores: [], niveis: [], resultados: { por_nivel: {}, por_qualificador: {} }, roteamento: {} };
 let QE_CARREGADO = false;
-function qeEhChave(p) { return (p.opts || []).some((o) => o && o.destino); }
+let QE_TAB = 'perguntas';
+let QE_WA_CONECTADO = false;
+
 async function qeCarregar() {
   QE_CARREGADO = true;
   const r = await fetch('/api/quiz-config').then((x) => x.json()).catch(() => null);
-  if (!r || !r.ok) { $('#qeStatus').textContent = 'Erro ao carregar as perguntas.'; return; }
-  QE = JSON.parse(JSON.stringify(r.perguntas));
+  if (!r || !r.ok) { $('#qeStatus').textContent = 'Erro ao carregar a configuração.'; return; }
+  QE = {
+    perguntas: JSON.parse(JSON.stringify(r.perguntas || [])),
+    qualificadores: JSON.parse(JSON.stringify(r.qualificadores || [])),
+    niveis: JSON.parse(JSON.stringify(r.niveis || [])),
+    resultados: JSON.parse(JSON.stringify(r.resultados || { por_nivel: {}, por_qualificador: {} })),
+    roteamento: JSON.parse(JSON.stringify(r.roteamento || {})),
+  };
+  QE_WA_CONECTADO = !!r.whatsappConectado;
   $('#qeStatus').textContent = r.personalizado
-    ? 'O quiz está usando perguntas personalizadas publicadas por você.'
-    : 'O quiz está usando as perguntas padrão.';
-  qeRender();
+    ? 'O quiz está usando a configuração personalizada publicada por você.'
+    : 'O quiz está usando a configuração padrão.';
+  qeRenderTudo();
 }
-function qeRender() {
+
+function qeRenderTudo() {
+  document.querySelectorAll('#qeTabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === QE_TAB));
+  $('#qeNova').style.display = QE_TAB === 'perguntas' ? '' : 'none';
   const box = $('#qeLista'); clear(box);
-  QE.forEach((p, pi) => {
+  if (QE_TAB === 'perguntas') qeRenderPerguntas(box);
+  else if (QE_TAB === 'qualificadores') qeRenderLista(box, 'qualificadores', true);
+  else if (QE_TAB === 'niveis') qeRenderLista(box, 'niveis', false);
+  else if (QE_TAB === 'resultados') qeRenderResultados(box);
+  else if (QE_TAB === 'roteamento') qeRenderRoteamento(box);
+  else if (QE_TAB === 'conexoes') qeRenderConexoes(box);
+}
+$('#qeTabs').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-tab]'); if (!b) return;
+  QE_TAB = b.dataset.tab; qeRenderTudo();
+});
+
+function qeSelectQualificador(o) {
+  const sel = el('select'); sel.title = 'Qualificador desta opção';
+  sel.style.cssText = 'padding:7px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;cursor:pointer;background:var(--card);';
+  const vazio = el('option'); vazio.value = ''; vazio.textContent = '(sem qualificador)'; sel.appendChild(vazio);
+  QE.qualificadores.filter((q) => q.ativo !== false).forEach((q) => {
+    const op = el('option'); op.value = q.chave; op.textContent = q.nome || q.chave; sel.appendChild(op);
+  });
+  sel.value = o.qualificador || '';
+  sel.onchange = () => { if (sel.value) o.qualificador = sel.value; else delete o.qualificador; };
+  return sel;
+}
+function qeSelectNivel(o) {
+  const sel = el('select'); sel.title = 'Nível de consciência desta opção';
+  sel.style.cssText = 'padding:7px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;cursor:pointer;background:var(--card);';
+  const vazio = el('option'); vazio.value = ''; vazio.textContent = '(sem nível)'; sel.appendChild(vazio);
+  QE.niveis.forEach((n) => {
+    const op = el('option'); op.value = n.chave; op.textContent = n.nome || n.chave; sel.appendChild(op);
+  });
+  sel.value = o.nivel || '';
+  sel.onchange = () => { if (sel.value) o.nivel = sel.value; else delete o.nivel; };
+  return sel;
+}
+
+function qeRenderPerguntas(box) {
+  QE.perguntas.forEach((p, pi) => {
     const card = el('div');
     card.style.cssText = 'border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:var(--bg);';
 
     const head = el('div'); head.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;';
     const num = el('b'); num.textContent = 'Pergunta ' + (pi + 1); head.appendChild(num);
-    if (qeEhChave(p)) { const bd = el('span', 'pill contato'); bd.textContent = 'pergunta-chave (renda)'; head.appendChild(bd); }
+
     const lativa = el('label'); lativa.style.cssText = 'font-size:12.5px;font-weight:600;display:flex;gap:5px;align-items:center;cursor:pointer;';
-    const cativa = el('input'); cativa.type = 'checkbox'; cativa.checked = p.ativo !== false; cativa.disabled = qeEhChave(p);
+    const cativa = el('input'); cativa.type = 'checkbox'; cativa.checked = p.ativo !== false;
     cativa.onchange = () => { p.ativo = cativa.checked; };
     lativa.append(cativa, 'Ativa');
+
     const lmulti = el('label'); lmulti.style.cssText = lativa.style.cssText;
-    const cmulti = el('input'); cmulti.type = 'checkbox'; cmulti.checked = !!p.multi; cmulti.disabled = qeEhChave(p);
+    const cmulti = el('input'); cmulti.type = 'checkbox'; cmulti.checked = !!p.multi;
     cmulti.onchange = () => { p.multi = cmulti.checked; };
     lmulti.append(cmulti, 'Aceita várias escolhas');
-    head.append(lativa, lmulti);
+
+    const ldes = el('label'); ldes.style.cssText = lativa.style.cssText;
+    ldes.title = 'Em caso de empate na votação, a resposta desta pergunta decide (só pode haver 1)';
+    const cdes = el('input'); cdes.type = 'checkbox'; cdes.checked = !!p.desempate;
+    cdes.onchange = () => {
+      if (cdes.checked) QE.perguntas.forEach((outra) => { outra.desempate = false; });
+      p.desempate = cdes.checked; qeRenderTudo();
+    };
+    ldes.append(cdes, 'Critério de desempate');
+
+    head.append(lativa, lmulti, ldes);
     const sp = el('span'); sp.style.flex = '1'; head.appendChild(sp);
-    if (!qeEhChave(p)) {
-      const bdel = el('button', 'acao-btn'); bdel.textContent = 'Excluir';
-      bdel.onclick = () => { if (confirm('Excluir esta pergunta do rascunho?')) { QE.splice(pi, 1); qeRender(); } };
-      head.appendChild(bdel);
-    }
+    const bdel = el('button', 'acao-btn'); bdel.textContent = 'Excluir';
+    bdel.onclick = () => { if (confirm('Excluir esta pergunta do rascunho?')) { QE.perguntas.splice(pi, 1); qeRenderTudo(); } };
+    head.appendChild(bdel);
     card.appendChild(head);
 
     const iq = el('input'); iq.value = p.q || ''; iq.placeholder = 'Texto da pergunta...';
@@ -2006,66 +2086,248 @@ function qeRender() {
       it.style.cssText = 'flex:1;min-width:170px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--card);';
       it.oninput = () => { o.t = it.value; };
       row.appendChild(it);
-      [['low', 'B', 'pontos p/ Baixa consciência'], ['mid', 'M', 'pontos p/ Média'], ['high', 'A', 'pontos p/ Alta']].forEach(([k, lab, dica]) => {
-        const w = el('label'); w.title = dica;
-        w.style.cssText = 'font-size:11px;font-weight:700;color:var(--text-muted);display:flex;align-items:center;gap:3px;';
-        const inp = el('input'); inp.type = 'number'; inp.min = 0; inp.max = 9; inp.value = (o.s && o.s[k]) || 0;
-        inp.style.cssText = 'width:44px;padding:6px;border:1.5px solid var(--line);border-radius:7px;font-size:12px;background:var(--card);';
-        inp.oninput = () => { o.s = o.s || {}; o.s[k] = Number(inp.value) || 0; };
-        w.append(lab, inp); row.appendChild(w);
-      });
-      if (qeEhChave(p)) {
-        const sd = el('select');
-        sd.style.cssText = 'padding:7px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;cursor:pointer;background:var(--card);';
-        [['comunidade', 'Comunidade'], ['premium', 'WhatsApp']].forEach(([v, tx]) => {
-          const op = el('option'); op.value = v; op.textContent = tx; sd.appendChild(op);
-        });
-        sd.value = o.destino || 'comunidade';
-        sd.onchange = () => { o.destino = sd.value; };
-        row.appendChild(sd);
-      }
+      row.appendChild(qeSelectQualificador(o));
+      row.appendChild(qeSelectNivel(o));
       const bx = el('button', 'acao-btn'); bx.textContent = '✕'; bx.title = 'Remover opção';
       bx.onclick = () => {
         if (p.opts.length <= 2) { alert('Cada pergunta precisa de pelo menos 2 opções.'); return; }
-        p.opts.splice(oi, 1); qeRender();
+        p.opts.splice(oi, 1); qeRenderTudo();
       };
       row.appendChild(bx);
       card.appendChild(row);
     });
     const badd = el('button', 'acao-btn'); badd.textContent = '+ Opção';
-    badd.onclick = () => {
-      const nova = { t: '', s: { low: 1, mid: 2, high: 2 } };
-      if (qeEhChave(p)) nova.destino = 'comunidade';
-      p.opts.push(nova); qeRender();
-    };
+    badd.onclick = () => { p.opts.push({ t: '' }); qeRenderTudo(); };
     card.appendChild(badd);
     box.appendChild(card);
   });
 }
+
+/* lista CRUD compartilhada por Qualificadores e Níveis — mesmo formato,
+   Qualificadores ganham um seletor de cor extra */
+function qeRenderLista(box, chaveLista, temCor) {
+  const lista = QE[chaveLista];
+  const singular = chaveLista === 'qualificadores' ? 'qualificador' : 'nível';
+  lista.forEach((item, i) => {
+    const row = el('div');
+    row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--bg);';
+    const inome = el('input'); inome.value = item.nome || ''; inome.placeholder = 'Nome';
+    inome.style.cssText = 'flex:1;min-width:160px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--card);';
+    inome.oninput = () => { item.nome = inome.value; };
+    row.appendChild(inome);
+
+    const ichave = el('span', 'muted-cell'); ichave.textContent = item.chave; ichave.style.fontFamily = 'monospace'; ichave.title = 'Identificador interno (fixo)';
+    row.appendChild(ichave);
+
+    if (temCor) {
+      const icor = el('input'); icor.type = 'color'; icor.value = item.cor || '#22A55E';
+      icor.style.cssText = 'width:36px;height:32px;border:1.5px solid var(--line);border-radius:8px;cursor:pointer;padding:2px;';
+      icor.oninput = () => { item.cor = icor.value; };
+      row.appendChild(icor);
+    }
+
+    const lativo = el('label'); lativo.style.cssText = 'font-size:12.5px;font-weight:600;display:flex;gap:5px;align-items:center;cursor:pointer;';
+    const cativo = el('input'); cativo.type = 'checkbox'; cativo.checked = item.ativo !== false;
+    cativo.onchange = () => { item.ativo = cativo.checked; };
+    lativo.append(cativo, 'Ativo'); row.appendChild(lativo);
+
+    const bdel = el('button', 'acao-btn'); bdel.textContent = 'Remover';
+    bdel.title = 'Se leads antigos já usam este valor, prefira desativar em vez de remover';
+    bdel.onclick = () => {
+      if (confirm('Remover "' + (item.nome || item.chave) + '"? Se preferir manter o histórico, cancele e desative em vez de remover.')) {
+        lista.splice(i, 1); qeRenderTudo();
+      }
+    };
+    row.appendChild(bdel);
+
+    box.appendChild(row);
+  });
+  const badd = el('button', 'acao-btn'); badd.textContent = '+ Novo ' + singular;
+  badd.onclick = () => {
+    const nome = prompt('Nome do novo ' + singular + ':');
+    if (!nome) return;
+    const chave = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || ('item' + Date.now());
+    if (lista.some((x) => x.chave === chave)) { alert('Já existe um ' + singular + ' com essa chave.'); return; }
+    const novo = { chave, nome, ordem: lista.length, ativo: true };
+    if (temCor) novo.cor = '#22A55E';
+    lista.push(novo);
+    if (chaveLista === 'qualificadores') { QE.roteamento[chave] = { tipo: 'crm' }; QE.resultados.por_qualificador[chave] = { texto: '' }; }
+    else { QE.resultados.por_nivel[chave] = { texto: '' }; }
+    qeRenderTudo();
+  };
+  box.appendChild(badd);
+}
+
+function qeCampoTexto(titulo, valor, onInput, linhas) {
+  const wrap = el('div'); wrap.style.cssText = 'margin-bottom:14px;';
+  const lab = el('div'); const labB = el('b'); labB.textContent = titulo; lab.appendChild(labB); lab.style.marginBottom = '4px'; wrap.appendChild(lab);
+  const ta = el('textarea'); ta.value = valor || ''; ta.rows = linhas;
+  ta.placeholder = 'Use {nome} pro primeiro nome do lead. Deixe uma linha em branco entre parágrafos — cada um vira uma mensagem separada.';
+  ta.style.cssText = 'width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--card);font-family:inherit;';
+  ta.oninput = () => onInput(ta.value);
+  wrap.appendChild(ta);
+  return wrap;
+}
+function qeRenderResultados(box) {
+  const h1 = el('h3'); h1.textContent = 'Por nível de consciência (diagnóstico)'; h1.style.margin = '6px 0'; box.appendChild(h1);
+  QE.niveis.forEach((n) => {
+    QE.resultados.por_nivel[n.chave] = QE.resultados.por_nivel[n.chave] || { texto: '' };
+    box.appendChild(qeCampoTexto(n.nome || n.chave, QE.resultados.por_nivel[n.chave].texto,
+      (v) => { QE.resultados.por_nivel[n.chave].texto = v; }, 5));
+  });
+  const h2 = el('h3'); h2.textContent = 'Por qualificador (convite)'; h2.style.margin = '16px 0 6px'; box.appendChild(h2);
+  QE.qualificadores.forEach((q) => {
+    QE.resultados.por_qualificador[q.chave] = QE.resultados.por_qualificador[q.chave] || { texto: '' };
+    box.appendChild(qeCampoTexto(q.nome || q.chave, QE.resultados.por_qualificador[q.chave].texto,
+      (v) => { QE.resultados.por_qualificador[q.chave].texto = v; }, 4));
+  });
+}
+
+function qeRenderRoteamento(box) {
+  QE.qualificadores.forEach((q) => {
+    const rota = QE.roteamento[q.chave] = QE.roteamento[q.chave] || { tipo: 'crm' };
+    const card = el('div');
+    card.style.cssText = 'border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:var(--bg);';
+    const tit = el('div'); const titB = el('b'); titB.textContent = q.nome || q.chave; tit.appendChild(titB); tit.style.marginBottom = '8px'; card.appendChild(tit);
+
+    const row = el('div'); row.style.cssText = 'display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;';
+    [['calcom', 'Cal.com (link de agendamento)'], ['whatsapp', 'WhatsApp automático'], ['crm', 'Só CRM (equipe entra em contato)']].forEach(([v, tx]) => {
+      const lab = el('label'); lab.style.cssText = 'font-size:13px;font-weight:600;display:flex;gap:6px;align-items:center;cursor:pointer;';
+      const rd = el('input'); rd.type = 'radio'; rd.name = 'rota_' + q.chave; rd.checked = rota.tipo === v;
+      rd.onchange = () => { rota.tipo = v; qeRenderTudo(); };
+      lab.append(rd, tx); row.appendChild(lab);
+    });
+    card.appendChild(row);
+
+    if (rota.tipo === 'calcom') {
+      const il = el('input'); il.value = rota.calLink || ''; il.placeholder = 'https://cal.com/sua-agenda';
+      il.style.cssText = 'width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--card);';
+      il.oninput = () => { rota.calLink = il.value; };
+      card.appendChild(il);
+    } else if (rota.tipo === 'whatsapp') {
+      if (!QE_WA_CONECTADO) {
+        const aviso = el('div', 'muted-cell');
+        aviso.style.cssText = 'color:#B45309;font-weight:600;margin-bottom:6px;';
+        aviso.textContent = '⚠ O WhatsApp ainda não está conectado (aba Conexões) — conecte antes de publicar, senão o lead só vê a mensagem passiva, sem envio automático.';
+        card.appendChild(aviso);
+      }
+      const ta = el('textarea'); ta.value = rota.mensagem || ''; ta.rows = 3;
+      ta.placeholder = 'Mensagem automática. Use {nome} pro primeiro nome do lead.';
+      ta.style.cssText = 'width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--card);font-family:inherit;';
+      ta.oninput = () => { rota.mensagem = ta.value; };
+      card.appendChild(ta);
+    }
+    box.appendChild(card);
+  });
+}
+
+function qeRenderConexoes(box) {
+  const cal = el('div');
+  cal.style.cssText = 'border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;background:var(--bg);';
+  cal.innerHTML = '<b>Cal.com</b>';
+  const sub = el('div', 'muted-cell'); sub.style.marginTop = '4px';
+  sub.textContent = 'Cada qualificador com roteamento "Cal.com" tem seu próprio link — configure na aba Roteamento.';
+  cal.appendChild(sub);
+  box.appendChild(cal);
+
+  const wa = el('div');
+  wa.style.cssText = 'border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--bg);';
+  wa.innerHTML = '<b>WhatsApp</b>';
+  const st = el('div', 'muted-cell'); st.style.marginTop = '4px';
+  st.textContent = QE_WA_CONECTADO
+    ? '✓ Conectado — qualificadores com roteamento "WhatsApp automático" podem disparar mensagem.'
+    : '○ Não conectado — conecte no painel "WhatsApp" (menu Configurações) antes de usar o roteamento automático.';
+  wa.appendChild(st);
+  const nota = el('div', 'muted-cell'); nota.style.marginTop = '8px';
+  nota.textContent = 'A mensagem enviada por qualificador é editada na aba Roteamento.';
+  wa.appendChild(nota);
+  box.appendChild(wa);
+}
+
 $('#qeNova').onclick = () => {
-  QE.push({ id: 'p' + Math.abs((Date.now()) % 1e9).toString(36), q: '', multi: false, ativo: true, opts: [
-    { t: '', s: { low: 1, mid: 2, high: 2 } },
-    { t: '', s: { low: 1, mid: 2, high: 2 } },
-  ]});
-  qeRender();
+  QE.perguntas.push({ id: 'p' + Math.abs((Date.now()) % 1e9).toString(36), q: '', multi: false, ativo: true, desempate: false, opts: [{ t: '' }, { t: '' }] });
+  qeRenderTudo();
 };
 $('#qePublicar').onclick = async () => {
   $('#qeStatus').textContent = 'publicando…';
   const r = await fetch('/api/quiz-config', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', perguntas: QE }),
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', ...QE }),
   }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
-  $('#qeStatus').textContent = r.ok ? '✓ Publicado! O quiz já está usando as novas perguntas.' : ('' + (r.error || 'Erro ao publicar.'));
+  $('#qeStatus').textContent = r.ok ? '✓ Publicado! O quiz já está usando a nova configuração.' : ('' + (r.error || 'Erro ao publicar.'));
   if (r.ok) { qeCarregar(); carregarRendaCfg(); }   // o quadro de renda acompanha na hora
 };
 $('#qeRestaurar').onclick = async () => {
-  if (!confirm('Voltar para as perguntas PADRÃO do quiz? As personalizações publicadas serão descartadas.')) return;
+  if (!confirm('Voltar para a configuração PADRÃO do quiz? As personalizações publicadas serão descartadas.')) return;
   const r = await fetch('/api/quiz-config', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'restaurar' }),
   }).then((x) => x.json()).catch(() => ({ ok: false }));
   $('#qeStatus').textContent = r.ok ? 'Padrão restaurado.' : 'Erro ao restaurar.';
   qeCarregar();
+};
+
+/* ===== LINKS DE RASTREIO (só administradora) ===== */
+let LINKS_CARREGADO = false;
+let LINKS_LISTA = [];
+async function linksCarregar() {
+  LINKS_CARREGADO = true;
+  const r = await fetch('/api/links', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'listar' }),
+  }).then((x) => x.json()).catch(() => null);
+  if (!r || !r.ok) { $('#lkStatus').textContent = 'Erro ao carregar os links.'; return; }
+  LINKS_LISTA = r.links || [];
+  linksRender();
+}
+function linksRender() {
+  const t = $('#lkTable'); clear(t);
+  t.appendChild(tableHead(['Nome', 'Link', 'Origem (utm_source)', 'Ativo', '']));
+  const tb = el('tbody');
+  const base = location.origin;
+  LINKS_LISTA.forEach((l) => {
+    const tr = el('tr');
+    const url = base + '/l/' + l.slug;
+    const linkCel = el('span');
+    const a = el('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = url; a.style.cssText = 'font-family:monospace;font-size:12px;';
+    const copiar = el('button', 'acao-btn'); copiar.textContent = 'Copiar'; copiar.style.marginLeft = '8px';
+    copiar.onclick = () => { navigator.clipboard.writeText(url).catch(() => {}); copiar.textContent = 'Copiado!'; setTimeout(() => copiar.textContent = 'Copiar', 1500); };
+    linkCel.append(a, copiar);
+    const lativo = el('label'); lativo.style.cssText = 'display:flex;align-items:center;gap:5px;cursor:pointer;';
+    const cativo = el('input'); cativo.type = 'checkbox'; cativo.checked = l.ativo !== false;
+    cativo.onchange = async () => {
+      const r = await fetch('/api/links', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'editar', slug: l.slug, ativo: cativo.checked }),
+      }).then((x) => x.json()).catch(() => ({ ok: false }));
+      if (r.ok) { l.ativo = cativo.checked; } else { cativo.checked = !cativo.checked; alert('Erro ao atualizar.'); }
+    };
+    lativo.appendChild(cativo);
+    const bdel = el('button', 'acao-btn'); bdel.textContent = 'Excluir';
+    bdel.onclick = async () => {
+      if (!confirm('Excluir o link "' + l.nome + '"? Leads que já vieram por ele continuam mostrando a origem certa.')) return;
+      const r = await fetch('/api/links', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'excluir', slug: l.slug }),
+      }).then((x) => x.json()).catch(() => ({ ok: false }));
+      if (r.ok) linksCarregar(); else alert('Erro ao excluir.');
+    };
+    tr.append(td(l.nome), td(linkCel), td(l.utm_source), td(lativo), td(bdel));
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+}
+$('#lkCriar').onclick = async () => {
+  const nome = ($('#lkNome').value || '').trim();
+  if (!nome) { $('#lkStatus').textContent = 'Dê um nome ao link.'; return; }
+  $('#lkStatus').textContent = 'criando…';
+  const r = await fetch('/api/links', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'criar', nome }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  $('#lkStatus').textContent = r.ok ? '✓ Link criado!' : ('' + (r.error || 'Erro ao criar.'));
+  if (r.ok) { $('#lkNome').value = ''; linksCarregar(); }
 };
 
 /* ===== REUNIÕES — agenda mensal com dias recolhidos (sanfona) ===== */
@@ -2685,7 +2947,9 @@ let RENDA_CFG = null;   // opções atuais da pergunta-chave publicada
 async function carregarRendaCfg() {
   try {
     const d = await fetch('/api/quiz-config').then((x) => x.json());
-    const chave = (d.perguntas || []).find((p) => (p.opts || []).some((o) => o.destino));
+    // a faixa de renda é sempre a pergunta marcada como critério de desempate
+    // (é o mesmo campo que o quiz usa pra preencher `faturamento` no lead)
+    const chave = (d.perguntas || []).find((p) => p.desempate);
     if (chave) { RENDA_CFG = chave.opts.map((o) => o.t); render(); }
   } catch (e) { /* mantém as faixas fixas */ }
 }
@@ -3045,20 +3309,41 @@ function popularLeadsAtendente() {
   LEADS_ATEND = (atual === '(sem)' || nomes.includes(atual)) ? atual : '';
   sel.value = LEADS_ATEND;
 }
-/* dropdown de Origem: destinos fixos + origens de tráfego (utm_source) cadastradas */
+/* dropdown de Origem: qualificadores configurados + origens de tráfego
+   (utm_source) cadastradas nos Links de Rastreio (ou o valor cru, se não
+   veio de um link cadastrado) */
+let ORIGEM_QUALIFICADORES = [];
+let ORIGEM_LINKS = [];
+async function carregarQualificadoresOrigem() {
+  try {
+    const d = await fetch('/api/quiz-config').then((x) => x.json());
+    if (d && d.ok && Array.isArray(d.qualificadores)) ORIGEM_QUALIFICADORES = d.qualificadores;
+  } catch (e) { /* fica vazio — cai no fallback fixo */ }
+  try {
+    const r = await fetch('/api/links', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'listar' }),
+    }).then((x) => x.json());
+    if (r && r.ok && Array.isArray(r.links)) ORIGEM_LINKS = r.links;
+  } catch (e) { /* sem links cadastrados */ }
+  render();
+}
 function popularLeadsOrigem() {
   const sel = $('#leadsOrigemSel');
   const fontes = [...new Set(LEADS_VIEW.map((r) => String(r.utm_source || '').trim() || '(direto)'))].sort();
-  const want = fontes.join('|');
+  const want = fontes.join('|') + '#' + ORIGEM_QUALIFICADORES.map((q) => q.chave).join(',');
   if (sel.dataset.opts === want) return;
   sel.dataset.opts = want;
   const atual = ORIGEM_FILTER;
   clear(sel);
   const add = (v, tx) => { const o = document.createElement('option'); o.value = v; o.textContent = tx; sel.appendChild(o); };
   add('', 'Origem: Todas');
-  add('t:comunidade', 'Comunidade');
-  add('t:premium', 'WhatsApp');
-  fontes.forEach((f) => add('u:' + f, '' + f));
+  const qualifs = ORIGEM_QUALIFICADORES.length ? ORIGEM_QUALIFICADORES : [{ chave: 'comunidade', nome: 'Comunidade' }, { chave: 'premium', nome: 'WhatsApp' }];
+  qualifs.forEach((q) => add('t:' + q.chave, q.nome || q.chave));
+  fontes.forEach((f) => {
+    const link = ORIGEM_LINKS.find((l) => l.utm_source === f);
+    add('u:' + f, link ? link.nome : f);
+  });
   ORIGEM_FILTER = [...sel.options].some((o) => o.value === atual) ? atual : '';
   sel.value = ORIGEM_FILTER;
 }
