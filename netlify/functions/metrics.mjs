@@ -27,6 +27,7 @@ const COLS = [
   'renda', 'lead_score', 'qualificado', 'call_track', 'vendedor',
   'agendado', 'agendamento_em', 'booking_uid', 'atendente', 'agendamento_status', 'equipe_json',
   'resultado', 'resultado_motivo', 'resultado_em', 'resultado_por', 'etapa', 'venda_json',
+  'qualificador', 'nivel_consciencia', 'roteamento_tipo',
   'ig_followers', 'ig_posts', 'ig_verificado', 'ig_categoria',
   'reel_views', 'reel_likes', 'reel_comments',
   'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'referrer',
@@ -82,7 +83,7 @@ export default async (req) => {
       );
       let res = await buscar();
       // alguma coluna nova ainda não existe no banco? vai tirando até funcionar
-      const RECUOS = [',venda_json', ',etapa', ',resultado,resultado_motivo,resultado_em,resultado_por', ',equipe_json', ',atendente,agendamento_status'];
+      const RECUOS = [',venda_json', ',etapa', ',resultado,resultado_motivo,resultado_em,resultado_por', ',equipe_json', ',atendente,agendamento_status', ',qualificador,nivel_consciencia,roteamento_tipo'];
       for (const recuo of RECUOS) {
         if (res.ok || res.status !== 400 || !colsAtivas.includes(recuo.slice(1).split(',')[0])) continue;
         colsAtivas = colsAtivas.replace(recuo, '');
