@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>Sua Conversa com a Suely | Suavitatis Terapias Integrativas</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-page: #fafafc; --bg-header: #0d0a1a; --bg-card: #ffffff; --bg-soft: #f2f1f7;
+      --text: #18141f; --text-dim: #4a4458; --text-muted: #9b95a8;
+      --border: rgba(24, 20, 31, 0.08);
+      --accent: #a155f2; --accent-dark: #7d3bd6; --accent-soft: rgba(161, 85, 242, 0.09);
+      --green: #25d366; --green-dark: #1faa52; --gold: #f5a623;
+      --gradient: linear-gradient(135deg, #a155f2 0%, #8b3fe0 100%);
+      --shadow-soft: 0 1px 2px rgba(24,20,31,.04), 0 8px 24px rgba(24,20,31,.06);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-page); color: var(--text); min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+    header { background: #fff; border-bottom: 1px solid var(--border); }
+    .topbar {
+      max-width: 720px; margin: 0 auto; padding: 12px 18px;
+      display: flex; align-items: center; gap: 11px;
+    }
+    .brand-badge { background: var(--bg-header); border-radius: 11px; padding: 8px 12px; display: flex; }
+    .brand-badge img { height: 17px; width: auto; max-width: 92px; object-fit: contain; }
+    .brand-sub { font-size: 12.5px; font-weight: 600; color: var(--text-dim); }
+
+    main { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 34px 18px 50px; }
+    .card {
+      width: min(560px, 100%); background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: 22px;
+      box-shadow: var(--shadow-soft); overflow: hidden;
+      animation: cardIn .55s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(22px) scale(.97); } to { opacity: 1; transform: none; } }
+    .card-head { background: var(--bg-header); color: #fff; padding: 22px 26px; display: flex; gap: 14px; align-items: center; }
+    .avatar {
+      width: 50px; height: 50px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+      border: 2px solid rgba(184,118,255,.6); background: #1d1830;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .card-head h1 { font-size: 18px; }
+    .card-head p { font-size: 12.5px; color: rgba(255,255,255,.65); margin-top: 2px; }
+
+    .card-body { padding: 26px; text-align: center; }
+    .ok-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: #e7f8ee; color: var(--green-dark);
+      font-size: 12.5px; font-weight: 700; padding: 6px 14px; border-radius: 99px;
+    }
+    h2 { font-size: 21px; margin-top: 14px; line-height: 1.3; }
+    .quando { font-size: 14.5px; color: var(--text-dim); margin-top: 7px; }
+    .quando b { color: var(--text); }
+
+    .count { display: flex; justify-content: center; gap: 10px; margin: 24px 0 6px; }
+    .tile {
+      background: var(--bg-soft); border: 1px solid var(--border);
+      border-radius: 14px; padding: 13px 6px; min-width: 72px;
+    }
+    .tile b { display: block; font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .tile span { display: block; font-size: 10px; letter-spacing: .14em; font-weight: 700; color: var(--text-muted); margin-top: 3px; }
+    .count-label { font-size: 12.5px; color: var(--text-muted); margin-bottom: 18px; }
+    .live { color: var(--green-dark); font-weight: 800; font-size: 16px; margin: 18px 0 10px; animation: pulse 1.4s infinite; }
+    @keyframes pulse { 50% { opacity: .55; } }
+
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      width: 100%; padding: 16px; margin-top: 12px;
+      border: none; border-radius: 13px; cursor: pointer;
+      font-family: inherit; font-size: 15.5px; font-weight: 700; color: #fff;
+      text-decoration: none; transition: transform .15s, opacity .2s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn.entrar { background: var(--gradient); box-shadow: 0 6px 22px rgba(161,85,242,.35); }
+    .btn.entrar.locked { opacity: .45; pointer-events: none; }
+    .btn.gcal { background: var(--bg-soft); color: var(--text-dim); border: 1px solid var(--border); font-weight: 600; }
+    .hint { font-size: 12px; color: var(--text-muted); margin-top: 9px; }
+
+    .gift {
+      margin-top: 22px; padding: 15px 16px; border-radius: 14px; text-align: left;
+      background: linear-gradient(135deg, #fff7e4, #ffedc4); border: 1.5px solid #f0cd86;
+      font-size: 13.5px; color: #6b4a0c; font-weight: 600; line-height: 1.5;
+    }
+    .gift b { color: #4a3105; }
+    footer { text-align: center; font-size: 11.5px; color: var(--text-muted); padding: 0 18px 26px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <span class="brand-badge"><img src="logo.png" alt="Suavitatis Terapias Integrativas"></span>
+      <span class="brand-sub">Sua conversa com a Suely</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="card-head">
+        <div class="avatar"><img src="suely.png" alt="" onerror="this.onerror=null;this.src='logo.png';this.style.objectFit='contain';this.style.padding='6px'"></div>
+        <div>
+          <h1>Sua conversa está confirmada 🎉</h1>
+          <p>Conversa de acolhimento · Suavitatis · online</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <span class="ok-badge">✓ AGENDADO</span>
+        <h2 id="titulo">Carregando sua reunião…</h2>
+        <p class="quando" id="quando"></p>
+
+        <div class="count" id="count" hidden>
+          <div class="tile"><b id="cd">0</b><span>DIAS</span></div>
+          <div class="tile"><b id="ch">00</b><span>HORAS</span></div>
+          <div class="tile"><b id="cm">00</b><span>MIN</span></div>
+          <div class="tile"><b id="cs">00</b><span>SEG</span></div>
+        </div>
+        <p class="count-label" id="countLabel" hidden>faltam pra sua sessão começar</p>
+        <p class="live" id="live" hidden>🔴 Sua sessão está acontecendo agora — entra!</p>
+
+        <a class="btn entrar locked" id="btnEntrar" target="_blank" rel="noopener" hidden>🎥&nbsp; Entrar na reunião</a>
+        <p class="hint" id="hintEntrar" hidden>O botão libera 15 minutos antes do horário.</p>
+        <a class="btn gcal" id="btnGcal" target="_blank" rel="noopener" hidden>📅&nbsp; Adicionar ao Google Agenda</a>
+
+        <div class="gift">🎁 <b>Não esquece:</b> seu ebook <b>7 Dicas — Como manter seu idoso feliz e você menos estressada</b> é entregue nessa conversa.</div>
+      </div>
+    </div>
+  </main>
+  <footer>Suavitatis Terapias Integrativas · chegue 2 minutinhos antes 😉</footer>
+
+<script>
+/* SEGURANÇA: todo dado dinâmico (nome via query/API, datas, links) entra no
+   DOM via textContent/createElement/atributos — nunca como HTML. */
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const q = new URLSearchParams(location.search);
+  const uid = q.get('id') || '';
+  let nome = (q.get('n') || '').slice(0, 60);
+  let startISO = q.get('t') || '';
+  // o link do Meet vem capturado no booking (POST) e passado aqui no param `v`,
+  // porque o GET /bookings/{uid} (info) não devolve a URL da sala.
+  let videoUrl = q.get('v') || '';
+
+  // dados reais do booking (motor Cal.com), com fallback pros params
+  if (uid) {
+    try {
+      const r = await fetch('/api/agenda', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'info', uid }),
+      });
+      if (r.ok) {
+        const j = await r.json();
+        if (j.ok) {
+          nome = j.nome || nome;
+          startISO = j.start || startISO;
+          videoUrl = j.videoUrl || videoUrl;
+        }
+      }
+    } catch (e) { /* usa fallback */ }
+  }
+
+  const primeiro = nome ? nome.split(' ')[0] : '';
+  if (!startISO) {
+    $('titulo').textContent = primeiro ? `${primeiro}, sua sessão está confirmada!` : 'Sua sessão está confirmada!';
+    $('quando').textContent = 'Os detalhes e o lembrete chegam no seu WhatsApp e e-mail.';
+    return;
+  }
+
+  const start = new Date(startISO);
+  const fim = new Date(start.getTime() + 30 * 60000);
+  const fmtDia = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const fmtHora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+  $('titulo').textContent = primeiro ? `${primeiro}, te espero na sessão!` : 'Te espero na sessão!';
+  $('quando').textContent = '';
+  const b = document.createElement('b');
+  b.textContent = `${cap(fmtDia.format(start))}, às ${fmtHora.format(start)}`;
+  $('quando').appendChild(b);
+  $('quando').append(' (horário de Brasília)');
+
+  // só aceita link de vídeo http(s)
+  if (!/^https?:\/\//.test(videoUrl)) videoUrl = '';
+
+  // Google Agenda
+  const gdate = (d) => d.toISOString().replace(/[-:]|\.\d{3}/g, '');
+  $('btnGcal').href = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+    '&text=' + encodeURIComponent('Conversa — Suavitatis Terapias Integrativas') +
+    '&dates=' + gdate(start) + '/' + gdate(fim) +
+    '&details=' + encodeURIComponent('Conversa de acolhimento com a Suely — Suavitatis Terapias Integrativas.' + (videoUrl ? ' Entrar: ' + videoUrl : ''));
+  $('btnGcal').hidden = false;
+
+  // botão de entrar (libera 15 min antes)
+  if (videoUrl) {
+    $('btnEntrar').href = videoUrl;
+    $('btnEntrar').hidden = false;
+    $('hintEntrar').hidden = false;
+  }
+
+  $('count').hidden = false;
+  $('countLabel').hidden = false;
+
+  function tick() {
+    const agora = Date.now();
+    const diff = start.getTime() - agora;
+
+    if (videoUrl) {
+      const libera = diff <= 15 * 60000;
+      $('btnEntrar').classList.toggle('locked', !libera);
+      $('hintEntrar').hidden = libera;
+    }
+
+    if (diff <= 0) {
+      $('count').hidden = true;
+      $('countLabel').hidden = true;
+      if (agora < fim.getTime() + 15 * 60000) {
+        $('live').hidden = false;
+      } else {
+        $('live').hidden = true;
+        $('titulo').textContent = 'Essa sessão já aconteceu.';
+        $('quando').textContent = 'Qualquer coisa, chama a gente no WhatsApp.';
+      }
+      return;
+    }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor(diff % 86400000 / 3600000);
+    const m = Math.floor(diff % 3600000 / 60000);
+    const s = Math.floor(diff % 60000 / 1000);
+    $('cd').textContent = d;
+    $('ch').textContent = String(h).padStart(2, '0');
+    $('cm').textContent = String(m).padStart(2, '0');
+    $('cs').textContent = String(s).padStart(2, '0');
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>

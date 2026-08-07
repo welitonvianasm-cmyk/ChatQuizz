@@ -1,0 +1,9 @@
+{
+  "name": "diagnostico-instagram",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Diagnóstico conversacional de crescimento orgânico no Instagram — Core Audience",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  }
+}

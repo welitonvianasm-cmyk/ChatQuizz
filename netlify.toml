@@ -1,0 +1,111 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[dev]
+  port = 8888
+
+# (As funções agendadas do funil original foram removidas — elas enviavam
+# dados de leads para o webhook do autor. Nada roda automaticamente aqui.)
+
+# ----------------------------------------------------------------------------
+# SEGURANÇA: bloqueia o acesso público ao código-fonte das functions e aos
+# arquivos de projeto/config (a raiz é publicada por publish="."). As rotas de
+# função continuam funcionando em /api/* (path no próprio .mjs) — isto só barra
+# o download do SOURCE estático. force=true sobrescreve o serviço de arquivo.
+# ----------------------------------------------------------------------------
+[[redirects]]
+  from = "/netlify/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/node_modules/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/referencia/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/setup.sql"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/package.json"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/package-lock.json"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/README.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+# arquivos internos do projeto SUAVIS (documentação e scripts) — nunca públicos
+[[redirects]]
+  from = "/PERSONALIZACAO.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/QUIZ-SUAVIS.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/setup-fix.sql"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/setup-equipe.sql"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/.env"
+  to = "/404.html"
+  status = 404
+  force = true
+
+# CORS das funções (mantido aberto p/ o funil; restringir a origem é parte do
+# endurecimento anti-abuso ainda a decidir com o Fabio).
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# Headers de segurança em todas as páginas.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# O painel admin nunca deve poder ser embutido em iframe (anti-clickjacking).
+[[headers]]
+  for = "/dashboard.html"
+  [headers.values]
+    X-Frame-Options = "DENY"

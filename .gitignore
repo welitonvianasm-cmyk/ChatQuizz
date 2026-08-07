@@ -1,0 +1,17 @@
+# segredos e config local (NUNCA commitar)
+.env
+.env.*
+.netlify/
+.claude/
+
+# conteúdo proprietário: prompt do Método CORE + instância/closers do Cal
+# (o Netlify empacota via import; o repo público NÃO tem)
+netlify/_private.mjs
+
+# dependências e arquivos de sistema
+node_modules/
+.DS_Store
+*.log
+
+# material de referência (não faz parte do app)
+referencia/

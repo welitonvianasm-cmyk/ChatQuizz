@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#ffffff">
+  <title>Reconstrua Suas Emoções | Suavitatis Terapias Integrativas</title>
+  <meta name="description" content="Descubra em 2 minutos o quanto você está pronta para voltar a viver — diagnóstico emocional para quem cuida dos pais idosos.">
+  <link rel="icon" type="image/png" href="logo.png">
+  <!-- Pixel do Meta removido (o original enviava dados para a conta do autor).
+       Quando houver Pixel próprio da Suavitatis, reinstalar aqui com o ID dela. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* ===== TEMA SUAVITATIS (claro) — verde da marca como acento ===== */
+      --bg-page: #fafcfb;
+      --bg-header: #04302f;
+      --bg-card: #ffffff;
+      --bg-soft: #eef4f2;          /* bolha do bot */
+      --bg-input: #ffffff;
+      --text: #14201e;
+      --text-dim: #40534f;
+      --text-muted: #8fa19c;
+      --border: rgba(20, 32, 30, 0.08);
+      --border-accent: rgba(0, 83, 85, 0.3);
+      --accent: #005355;
+      --accent-bright: #1b7a7c;
+      --accent-dark: #003b3c;
+      --accent-soft: rgba(0, 83, 85, 0.09);
+      --accent-glow: rgba(0, 83, 85, 0.28);
+      --green: #25d366;
+      --green-dark: #1faa52;
+      --gold: #f5a623;
+      --red: #e5485f;
+      --gradient: linear-gradient(135deg, #0e6b6d 0%, #005355 100%);
+      --gradient-gold: linear-gradient(135deg, #f7b545 0%, #ef8f1f 100%);
+      --shadow-soft: 0 1px 2px rgba(24,20,31,.04), 0 8px 24px rgba(24,20,31,.06);
+      --radius: 18px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-page);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ===== HEADER (claro, identidade própria: badge de marca + pill de etapa + linha de progresso) ===== */
+    header {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 10;
+      animation: headerIn .6s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes headerIn { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+    .topbar {
+      max-width: 720px; margin: 0 auto; padding: 12px 18px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .brand-badge {
+      background: transparent; border-radius: 11px; padding: 0;
+      display: flex; align-items: center; flex-shrink: 0;
+    }
+    .brand-badge img { height: 34px; width: auto; max-width: 160px; object-fit: contain; display: block; }
+    .brand-sub {
+      font-size: 12.5px; font-weight: 600; color: var(--text-dim);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .step-pill {
+      background: var(--accent-soft); color: var(--accent-dark);
+      font-size: 12px; font-weight: 700; padding: 6px 13px; border-radius: 99px;
+      flex-shrink: 0; letter-spacing: .02em;
+    }
+    .step-pill.bump { animation: pillBump .4s ease; }
+    @keyframes pillBump { 50% { transform: scale(1.18); } }
+    .progress-line { height: 3px; background: var(--accent-soft); }
+    .progress-line i {
+      display: block; height: 100%; width: 0%;
+      background: var(--gradient); border-radius: 0 3px 3px 0;
+      transition: width .6s cubic-bezier(.22,1,.36,1);
+    }
+
+    /* ===== CHAT ===== */
+    main { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+    .chat { max-width: 720px; margin: 0 auto; padding: 28px 18px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+    .row { display: flex; gap: 10px; align-items: flex-end; animation: msgIn .45s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: none; } }
+    .row.user { justify-content: flex-end; }
+
+    .avatar {
+      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+      background: var(--bg-header); border: 1.5px solid var(--border-accent);
+      overflow: hidden; display: flex; align-items: center; justify-content: center;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar img.is-logo { object-fit: contain; padding: 4px; }
+    .row.cont .avatar { visibility: hidden; }
+
+    .bubble {
+      max-width: 82%;
+      padding: 13px 17px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text-dim);
+      word-break: break-word;
+    }
+    .bubble b, .bubble strong { color: var(--text); font-weight: 700; }
+    .row.bot .bubble { background: var(--bg-soft); border-bottom-left-radius: 6px; }
+    .row.user .bubble {
+      background: var(--gradient); color: #fff; font-weight: 600;
+      border-bottom-right-radius: 6px; box-shadow: 0 4px 18px rgba(161,85,242,.28);
+    }
+    .row.user .bubble b { color: #fff; }
+
+    /* typing indicator */
+    .typing { display: inline-flex; gap: 5px; padding: 17px; align-items: center; }
+    .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); opacity: .3; animation: dotPulse 1.1s infinite; }
+    .typing i:nth-child(2) { animation-delay: .18s; }
+    .typing i:nth-child(3) { animation-delay: .36s; }
+    @keyframes dotPulse { 30% { opacity: 1; transform: translateY(-4px) } }
+
+    /* ===== LOADER DE RETENÇÃO (cargas longas) ===== */
+    .loader-card { min-width: min(300px, 70vw); background: var(--bg-card) !important; border: 1px solid var(--border); box-shadow: var(--shadow-soft); }
+    .loader-title { font-weight: 700; color: var(--text); font-size: 14px; }
+    .loader-steps { margin-top: 12px; display: flex; flex-direction: column; gap: 9px; }
+    .lstep { display: flex; gap: 10px; align-items: center; font-size: 13.5px; color: var(--text-muted); transition: color .3s; }
+    .lstep .ic {
+      width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800;
+    }
+    .lstep.doing { color: var(--text); font-weight: 600; }
+    .lstep.doing .ic::after {
+      content: ''; width: 11px; height: 11px; border-radius: 50%;
+      border: 2px solid var(--accent-soft); border-top-color: var(--accent);
+      animation: spin .7s linear infinite;
+    }
+    .lstep.ok { color: var(--text-dim); }
+    .lstep.ok .ic { background: #e7f8ee; color: var(--green-dark); animation: popIn .3s ease; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes popIn { from { transform: scale(.4); } 70% { transform: scale(1.2); } to { transform: scale(1); } }
+    .loader-bar { margin-top: 14px; height: 5px; border-radius: 3px; background: var(--accent-soft); overflow: hidden; }
+    .loader-bar i {
+      display: block; height: 100%; width: 5%;
+      background: var(--gradient); border-radius: 3px;
+      transition: width .9s cubic-bezier(.22,1,.36,1);
+      position: relative;
+    }
+    .loader-bar i::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+    /* ===== CARD DE PERFIL (Apify) ===== */
+    .pcard-bubble { max-width: 88% !important; background: var(--bg-card) !important; border: 1px solid var(--border); box-shadow: var(--shadow-soft); }
+    .pcard { display: flex; gap: 14px; align-items: center; }
+    .ppic {
+      width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+      background: var(--bg-soft) center/cover no-repeat;
+      border: 2.5px solid transparent;
+      background-clip: padding-box;
+      box-shadow: 0 0 0 2.5px var(--accent);
+    }
+    .pname { font-weight: 700; color: var(--text); font-size: 15px; display: flex; align-items: center; gap: 6px; }
+    .pverif {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 15px; height: 15px; border-radius: 50%;
+      background: #4da6ff; color: #fff; font-size: 9px; font-weight: 800;
+    }
+    .puser { color: var(--accent-dark); font-size: 13px; font-weight: 600; margin-top: 1px; }
+    .pstats { display: flex; gap: 14px; margin-top: 7px; font-size: 12.5px; color: var(--text-muted); }
+    .pstats b { color: var(--text); font-size: 14px; }
+    .pcat {
+      display: inline-block; margin-top: 7px; padding: 3px 10px; border-radius: 99px;
+      background: var(--accent-soft);
+      font-size: 11px; color: var(--accent-dark); font-weight: 700;
+    }
+
+    /* ===== RESULT CARD + CTA ===== */
+    .result-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      border-radius: var(--radius);
+      padding: 20px;
+      max-width: 88%;
+    }
+    .result-card h3 { font-size: 16px; margin-bottom: 8px; color: var(--text); }
+    .result-card p { font-size: 14.5px; line-height: 1.6; color: var(--text-dim); }
+    .score-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--accent-soft);
+      padding: 5px 13px; border-radius: 99px; font-size: 12.5px; font-weight: 700;
+      color: var(--accent-dark); margin-bottom: 12px; letter-spacing: .04em;
+    }
+    .cta-btn {
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      width: 100%; padding: 15px; margin-top: 12px;
+      border: none; border-radius: 13px; cursor: pointer;
+      font-family: inherit; font-size: 15px; font-weight: 700; color: #fff;
+      text-decoration: none; transition: transform .15s, box-shadow .15s;
+    }
+    .cta-btn:active { transform: scale(.97); }
+    .cta-btn.whats { background: linear-gradient(135deg, #25d366, #1faa52); box-shadow: 0 6px 20px rgba(37,211,102,.3); }
+    .cta-btn.gift { background: var(--gradient-gold); color: #3c2503; box-shadow: 0 6px 22px rgba(245,166,35,.35); animation: giftPulse 2s ease-in-out infinite; }
+    @keyframes giftPulse { 50% { box-shadow: 0 6px 32px rgba(245,166,35,.55); transform: translateY(-1px); } }
+    .cta-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+    /* ===== INPUT DOCK (inline: aparece logo abaixo da pergunta) ===== */
+    .dock { width: 100%; padding: 2px 0 6px; }
+    .dock-inner { max-width: 100%; }
+    .field-label {
+      font-size: 10.5px; letter-spacing: .22em; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase;
+      margin: 0 0 8px 6px; display: none;
+    }
+    .input-wrap {
+      display: none;
+      align-items: center; gap: 8px;
+      background: var(--bg-input);
+      border: 1.5px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      border-radius: 99px;
+      padding: 7px 7px 7px 20px;
+      transition: border-color .25s, box-shadow .25s;
+      animation: msgIn .4s both;
+    }
+    .input-wrap.show { display: flex; }
+    .field-label.show { display: block; }
+    .input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+    .input-wrap .prefix { color: var(--text-muted); font-weight: 600; font-size: 15px; display: none; }
+    .input-wrap .prefix.show { display: block; }
+    .input-wrap .prefix .ddi-sel { border: none; background: transparent; font: inherit; font-weight: 600; color: var(--text); cursor: pointer; outline: none; padding: 0 2px 0 0; max-width: 96px; }
+    .input-wrap input {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-family: inherit; font-size: 16px; min-width: 0;
+    }
+    .input-wrap input::placeholder { color: var(--text-muted); }
+    .send-btn {
+      width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
+      background: var(--gradient); color: #fff; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      opacity: .3; pointer-events: none; transition: opacity .25s, transform .15s;
+    }
+    .send-btn.ready { opacity: 1; pointer-events: auto; box-shadow: 0 4px 14px var(--accent-glow); }
+    .send-btn:active { transform: scale(.92); }
+    .input-hint { font-size: 12px; color: var(--red); margin: 7px 6px 0; min-height: 15px; }
+    .lgpd { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 10px; line-height: 1.5; }
+
+    /* select (perguntas com muitas opções) */
+    .select-wrap { display: none; align-items: center; gap: 8px; animation: msgIn .4s both; }
+    .select-wrap.show { display: flex; }
+    .select-shell { position: relative; flex: 1; min-width: 0; }
+    .select-shell select {
+      width: 100%; appearance: none; -webkit-appearance: none;
+      background: var(--bg-card); border: 1.5px solid var(--border);
+      box-shadow: var(--shadow-soft); border-radius: 99px;
+      padding: 14px 44px 14px 20px; font-family: inherit; font-size: 15px;
+      color: var(--text); outline: none; cursor: pointer; transition: border-color .25s, box-shadow .25s;
+    }
+    .select-shell select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+    .select-shell select:invalid { color: var(--text-muted); }
+    .select-shell::after {
+      content: '▾'; position: absolute; right: 19px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); pointer-events: none; font-size: 13px;
+    }
+
+    /* destaque do gatilho principal ausente */
+    .gatilho-falta {
+      margin-top: 12px; display: flex; align-items: center; gap: 10px;
+      background: linear-gradient(135deg, #fff3f0, #ffe8e2);
+      border: 1.5px solid #f3b8a6; border-radius: 12px; padding: 11px 14px;
+      font-size: 13px; color: #7a3522; font-weight: 600;
+    }
+    .gatilho-falta .gf-ic { font-size: 18px; }
+    .gatilho-falta b { color: #5c2412; }
+
+    /* pilares trancados do diagnóstico (curiosidade → sessão) */
+    .locked {
+      margin-top: 14px; border: 1.5px dashed rgba(161, 85, 242, .35);
+      border-radius: 13px; padding: 12px 13px; background: rgba(161, 85, 242, .04);
+    }
+    .locked-row {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 13.5px; color: var(--text); padding: 3px 0;
+    }
+    .locked-nota {
+      background: var(--accent-soft); color: var(--accent-dark);
+      font-weight: 800; font-size: 12px; padding: 3px 10px; border-radius: 99px;
+    }
+    .locked-fake {
+      filter: blur(4px); user-select: none; pointer-events: none;
+      font-size: 12px; color: var(--text-muted); line-height: 1.5;
+      margin: 4px 0 9px;
+    }
+    .locked-cta {
+      margin-top: 8px; padding-top: 10px; border-top: 1px dashed rgba(161, 85, 242, .25);
+      font-size: 12.5px; color: var(--text-dim); text-align: center;
+    }
+
+    /* introdução do Método CORE — contexto dos 3 pilares antes do diagnóstico */
+    .metodo-intro {
+      border: 1.5px solid rgba(161, 85, 242, .22); border-radius: 14px;
+      padding: 13px 14px; background: linear-gradient(180deg, rgba(161, 85, 242, .06), rgba(161, 85, 242, .015));
+    }
+    .metodo-intro .mi-head { font-size: 13.5px; color: var(--text); line-height: 1.5; margin-bottom: 10px; }
+    .mi-pilar { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; }
+    .mi-pilar .mi-ic { font-size: 17px; line-height: 1.45; flex: 0 0 auto; }
+    .mi-pilar b { display: block; font-size: 13.5px; color: var(--text); }
+    .mi-pilar i { font-style: normal; font-size: 12.5px; color: var(--text-muted); line-height: 1.4; }
+    .mi-foot {
+      margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(161, 85, 242, .22);
+      font-size: 12.5px; color: var(--text-dim); line-height: 1.5;
+    }
+    .mi-foot b { color: var(--accent-dark); }
+
+    /* anúncio do presente (ênfase) */
+    .bubble.gift-announce {
+      background: linear-gradient(135deg, #fff7e4, #ffedc4);
+      border: 1.5px solid #f0cd86;
+      color: #6b4a0c; font-weight: 600;
+      box-shadow: 0 6px 22px rgba(240, 180, 60, .22);
+      animation: giftAnnounce .6s cubic-bezier(.22,1,.36,1) both;
+    }
+    .bubble.gift-announce b { color: #4a3105; }
+    .bubble.gift-announce .gift-prod { font-size: 17.5px; letter-spacing: .01em; }
+    @keyframes giftAnnounce { from { opacity: 0; transform: translateY(18px) scale(.94); } 70% { transform: scale(1.02); } to { opacity: 1; transform: none; } }
+
+    /* chips */
+    .chips { display: none; flex-wrap: wrap; gap: 9px; justify-content: center; animation: msgIn .4s both; }
+    .chips.show { display: flex; }
+    .chip {
+      background: var(--bg-card); border: 1.5px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      color: var(--text-dim); border-radius: 99px;
+      padding: 11px 18px; font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all .18s;
+    }
+    .chip:hover, .chip:focus-visible { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-soft); }
+    .chip:active { transform: scale(.95); }
+
+    /* seletor de reels */
+    .reels {
+      display: none; gap: 10px; overflow-x: auto; padding: 4px 2px 10px;
+      animation: msgIn .4s both; scrollbar-width: thin; scrollbar-color: var(--accent) transparent;
+    }
+    .reels.show { display: flex; }
+    .reel-card {
+      flex: 0 0 118px; height: 180px; border-radius: 14px; border: 2px solid var(--border);
+      background: #e9e7f1 center/cover no-repeat; cursor: pointer; position: relative;
+      transition: transform .18s, border-color .18s, box-shadow .18s; overflow: hidden; padding: 0;
+      box-shadow: var(--shadow-soft);
+    }
+    .reel-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,.7)); }
+    .reel-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 10px 26px var(--accent-glow); }
+    .reel-views {
+      position: absolute; bottom: 8px; left: 8px; z-index: 1;
+      background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+      color: #fff; font-size: 11.5px; font-weight: 700; font-family: inherit;
+      padding: 4px 9px; border-radius: 99px;
+    }
+
+    /* ===== AGENDA INLINE (no chat, estilo Viver de IA) ===== */
+    .agenda-card {
+      padding: 0 !important; overflow: hidden; width: min(380px, 88vw);
+      background: var(--bg-card) !important; border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft); border-radius: var(--radius);
+    }
+    .ag-head {
+      background: var(--bg-header); color: #fff;
+      padding: 15px 18px; display: flex; gap: 12px; align-items: center;
+    }
+    .ag-head .ag-ic { font-size: 20px; }
+    .ag-head h4 { font-size: 15.5px; font-weight: 700; }
+    .ag-head p { font-size: 12px; color: rgba(255,255,255,.65); margin-top: 1px; }
+    .ag-body { padding: 14px 14px 16px; }
+    .ag-today {
+      display: flex; justify-content: center; margin-bottom: 12px;
+    }
+    .ag-today span {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid var(--border); border-radius: 99px;
+      padding: 7px 14px; font-size: 12.5px; color: var(--text-dim); font-weight: 500;
+      box-shadow: var(--shadow-soft);
+    }
+    .ag-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .ag-nav b { font-size: 15px; color: var(--text); }
+    .ag-nav button {
+      width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
+      background: var(--bg-soft); color: var(--text); font-size: 15px;
+      display: flex; align-items: center; justify-content: center; transition: all .15s;
+    }
+    .ag-nav button:disabled { opacity: .3; cursor: default; }
+    .ag-nav button:not(:disabled):hover { background: var(--accent-soft); color: var(--accent-dark); }
+    .ag-grid {
+      border: 1px solid var(--border); border-radius: 14px; padding: 10px 8px;
+      box-shadow: var(--shadow-soft);
+    }
+    .ag-week, .ag-days { display: grid; grid-template-columns: repeat(7, 1fr); }
+    .ag-week span {
+      text-align: center; font-size: 11px; font-weight: 700;
+      color: var(--text-muted); padding: 4px 0 8px;
+    }
+    .ag-d {
+      aspect-ratio: 1; border: none; background: none; border-radius: 50%;
+      font-family: inherit; font-size: 13.5px; display: flex; align-items: center;
+      justify-content: center; color: #c9c5d4; cursor: default; margin: 1px auto;
+      width: 36px; max-width: 100%;
+    }
+    .ag-d.on { color: var(--text); font-weight: 700; cursor: pointer; transition: all .15s; }
+    .ag-d.on:hover { background: var(--accent-soft); }
+    .ag-d.sel { background: var(--bg-header); color: #fff; font-weight: 700; }
+    .ag-slots-title { font-size: 13px; font-weight: 600; color: var(--text); margin: 14px 2px 9px; }
+    .ag-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .ag-slot {
+      border: 1.5px solid var(--border); border-radius: 11px; background: var(--bg-card);
+      padding: 11px 4px; font-family: inherit; font-size: 14px; font-weight: 600;
+      color: var(--text); cursor: pointer; transition: all .15s; box-shadow: var(--shadow-soft);
+    }
+    .ag-slot:hover { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-soft); }
+    .ag-foot { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 13px; }
+    .ag-wa { display: block; text-align: center; font-size: 12.5px; color: var(--accent-dark); font-weight: 600; margin-top: 9px; text-decoration: none; }
+    .ag-done { padding: 26px 18px; text-align: center; }
+    .ag-done .ag-check {
+      width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 12px;
+      background: #e7f8ee; color: var(--green-dark); font-size: 24px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      animation: popIn .4s ease;
+    }
+    .ag-done h4 { font-size: 16px; color: var(--text); margin-bottom: 5px; }
+    .ag-done p { font-size: 13.5px; color: var(--text-dim); }
+    .ag-link {
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-top: 14px; padding: 12px 18px; border-radius: 11px;
+      background: var(--gradient); color: #fff; font-weight: 700; font-size: 13.5px;
+      text-decoration: none; box-shadow: 0 5px 18px rgba(161,85,242,.3);
+    }
+    /* card com o booker embutido (agendamento real via instância) */
+    .cal-embed-card { width: 100%; max-width: 96% !important; }
+    .cal-embed-body { background: #fff; }
+    .cal-embed-slot { min-height: 560px; max-height: 660px; overflow-y: auto; }
+    .cal-embed-slot iframe { border: 0; display: block; }
+
+    /* ===== PREVIEW DO PRODUTO (Template 30 Reels) ===== */
+    .produto-bubble {
+      padding: 0 !important; overflow: hidden; width: min(340px, 85vw);
+      background: linear-gradient(165deg, #1b1130 0%, #2c1652 55%, #190e30 100%) !important;
+      border: 1px solid rgba(161, 85, 242, .35);
+      box-shadow: 0 16px 44px rgba(124, 58, 237, .28);
+      border-radius: var(--radius);
+      animation: produtoIn .6s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes produtoIn { from { opacity: 0; transform: translateY(20px) scale(.95); } to { opacity: 1; transform: none; } }
+    .pr-body { padding: 18px 18px 17px; position: relative; }
+    .pr-glow {
+      position: absolute; top: -50px; right: -50px; width: 180px; height: 180px;
+      border-radius: 50%; background: radial-gradient(circle, rgba(184,118,255,.38), transparent 68%);
+      pointer-events: none;
+    }
+    .pr-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--gradient-gold); color: #3c2503;
+      font-size: 10.5px; font-weight: 800; letter-spacing: .08em;
+      padding: 5px 11px; border-radius: 99px;
+    }
+    .pr-kicker { margin-top: 14px; font-size: 11px; letter-spacing: .3em; color: #e3c06b; font-weight: 700; }
+    .pr-title { font-size: 27px; line-height: 1.08; font-weight: 800; color: #fff; margin-top: 4px; }
+    .pr-sub { font-size: 12.5px; color: rgba(255,255,255,.78); margin-top: 8px; line-height: 1.5; }
+    .pr-sub b { color: #fff; }
+    .pr-stack { margin-top: 15px; display: flex; flex-direction: column; gap: 7px; position: relative; }
+    .pr-item {
+      background: rgba(255,255,255,.97); border-radius: 10px; padding: 9px 12px;
+      display: flex; align-items: center; gap: 9px;
+      font-size: 12px; font-weight: 600; color: #241a38;
+      box-shadow: 0 4px 14px rgba(0,0,0,.28); text-align: left;
+    }
+    .pr-item .n { background: var(--gradient); color: #fff; font-size: 10px; font-weight: 800; border-radius: 6px; padding: 3px 6px; flex-shrink: 0; }
+    .pr-item.blur { filter: blur(3px); opacity: .8; }
+    .pr-mais { position: absolute; bottom: -5px; left: 0; right: 0; display: flex; justify-content: center; }
+    .pr-mais span {
+      background: rgba(15,10,28,.88); border: 1px solid rgba(184,118,255,.45);
+      color: #ecdfff; backdrop-filter: blur(4px);
+      font-size: 11.5px; font-weight: 700; padding: 6px 15px; border-radius: 99px;
+    }
+    .pr-foot {
+      margin-top: 18px; display: flex; align-items: baseline; justify-content: center; gap: 8px;
+      font-size: 13px; color: rgba(255,255,255,.82);
+    }
+    .pr-foot s { color: rgba(255,255,255,.42); }
+    .pr-foot b { color: #7ef0a5; font-size: 16px; letter-spacing: .03em; }
+    .produto-img { width: 100%; display: block; }
+
+    /* chips de múltipla escolha (quiz SUAVIS) */
+    .chip.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .chip-ok { background: var(--gradient); color: #fff; font-weight: 700; }
+
+    @media (max-width: 560px) {
+      .bubble { max-width: 88%; font-size: 14.5px; }
+      .progress-track { max-width: none; }
+      .chip { padding: 10px 15px; font-size: 13.5px; }
+      .reel-card { flex-basis: 104px; height: 162px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="topbar">
+      <div class="brand">
+        <span class="brand-badge"><img src="logo.png" alt="Suavitatis Terapias Integrativas"></span>
+        <span class="brand-sub">Reconstrua Suas Emoções</span>
+      </div>
+      <div class="step-pill" id="stepPill">0 de 11</div>
+    </div>
+    <div class="progress-line"><i id="progressFill"></i></div>
+  </header>
+
+  <main id="main"><div class="chat" id="chat">
+
+  <div class="dock" id="dock">
+    <div class="dock-inner">
+      <p class="field-label" id="fieldLabel"></p>
+      <div class="input-wrap" id="inputWrap">
+        <span class="prefix" id="prefix"></span>
+        <input type="text" id="input" autocomplete="off">
+        <button class="send-btn" id="sendBtn" aria-label="Enviar">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+      </div>
+      <div class="select-wrap" id="selectWrap">
+        <div class="select-shell">
+          <select id="selectEl" required></select>
+        </div>
+        <button class="send-btn" id="selectBtn" aria-label="Confirmar">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+      </div>
+      <div class="reels" id="reels"></div>
+      <div class="chips" id="chips"></div>
+      <p class="input-hint" id="hint"></p>
+      <p class="lgpd" id="lgpd">Ao continuar, você concorda que seus dados sejam usados para entrarmos em contato sobre o seu diagnóstico. Seus dados estão protegidos (LGPD).</p>
+    </div>
+  </div>
+
+  </div></main>
+
+<script>
+/* ================================================================
+   SEGURANÇA: todo dado vindo do usuário OU de APIs externas
+   (Apify/Claude) passa por esc() antes de entrar em qualquer
+   template HTML. Os templates em si são estáticos deste arquivo.
+   ================================================================ */
+const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* ================================================================
+   CONFIG — ajuste aqui antes de publicar
+   ================================================================ */
+const CONFIG = {
+  WHATSAPP_NUMERO: '5511993746788',       // WhatsApp da Suely (leads acima de R$20 mil)
+  AVATAR_URL: 'suely.png',                // foto da Suely (cai no logo.png se o arquivo não existir)
+  AVATAR_FALLBACK: 'logo.png',
+  PRODUTO_IMG: 'ebook.png',               // capa real do ebook "7 Dicas"
+  SITE_URL: 'https://www.suavitatisterapias.com.br',
+  CAL_COMUNIDADE: 'https://cal.com/suavitatisterapias/comunidade',  // agenda COMUNIDADE (R$1.500–5.000)
+  CAL_IMERSAO: 'https://cal.com/suavitatisterapias/comunidade',     // agenda IMERSÃO foi UNIFICADA na Comunidade (29/07/2026) — a trilha do lead continua 'imersao'
+  IMERSAO_ATE: '2026-08-13',  // última data da turma da Imersão — depois disso, leads dessa faixa vão pra COMUNIDADE
+  API_SAVE: '/api/save-lead',
+  API_AGENDA: '/api/agenda',              // usado só pela agenda local de emergência
+  API_FB_EVENT: '/api/fb-event',          // desativado (sem Pixel próprio por enquanto)
+  /* Agenda local de emergência — só aparece se o embed do cal.com falhar */
+  AGENDA: {
+    diasSemana: [1, 2, 3, 4, 5],          // 0=dom ... 6=sáb
+    horarios: ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'],
+    diasAdiante: 14,
+    minHorasAntecedencia: 3,
+  },
+};
+
+/* ================================================================
+   QUIZ SUAVIS — 8 perguntas com pontuação em 3 perfis (low/mid/high).
+   Resultado = perfil com mais pontos. Qualificada = perfil 'high'
+   (e a resposta "sem orçamento" corta a qualificação — `corta`).
+   ================================================================ */
+const QUIZ_PADRAO = [
+  { id: 'q1', q: 'Pra começar: qual a sua idade?', multi: false, opts: [
+    { t: '🌻 30-45', s: { low: 1, mid: 2, high: 2 } },
+    { t: '🌳 46-60', s: { low: 1, mid: 2, high: 2 } },
+    { t: '🕊️ 61+', s: { low: 2, mid: 1, high: 2 } },
+  ]},
+  { id: 'q2', q: 'Como você se sente cuidando de seus pais?', multi: false, opts: [
+    { t: '😩 Exausta', s: { low: 4, mid: 1, high: 0 } },
+    { t: '🤯 Sobrecarregada', s: { low: 2, mid: 3, high: 0 } },
+    { t: '🧘‍♀️ Em Paz', s: { low: 0, mid: 1, high: 4 } },
+  ]},
+  { id: 'q3', q: 'Quais áreas da sua vida você sente que estão sendo <b>mais afetadas</b>? Pode marcar mais de uma 🙂', multi: true, opts: [
+    { t: '💪 Saúde física', s: { low: 1, mid: 2, high: 2 } },
+    { t: '🧠 Saúde mental', s: { low: 1, mid: 2, high: 2 } },
+    { t: '❤️ Relacionamentos', s: { low: 1, mid: 2, high: 2 } },
+    { t: '💼 Carreira/Trabalho', s: { low: 1, mid: 2, high: 2 } },
+    { t: '🎨 Tempo livre/Hobbies', s: { low: 1, mid: 2, high: 2 } },
+  ]},
+  { id: 'q4', q: 'Em uma escala de 1 a 5, o quanto você se sente <b>culpada</b> por não conseguir "dar conta de tudo"?', multi: false, opts: [
+    { t: '😊 1 - Nada culpada', s: { low: 0, mid: 1, high: 4 } },
+    { t: '🙂 2', s: { low: 1, mid: 2, high: 2 } },
+    { t: '😐 3', s: { low: 2, mid: 2, high: 1 } },
+    { t: '🙁 4', s: { low: 3, mid: 1, high: 1 } },
+    { t: '😔 5 - Extremamente culpada', s: { low: 4, mid: 0, high: 1 } },
+  ]},
+  { id: 'q5', q: 'Você já buscou ajuda profissional (terapia, grupos de apoio...) pra lidar com o estresse do cuidado?', multi: false, opts: [
+    { t: '🌱 Sim, e estou em acompanhamento', s: { low: 1, mid: 2, high: 2 } },
+    { t: '💔 Sim, mas não funcionou', s: { low: 2, mid: 3, high: 0 } },
+    { t: '🤔 Não, nunca busquei', s: { low: 3, mid: 1, high: 1 } },
+  ]},
+  { id: 'q6', q: '🌻 Qual é a renda média <b>mensal</b> da sua família?', multi: false, opts: [
+    { t: 'Entre R$ 1.500,00 e R$ 2.500,00', s: { low: 2, mid: 2, high: 1 }, destino: 'comunidade' },
+    { t: 'Entre R$ 2.500,00 e R$ 5.000,00', s: { low: 1, mid: 2, high: 2 }, destino: 'comunidade' },
+    { t: 'Entre R$ 5.000,00 e R$ 10.000,00', s: { low: 1, mid: 2, high: 3 }, destino: 'comunidade' },
+    { t: 'Entre R$ 10.000,00 e R$ 20.000,00', s: { low: 0, mid: 1, high: 4 }, destino: 'comunidade' },
+    { t: 'Acima de R$ 20.000,00', s: { low: 0, mid: 1, high: 4 }, destino: 'premium' },
+  ]},
+  { id: 'q7', q: 'Em qual <b>prazo</b> você gostaria de começar a sentir uma melhora significativa na sua vida?', multi: false, opts: [
+    { t: '🚨 O mais rápido possível, preciso de uma mudança urgente!', s: { low: 0, mid: 1, high: 4 } },
+    { t: '⏳ Em até 3 meses', s: { low: 1, mid: 3, high: 1 } },
+    { t: '🕰️ Não tenho pressa', s: { low: 4, mid: 1, high: 0 } },
+  ]},
+  { id: 'q8', q: 'Última: qual o <b>orçamento disponível</b> pra investir em um programa de desenvolvimento pessoal?', multi: false, opts: [
+    { t: '💰 Já tenho um orçamento definido e estou pronta para investir.', s: { low: 0, mid: 1, high: 4 } },
+    { t: '🤔 Preciso entender melhor o programa para avaliar o investimento.', s: { low: 1, mid: 3, high: 1 } },
+    { t: '💸 Não tenho orçamento disponível no momento.', s: { low: 4, mid: 1, high: 0 } },
+  ]},
+];
+let QUIZ = QUIZ_PADRAO;                                // perguntas em uso (podem vir do painel)
+const PASSOS_CONTATO = 3;                              // nome, whatsapp, e-mail
+let TOTAL_PASSOS = PASSOS_CONTATO + QUIZ.length;
+
+/* Perguntas editadas no painel (Configurações → Quiz). Qualquer problema na
+   carga (rede, config inválida, sem pergunta-chave) → usa o PADRÃO embutido
+   acima e o quiz NUNCA trava. */
+async function carregarQuizConfig() {
+  try {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 3500);
+    const r = await fetch('/api/quiz-config', { signal: ctl.signal });
+    clearTimeout(t);
+    if (!r.ok) return;
+    const j = await r.json();
+    const ps = j && j.ok && Array.isArray(j.perguntas) ? j.perguntas : null;
+    if (!ps) return;
+    const ativas = ps.filter((p) => p && p.ativo !== false && p.q && Array.isArray(p.opts) && p.opts.length >= 2);
+    if (!ativas.length) return;
+    if (!ativas.some((p) => p.opts.some((o) => o && o.destino))) return;  // sem pergunta-chave, não troca
+    QUIZ = ativas;
+    TOTAL_PASSOS = PASSOS_CONTATO + QUIZ.length;
+  } catch (e) { /* mantém o padrão embutido */ }
+}
+
+/* o destino do agendamento (comunidade/imersão/premium) vem da resposta
+   de renda familiar — campo `destino` nas opções da pergunta q6 */
+
+/* O placar low/mid/high serve SÓ pra escolher qual texto de resultado a
+   pessoa lê (personalização). A qualificação/destino vem APENAS da renda
+   familiar (q6): comunidade, imersão ou WhatsApp — todo mundo segue. */
+function calcularResultado() {
+  const r = state.data.respostas || {};
+  const tot = { low: 0, mid: 0, high: 0 };
+  QUIZ.forEach((p) => {
+    const sel = r[p.id];
+    const escolhidas = p.multi ? (Array.isArray(sel) ? sel : []) : (sel != null ? [sel] : []);
+    escolhidas.forEach((idx) => {
+      const o = p.opts[idx];
+      if (!o) return;
+      tot.low += o.s.low; tot.mid += o.s.mid; tot.high += o.s.high;
+    });
+  });
+  const soma = tot.low + tot.mid + tot.high || 1;
+  let perfil = 'low';
+  if (tot.mid >= tot.low) perfil = 'mid';
+  if (tot.high >= tot.mid && tot.high >= tot.low) perfil = 'high';
+  return { perfil, score: Math.round((tot.high / soma) * 100) };
+}
+
+/* ================================================================
+   DDD → ESTADO + mensagem regional
+   ================================================================ */
+const DDD_UF = {
+  11:'SP',12:'SP',13:'SP',14:'SP',15:'SP',16:'SP',17:'SP',18:'SP',19:'SP',
+  21:'RJ',22:'RJ',24:'RJ',27:'ES',28:'ES',
+  31:'MG',32:'MG',33:'MG',34:'MG',35:'MG',37:'MG',38:'MG',
+  41:'PR',42:'PR',43:'PR',44:'PR',45:'PR',46:'PR',
+  47:'SC',48:'SC',49:'SC',
+  51:'RS',53:'RS',54:'RS',55:'RS',
+  61:'DF',62:'GO',64:'GO',63:'TO',65:'MT',66:'MT',67:'MS',68:'AC',69:'RO',
+  71:'BA',73:'BA',74:'BA',75:'BA',77:'BA',79:'SE',
+  81:'PE',87:'PE',82:'AL',83:'PB',84:'RN',85:'CE',88:'CE',86:'PI',89:'PI',
+  91:'PA',93:'PA',94:'PA',92:'AM',97:'AM',95:'RR',96:'AP',98:'MA',99:'MA',
+};
+/* (as mensagens regionais do quiz de Instagram foram removidas — o DDD
+   continua sendo usado só pra validar o telefone e salvar a UF do lead) */
+
+/* ================================================================
+   CORREÇÃO DE TYPO DE E-MAIL
+   ================================================================ */
+const DOMAIN_FIXES = {
+  'gmail.con':'gmail.com','gmail.co':'gmail.com','gmal.com':'gmail.com','gamil.com':'gmail.com',
+  'gmai.com':'gmail.com','gmail.cm':'gmail.com','hotmal.com':'hotmail.com','hotmai.com':'hotmail.com',
+  'hotmail.con':'hotmail.com','hotmial.com':'hotmail.com','outlok.com':'outlook.com',
+  'outlook.con':'outlook.com','yaho.com':'yahoo.com','yahoo.con':'yahoo.com','icloud.con':'icloud.com',
+  'iclod.com':'icloud.com',
+};
+function sugerirEmail(email) {
+  const [u, domain] = email.toLowerCase().split('@');
+  if (!domain) return null;
+  if (DOMAIN_FIXES[domain]) return u + '@' + DOMAIN_FIXES[domain];
+  return null;
+}
+
+/* ================================================================
+   RESULTADOS SUAVIS — copy dos 3 perfis (extraída do quiz original)
+   ================================================================ */
+const OUTCOMES = {
+  low: {
+    titulo: 'Baixa Consciência',
+    resumo: 'Você ainda não entendeu que precisa mergulhar fundo na transformação. Talvez ainda esteja resistindo à ideia de priorizar a si mesma.',
+    situacaoH: "Você está no modo 'piloto automático' do cuidado.",
+    situacaoB: 'A rotina te engoliu, e você se sente presa a um ciclo de obrigações. A ideia de mudar parece distante e até um pouco assustadora.',
+    problemaH: 'A raiz do problema: a dificuldade em se priorizar.',
+    problemaB: 'Você se sente culpada ao pensar em si mesma, como se estivesse negligenciando seus pais. Essa culpa te impede de buscar soluções e perpetua o ciclo de exaustão.',
+    implicacaoH: 'Se você continuar nesse caminho, 3 coisas podem acontecer:',
+    implicacaoItens: [
+      'Sua saúde física e mental se deteriorarão cada vez mais.',
+      'Seus relacionamentos se desgastarão, gerando isolamento e ressentimento.',
+      'Você perderá sua identidade e seus sonhos, vivendo apenas em função do cuidado.',
+    ],
+    perspectivaH: 'É possível cuidar sem se perder de si mesma.',
+    perspectivaB: 'Priorizar seu bem-estar não é egoísmo, mas sim uma necessidade para que você possa oferecer o melhor cuidado aos seus pais. Ao se fortalecer emocionalmente, você se torna uma cuidadora mais presente, equilibrada e feliz.',
+    quote: 'Cuidar de si não é egoísmo, é autopreservação, e autopreservação é um ato de guerra.',
+  },
+  mid: {
+    titulo: 'Média Consciência',
+    resumo: 'Você já reconhece que precisa de ajuda, mas ainda está hesitante em investir tempo e recursos em si mesma. Você está no caminho certo, mas precisa de um empurrãozinho.',
+    situacaoH: "Você está no 'meio do caminho' da transformação.",
+    situacaoB: 'Você sente o peso do cuidado, mas também vislumbra a possibilidade de uma vida mais equilibrada. A dúvida é: como chegar lá?',
+    problemaH: 'A hesitação em investir em si mesma te impede de avançar.',
+    problemaB: 'Você sabe que precisa de ajuda, mas se sente insegura em gastar tempo e dinheiro em um programa. O medo de não funcionar te paralisa e te mantém presa à rotina.',
+    implicacaoH: 'Se você não tomar uma atitude agora, 3 coisas podem acontecer:',
+    implicacaoItens: [
+      'O estresse crônico se intensificará, afetando sua saúde e bem-estar.',
+      'A sobrecarga emocional te deixará mais irritada e impaciente com seus pais.',
+      'Você perderá oportunidades de se reconectar com seus hobbies e paixões.',
+    ],
+    perspectivaH: 'Investir em você é investir no melhor cuidado para seus pais.',
+    perspectivaB: 'Ao se fortalecer emocionalmente, você se torna uma cuidadora mais eficiente, presente e amorosa. Um programa de desenvolvimento pessoal não é um luxo, mas sim um investimento estratégico no seu bem-estar e no bem-estar de seus pais.',
+    quote: 'Seja a mudança que você quer ver no mundo.',
+  },
+  high: {
+    titulo: 'Alta Consciência',
+    resumo: 'Você está decidida a transformar sua vida e reconquistar sua felicidade. Você sabe que precisa de um suporte especializado e está pronta para investir em si mesma. Parabéns!',
+    situacaoH: 'Você está no ponto ideal para a transformação!',
+    situacaoB: 'Você já reconhece a importância de priorizar seu bem-estar e está disposta a investir tempo e recursos em um programa que te ajude a reconquistar sua vida. Você está no caminho certo!',
+    problemaH: 'Ainda existe uma lacuna entre o desejo e a ação.',
+    problemaB: 'Você já sabe o que precisa fazer, mas sente que precisa de um suporte especializado para te guiar e te manter motivada ao longo do processo. Sozinha, pode ser difícil superar os obstáculos e manter o foco nos seus objetivos.',
+    implicacaoH: 'Se você não agir agora, o custo da espera pode ser alto:',
+    implicacaoItens: [
+      'Perder a oportunidade de viver uma vida plena e realizada.',
+      'Ver seus sonhos e projetos pessoais se distanciarem cada vez mais.',
+      'Arrepender-se de não ter tomado uma atitude antes que a situação se tornasse insustentável.',
+    ],
+    perspectivaH: 'A hora de agir é agora! Não espere mais para reconquistar sua vida.',
+    perspectivaB: '',
+    quote: 'O melhor momento para plantar uma árvore foi há 20 anos. O segundo melhor momento é agora.',
+  },
+};
+
+/* pergunta-chave = a da renda (opções com `destino`) — pode ter qualquer id */
+function perguntaChave() {
+  return QUIZ.find((p) => (p.opts || []).some((o) => o && o.destino)) || null;
+}
+/* destino da lead pela renda familiar: comunidade | imersao | premium.
+   A Imersão tem data-limite (CONFIG.IMERSAO_ATE): passou, a lead vai pra
+   Comunidade — o convite e a agenda seguem juntos, sem tela vazia. */
+function destinoQ6() {
+  const p = perguntaChave();
+  const o = (p && p.opts[(state.data.respostas || {})[p.id]]) || {};
+  let d = o.destino || 'comunidade';
+  if (d === 'imersao' && CONFIG.IMERSAO_ATE &&
+      new Date() > new Date(CONFIG.IMERSAO_ATE + 'T23:59:59-03:00')) d = 'comunidade';
+  return d;
+}
+
+/* convite final: o nome do produto acompanha o destino da lead */
+const NOME_DESTINO = {
+  comunidade: 'A <b>Comunidade SUAVIS</b> é o espaço',
+  imersao: 'A <b>Imersão Terapêutica</b> é o espaço',
+  premium: 'O <b>Programa de Desenvolvimento SUAVIS</b> é o espaço',
+};
+function conviteSuavis() {
+  return '<b>Você não precisa continuar carregando isso sozinha.</b><br><br>' +
+    NOME_DESTINO[destinoQ6()] + ' para filhos cuidadores que precisam de apoio, direção e força para cuidar sem se perder no processo. ' +
+    'Aqui você vai sair do modo <i>"eu não aguento mais e não sei o que fazer"</i> para o modo <i>"eu tenho direção, apoio e ferramentas para cuidar melhor sem me abandonar pelo caminho."</i>';
+}
+
+function safeData() {
+  const d = state.data;
+  return { primeiro: esc((d.nome || '').split(' ')[0]) };
+}
+
+/* mostra o resultado do perfil (copy do OUTCOMES) como sequência de mensagens */
+async function mostrarResultado(res) {
+  const o = OUTCOMES[res.perfil];
+  const s = safeData();
+  await bot(`<b>${s.primeiro}</b>, li tudo o que você me contou, e li com muito carinho 🌿<br><br>O que eu percebo é que você está num momento de <b>${o.titulo}</b>.<br><br>${o.resumo}`, { delay: 1000 });
+  await bot(`<b>${o.situacaoH}</b><br><br>${o.situacaoB}<br><br><b>${o.problemaH}</b><br><br>${o.problemaB}`, { delay: 1100 });
+  await bot(`<b>${o.implicacaoH}</b><br><br>• ${o.implicacaoItens.join('<br>• ')}<br><br><b>${o.perspectivaH}</b>${o.perspectivaB ? '<br><br>' + o.perspectivaB : ''}<br><br>💬 <i>"${o.quote}"</i>`, { delay: 1200 });
+  await bot(conviteSuavis(), { delay: 1000 });
+}
+
+/* ================================================================
+   ESTADO + PERSISTÊNCIA
+   ================================================================ */
+const SKEY = 'suavis_quiz_v1';
+let state = { step: 0, data: {}, leadRef: null, done: false };
+/* ?demo na URL = MODO DEMONSTRAÇÃO (pra apresentar o sistema a clientes):
+   o quiz roda inteirinho, mas NADA é gravado — sem banco de dados, sem
+   Cal.com (agenda simulada), sem pixel. Cada recarregada começa do zero. */
+const MODO_DEMO = /[?&]demo\b/.test(location.search);
+/* ?reiniciar na URL = apaga o progresso salvo e começa do zero (útil p/ testes) */
+if (MODO_DEMO || /[?&]reiniciar/.test(location.search)) { try { localStorage.removeItem(SKEY); } catch (e) {} }
+if (MODO_DEMO) {
+  const marcarDemo = () => {
+    const b = document.createElement('div');
+    b.textContent = '🧪 Demonstração · nada é gravado';
+    b.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;background:#005355;color:#fff;font-size:12px;font-weight:700;padding:6px 14px;border-radius:99px;opacity:.92;box-shadow:0 2px 10px rgba(0,0,0,.25);pointer-events:none;';
+    document.body.appendChild(b);
+  };
+  if (document.body) marcarDemo();
+  else document.addEventListener('DOMContentLoaded', marcarDemo);
+}
+try {
+  const saved = JSON.parse(localStorage.getItem(SKEY) || 'null');
+  if (saved && saved.leadRef && !saved.done) state = saved;
+} catch (e) {}
+if (!state.leadRef) state.leadRef = 'lr_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+function persist() { if (MODO_DEMO) return; try { localStorage.setItem(SKEY, JSON.stringify(state)); } catch (e) {} }
+
+/* captura UTMs/click-id da URL de entrada — 1x, e persiste no state (sobrevive
+   às etapas/refresh e vai junto em todo salvarLead). Preserva a 1ª atribuição. */
+(function capturarUTMs() {
+  try {
+    const p = new URLSearchParams(location.search);
+    const get = (k) => (p.get(k) || '').slice(0, 200);
+    const u = {
+      source: get('utm_source'), medium: get('utm_medium'), campaign: get('utm_campaign'),
+      content: get('utm_content'), term: get('utm_term'), fbclid: get('fbclid') || get('gclid'),
+    };
+    state.data.utm = state.data.utm || {};
+    let mudou = false;
+    for (const k of Object.keys(u)) if (u[k] && !state.data.utm[k]) { state.data.utm[k] = u[k]; mudou = true; }
+    if (!state.data.referrer && document.referrer) { state.data.referrer = document.referrer.slice(0, 300); mudou = true; }
+    if (mudou) persist();
+  } catch (e) {}
+})();
+
+/* ================================================================
+   HELPERS DE UI
+   ================================================================ */
+const $ = (id) => document.getElementById(id);
+const chat = $('chat'), main = $('main'), input = $('input'), sendBtn = $('sendBtn');
+const chipsEl = $('chips'), reelsEl = $('reels'), wrapEl = $('inputWrap'), labelEl = $('fieldLabel');
+const prefixEl = $('prefix'), hintEl = $('hint'), lgpdEl = $('lgpd');
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const scrollDown = () => { main.scrollTo({ top: main.scrollHeight, behavior: 'smooth' }); };
+const fmtNum = (n) => n == null ? '—' : new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+
+let lastSide = null;
+/* avatar com fallback: foto → logo (classe is-logo ajusta o encaixe) */
+const avatarHtml = () =>
+  `<div class="avatar"><img src="${CONFIG.AVATAR_URL}" alt="" onerror="this.onerror=null;this.src='${CONFIG.AVATAR_FALLBACK}';this.classList.add('is-logo')"></div>`;
+
+/* html aqui é sempre template estático deste arquivo com valores já escapados */
+function addRow(side, html, extraClass = '') {
+  const row = document.createElement('div');
+  row.className = `row ${side}${side === lastSide && side === 'bot' ? ' cont' : ''}`;
+  row.innerHTML = side === 'bot'
+    ? `${avatarHtml()}<div class="bubble ${extraClass}">${html}</div>`
+    : `<div class="bubble">${html}</div>`;
+  chat.appendChild(row);
+  lastSide = side;
+  scrollDown();
+  return row;
+}
+
+function showTyping() {
+  const t = document.createElement('div');
+  t.className = `row bot${lastSide === 'bot' ? ' cont' : ''}`;
+  t.innerHTML = `${avatarHtml()}<div class="bubble typing"><i></i><i></i><i></i></div>`;
+  chat.appendChild(t); scrollDown();
+  return t;
+}
+function hideTyping(t) { if (t) t.remove(); }
+
+async function bot(html, { delay = 900 } = {}) {
+  const t = showTyping();
+  await sleep(delay);
+  hideTyping(t);
+  addRow('bot', html);
+}
+const user = (text) => addRow('user', esc(text));
+
+/* ================================================================
+   LOADER DE RETENÇÃO — card com etapas + barra (cargas longas).
+   Os passos avançam por timer e o último segura até o done().
+   titulo/steps: strings estáticas deste arquivo (handle já escapado).
+   ================================================================ */
+function showLoader(titulo, steps, intervalMs = 5000) {
+  const row = document.createElement('div');
+  row.className = `row bot${lastSide === 'bot' ? ' cont' : ''}`;
+  const stepsHtml = steps.map((t, i) =>
+    `<div class="lstep${i === 0 ? ' doing' : ''}"><span class="ic"></span><span>${t}</span></div>`
+  ).join('');
+  row.innerHTML =
+    avatarHtml() +
+    `<div class="bubble loader-card"><div class="loader-title">${titulo}</div>` +
+    `<div class="loader-steps">${stepsHtml}</div>` +
+    `<div class="loader-bar"><i></i></div></div>`;
+  chat.appendChild(row);
+  lastSide = 'bot';
+  scrollDown();
+
+  const bar = row.querySelector('.loader-bar i');
+  const els = [...row.querySelectorAll('.lstep')];
+  let cur = 0;
+  const setBar = () => { bar.style.width = Math.min(10 + ((cur + 0.5) / steps.length) * 80, 92) + '%'; };
+  requestAnimationFrame(setBar);
+
+  const timer = setInterval(() => {
+    if (cur >= steps.length - 1) return; // segura no último passo até resolver
+    els[cur].classList.remove('doing'); els[cur].classList.add('ok');
+    els[cur].querySelector('.ic').textContent = '✓';
+    cur++;
+    els[cur].classList.add('doing');
+    setBar(); scrollDown();
+  }, intervalMs);
+
+  return {
+    async done() {
+      clearInterval(timer);
+      els.forEach(e => {
+        e.classList.remove('doing'); e.classList.add('ok');
+        e.querySelector('.ic').textContent = '✓';
+      });
+      bar.style.width = '100%';
+      await sleep(550);
+      row.style.transition = 'opacity .35s, transform .35s';
+      row.style.opacity = '0'; row.style.transform = 'translateY(-8px)';
+      await sleep(360);
+      row.remove();
+      lastSide = null;
+    },
+  };
+}
+
+/* progress header */
+function setProgress(n) {
+  const pill = $('stepPill');
+  pill.textContent = `${n} de ${TOTAL_PASSOS}`;
+  pill.classList.remove('bump'); void pill.offsetWidth;
+  pill.classList.add('bump');
+  $('progressFill').style.width = (n / TOTAL_PASSOS * 100) + '%';
+}
+
+/* input dock modes — o dock é inline: sempre vai pro fim do chat,
+   logo abaixo da última pergunta */
+const dockEl = $('dock');
+const selWrap = $('selectWrap'), selEl = $('selectEl'), selBtn = $('selectBtn');
+let onSubmit = null;
+function ensureDockLast() { chat.appendChild(dockEl); }
+function hideDock() {
+  wrapEl.classList.remove('show'); labelEl.classList.remove('show');
+  chipsEl.classList.remove('show'); reelsEl.classList.remove('show');
+  selWrap.classList.remove('show');
+  hintEl.textContent = '';
+}
+function askText({ label, placeholder, prefix = '', type = 'text', mask = null, validate, onOk, ddiSelect = false }) {
+  hideDock(); ensureDockLast();
+  labelEl.textContent = label; labelEl.classList.add('show');
+  wrapEl.classList.add('show');
+  if (ddiSelect) {
+    // seletor de país (DDI) no lugar do prefixo fixo; Brasil é o padrão
+    foneDDI = '55';
+    prefixEl.innerHTML = '<select id="ddiSel" class="ddi-sel" aria-label="País"></select>';
+    const sel = prefixEl.querySelector('#ddiSel');
+    sel.innerHTML = PAISES.map((p) => `<option value="${p.ddi}">${p.f} +${p.ddi}</option>`).join('');
+    sel.value = '55';
+    prefixEl.classList.add('show');
+    sel.onchange = () => {
+      foneDDI = sel.value;
+      input.value = mask ? mask(input.value) : input.value;
+      input.placeholder = foneDDI === '55' ? '(11) 99999-9999' : 'só os números';
+      hintEl.textContent = '';
+      sendBtn.classList.toggle('ready', validate(input.value).ok);
+      input.focus({ preventScroll: true });
+    };
+  } else {
+    prefixEl.textContent = prefix; prefixEl.classList.toggle('show', !!prefix);
+  }
+  input.value = ''; input.placeholder = placeholder;
+  input.type = type; input.inputMode = type === 'tel' ? 'tel' : (type === 'email' ? 'email' : 'text');
+  sendBtn.classList.remove('ready');
+  input.oninput = () => {
+    if (mask) input.value = mask(input.value);
+    hintEl.textContent = '';
+    sendBtn.classList.toggle('ready', validate(input.value).ok);
+  };
+  onSubmit = async () => {
+    const v = validate(input.value);
+    if (!v.ok) { hintEl.textContent = v.erro || ''; return; }
+    hideDock(); onSubmit = null;
+    await onOk(v.valor);
+  };
+  setTimeout(() => input.focus({ preventScroll: true }), 350);
+}
+function askChips(options, onPick) {
+  hideDock(); ensureDockLast();
+  chipsEl.textContent = '';
+  options.forEach(opt => {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = opt;
+    b.onclick = async () => { hideDock(); await onPick(opt); };
+    chipsEl.appendChild(b);
+  });
+  chipsEl.classList.add('show');
+  scrollDown();
+}
+/* chips de MÚLTIPLA escolha — toca pra marcar/desmarcar, confirma no final */
+function askChipsMulti(options, onDone) {
+  hideDock(); ensureDockLast();
+  chipsEl.textContent = '';
+  const sel = new Set();
+  const ok = document.createElement('button');
+  options.forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = opt;
+    b.onclick = () => {
+      if (sel.has(i)) { sel.delete(i); b.classList.remove('sel'); }
+      else { sel.add(i); b.classList.add('sel'); }
+      ok.style.display = sel.size ? '' : 'none';
+    };
+    chipsEl.appendChild(b);
+  });
+  ok.className = 'chip chip-ok'; ok.textContent = 'Continuar ✅'; ok.style.display = 'none';
+  ok.onclick = async () => {
+    if (!sel.size) return;
+    hideDock();
+    await onDone([...sel].sort((a, b) => a - b));
+  };
+  chipsEl.appendChild(ok);
+  chipsEl.classList.add('show');
+  scrollDown();
+}
+function askReels(reels, onPick) {
+  hideDock(); ensureDockLast();
+  reelsEl.textContent = '';
+  reels.forEach((r) => {
+    const c = document.createElement('button');
+    c.className = 'reel-card';
+    if (r.thumb) c.style.backgroundImage = `url("/api/proxy-image?url=${encodeURIComponent(r.thumb)}")`;
+    const v = document.createElement('span');
+    v.className = 'reel-views';
+    v.textContent = r.views != null ? `▶ ${fmtNum(r.views)}` : '🎬 Reel';
+    c.appendChild(v);
+    c.onclick = async () => { hideDock(); await onPick(r); };
+    reelsEl.appendChild(c);
+  });
+  reelsEl.classList.add('show');
+  chipsEl.textContent = '';
+  const skip = document.createElement('button');
+  skip.className = 'chip'; skip.textContent = 'Prefiro pular a análise de reel';
+  skip.onclick = async () => { hideDock(); await onPick(null); };
+  chipsEl.appendChild(skip);
+  chipsEl.classList.add('show');
+  scrollDown();
+}
+/* caixa de seleção p/ perguntas com muitas opções (options são constantes deste arquivo) */
+function askSelect({ label, placeholder, options, onOk }) {
+  hideDock(); ensureDockLast();
+  labelEl.textContent = label; labelEl.classList.add('show');
+  selEl.innerHTML = `<option value="" disabled selected hidden>${placeholder}</option>` +
+    options.map(o => `<option>${o}</option>`).join('');
+  selWrap.classList.add('show');
+  selBtn.classList.remove('ready');
+  selEl.onchange = () => selBtn.classList.toggle('ready', !!selEl.value);
+  selBtn.onclick = async () => {
+    if (!selEl.value) return;
+    const v = selEl.value;
+    hideDock();
+    await onOk(v);
+  };
+  scrollDown();
+}
+
+/* ================================================================
+   VALIDAÇÕES
+   ================================================================ */
+const vNome = (v) => {
+  const t = v.trim().replace(/\s+/g, ' ');
+  if (t.split(' ').length < 2 || t.length < 5) return { ok: false, erro: t.length > 3 ? 'Digite nome e sobrenome 🙂' : '' };
+  return { ok: true, valor: t };
+};
+const maskFone = (v) => {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 2) return d.length ? `(${d}` : '';
+  if (d.length <= 7) return `(${d.slice(0,2)}) ${d.slice(2)}`;
+  return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+};
+const vFone = (v) => {
+  const d = v.replace(/\D/g, '');
+  if (d.length !== 11) return { ok: false, erro: d.length > 2 && !DDD_UF[+d.slice(0,2)] ? 'DDD inválido' : '' };
+  if (!DDD_UF[+d.slice(0, 2)]) return { ok: false, erro: 'Esse DDD não existe no Brasil 🤔' };
+  if (d[2] !== '9') return { ok: false, erro: 'Celular começa com 9 depois do DDD' };
+  return { ok: true, valor: d };
+};
+// ---- telefone internacional: Brasil (padrão) com validação estrita; outros países, validação leve ----
+const PAISES = [
+  { f: '🇧🇷', ddi: '55', nome: 'Brasil' }, { f: '🇵🇹', ddi: '351', nome: 'Portugal' },
+  { f: '🇺🇸', ddi: '1', nome: 'EUA/Canadá' }, { f: '🇪🇸', ddi: '34', nome: 'Espanha' },
+  { f: '🇦🇷', ddi: '54', nome: 'Argentina' }, { f: '🇲🇽', ddi: '52', nome: 'México' },
+  { f: '🇨🇱', ddi: '56', nome: 'Chile' }, { f: '🇨🇴', ddi: '57', nome: 'Colômbia' },
+  { f: '🇵🇾', ddi: '595', nome: 'Paraguai' }, { f: '🇺🇾', ddi: '598', nome: 'Uruguai' },
+  { f: '🇬🇧', ddi: '44', nome: 'Reino Unido' }, { f: '🇮🇹', ddi: '39', nome: 'Itália' },
+  { f: '🇫🇷', ddi: '33', nome: 'França' }, { f: '🇩🇪', ddi: '49', nome: 'Alemanha' },
+];
+let foneDDI = '55';   // DDI ativo no campo de WhatsApp (atualizado pelo seletor de país)
+const maskFoneIntl = (v) => (foneDDI === '55' ? maskFone(v) : v.replace(/\D/g, '').slice(0, 15));
+const vFoneIntl = (v) => {
+  if (foneDDI === '55') return vFone(v);                 // Brasil: regra estrita (DDD + 9)
+  const d = v.replace(/\D/g, '');
+  if (d.length < 6 || d.length > 14) return { ok: false, erro: d.length > 3 ? 'Número parece incompleto 🤔' : '' };
+  return { ok: true, valor: d };
+};
+const vEmail = (v) => {
+  const t = v.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t)) return { ok: false, erro: '' };
+  return { ok: true, valor: t };
+};
+const vInsta = (v) => {
+  const t = v.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[\/\?].*$/, '').toLowerCase();
+  if (!/^[\w.]{2,30}$/.test(t)) return { ok: false, erro: t.length > 1 ? 'Só letras, números, ponto e underline' : '' };
+  return { ok: true, valor: t };
+};
+
+/* ================================================================
+   CAPTURA PROGRESSIVA — nunca trava a UX
+   ================================================================ */
+/* rótulo legível de uma resposta do quiz (pro banco/painel) */
+function respostaLabel(id) {
+  const p = QUIZ.find((x) => x.id === id);
+  const v = (state.data.respostas || {})[id];
+  if (!p || v == null) return '';
+  if (Array.isArray(v)) return v.map((i) => (p.opts[i] ? p.opts[i].t : '')).filter(Boolean).join(' · ');
+  return p.opts[v] ? p.opts[v].t : '';
+}
+
+function salvarLead(status) {
+  if (MODO_DEMO) return;   // demonstração: nenhum lead vai pro banco
+  const d = state.data;
+  fetch(CONFIG.API_SAVE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      lead_ref: state.leadRef, status,
+      nome: d.nome || '', whatsapp: d.whatsapp || '', email: d.email || '',
+      instagram: '', uf: d.uf || '',
+      nicho: respostaLabel('q2'),            // como se sente
+      nicho_detectado: respostaLabel('q5'),  // já buscou ajuda?
+      seguidores: respostaLabel('q1'),       // idade
+      dificuldade: respostaLabel('q3'),      // áreas afetadas
+      faturamento: respostaLabel((perguntaChave() || {}).id),  // renda média mensal da família
+      score: d.score ?? null,
+      qualificado: d.qualificado ?? null,
+      agendado: d.agendado === true,
+      agendamento_em: d.agendamentoEm || null,
+      booking_uid: d.bookingUid || '',
+      video_url: d.videoUrl || '',
+      call_track: d.callTrack || '',
+      vendedor: d.vendedor || '',
+      profile: null,
+      reel: null,
+      reel_transcript: '',
+      utm_source: (d.utm && d.utm.source) || '',
+      utm_medium: (d.utm && d.utm.medium) || '',
+      utm_campaign: (d.utm && d.utm.campaign) || '',
+      utm_content: (d.utm && d.utm.content) || '',
+      utm_term: (d.utm && d.utm.term) || '',
+      fbclid: (d.utm && d.utm.fbclid) || '',
+      referrer: d.referrer || '',
+    }),
+  }).catch((e) => console.warn('[lead] salvar falhou (seguindo normal):', e.message));
+}
+
+/* Conversão Meta (Pixel + CAPI) — dispara p/ lead QUALIFICADO 10k+ em ambas
+   as trilhas: premium (médico) e audience (10k+ não-médico). 1x por lead.
+   Evento de Lead puro (SEM valor). Mesmo eventID no Pixel e na CAPI → o Meta
+   deduplica. Hash dos dados e token da CAPI ficam no backend (/api/fb-event). */
+// Eventos Meta (Pixel browser + CAPI server, deduplicados por eventID) — só leads 10k+.
+//  • Lead     → dispara na CLASSIFICAÇÃO (virou closer/audience, logo após reel+renda).
+//               Meta otimiza pelo LEAD QUALIFICADO e captura até quem não agenda.
+//  • Schedule → dispara no AGENDAMENTO (booking confirmado). Mede quem fechou horário.
+// Cada um tem sua própria flag de 1x-por-lead (persistida), então não se atrapalham.
+function dispararEventoMeta(eventName, flagKey, contentName) {
+  if (MODO_DEMO) return;   // demonstração: nenhum pixel dispara
+  const d = state.data;
+  if (d.callTrack !== 'premium' && d.callTrack !== 'audience') return;  // só 10k+
+  if (d[flagKey]) return;                       // evita duplicar (1x por lead)
+  d[flagKey] = true; persist();
+
+  const eventId = `${eventName.toLowerCase()}_${state.leadRef || 'x'}_${Date.now()}`;
+  const custom = { content_name: contentName, currency: 'BRL' };  // evento de lead/schedule — sem value
+
+  // 1) Pixel (navegador)
+  try { if (window.fbq) fbq('track', eventName, custom, { eventID: eventId }); } catch (e) {}
+
+  // 2) CAPI (servidor) — mesmo eventID; manda dados p/ matching (hash é no backend)
+  const cookie = (n) => (document.cookie.match('(^|;)\\s*' + n + '=([^;]+)') || [])[2] || '';
+  postJSON(CONFIG.API_FB_EVENT, {
+    event_name: eventName, event_id: eventId, track: d.callTrack,
+    content_name: contentName,
+    email: d.email || '', phone: d.whatsapp || '', nome: d.nome || '',
+    fbp: cookie('_fbp'), fbc: cookie('_fbc'),
+    event_source_url: location.href, currency: 'BRL',
+  }, 6000);
+}
+function contentNameTrilha() {
+  return state.data.callTrack === 'premium' ? 'Sessão Estratégica (closers)' : 'Call de Raio X';
+}
+// Lead na classificação (lead qualificado 10k+ — mesmo que não agende depois).
+function dispararLeadQualificado() { dispararEventoMeta('Lead', 'leadPixelEnviado', contentNameTrilha()); }
+// Schedule no agendamento (booking confirmado).
+function dispararAgendamento() { dispararEventoMeta('Schedule', 'schedulePixelEnviado', contentNameTrilha()); }
+
+/* ================================================================
+   APIFY — perfil + reels (assíncrono: start + polling)
+   ================================================================ */
+async function postJSON(url, payload, timeoutMs = 9000) {
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeoutMs);
+    const r = await fetch(url, {
+      method: 'POST', signal: ctl.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    clearTimeout(timer);
+    if (r.ok) return await r.json();
+  } catch (e) { /* rede falhou */ }
+  return null;
+}
+
+/* (a busca de perfil no Instagram via Apify foi removida do fluxo SUAVIS) */
+
+/* (o pré-diagnóstico de Instagram via IA foi removido do fluxo SUAVIS) */
+
+/* ================================================================
+   FLUXO PRINCIPAL SUAVIS — 11 passos
+   0 nome · 1 whats · 2 email · 3-10 quiz (q1..q8) · resultado
+   ================================================================ */
+async function etapaNome(replay = false) {
+  if (!replay) {
+    await bot('Você se sente exausta pelos cuidados que tem enfrentado? Eu estou aqui para te mostrar o quanto você está preparada para transformar sua realidade e reconquistar sua vida. Responda com sinceridade! 💚', { delay: 1100 });
+    await bot('Antes de tudo, me conta: como você se chama?');
+  }
+  askText({
+    label: 'Nome completo', placeholder: 'Digite seu nome e sobrenome...',
+    validate: vNome,
+    onOk: async (nome) => {
+      user(nome);
+      state.data.nome = nome; state.step = 1; persist(); setProgress(1);
+      await etapaWhats();
+    },
+  });
+}
+
+async function etapaWhats(replay = false) {
+  const primeiro = esc(state.data.nome.split(' ')[0]);
+  if (!replay) await bot(`Que bom ter você aqui, <b>${primeiro}</b> 💚 Me passa seu WhatsApp? É por ele que eu te envio suas orientações depois da nossa conversa.`);
+  askText({
+    label: 'WhatsApp', placeholder: '(11) 99999-9999', type: 'tel', mask: maskFoneIntl,
+    validate: vFoneIntl, ddiSelect: true,
+    onOk: async (fone) => {
+      const ddi = foneDDI, isBR = ddi === '55';
+      user(isBR ? '🇧🇷 ' + maskFone(fone) : '+' + ddi + ' ' + fone);
+      state.data.whatsapp = ddi + fone;   // E.164 sem '+' (ddi + número)
+      state.data.uf = isBR ? (DDD_UF[+fone.slice(0, 2)] || '') : '';
+      state.data.paisDDI = ddi;
+      state.step = 2; persist(); setProgress(2);
+      salvarLead('parcial');
+      await etapaEmail();
+    },
+  });
+}
+
+async function etapaEmail(replay = false) {
+  if (!replay) await bot('Obrigada pela confiança 🙏 E qual e-mail você mais usa no dia a dia?', { delay: 700 });
+  askText({
+    label: 'E-mail', placeholder: 'seu@email.com', type: 'email',
+    validate: vEmail,
+    onOk: async (email) => {
+      user(email);
+      const sugestao = sugerirEmail(email);
+      if (sugestao && sugestao !== email) {
+        await bot(`Hmm, esse e-mail parece ter um errinho de digitação. Você quis dizer <b>${esc(sugestao)}</b>?`);
+        askChips(['Sim, usar o corrigido', 'Não, manter como digitei'], async (opt) => {
+          user(opt);
+          await confirmarEmail(opt.startsWith('Sim') ? sugestao : email);
+        });
+        return;
+      }
+      await confirmarEmail(email);
+    },
+  });
+}
+async function confirmarEmail(email) {
+  state.data.email = email; state.step = 3; persist(); setProgress(3);
+  salvarLead('contato');
+  await bot('Agora quero te conhecer um pouquinho melhor, tá? Fica à vontade pra responder com o coração 🌿', { delay: 1000 });
+  await etapaQuiz(0);
+}
+
+/* pergunta i do quiz (0..7) */
+async function etapaQuiz(i, replay = false) {
+  const p = QUIZ[i];
+  state.data.respostas = state.data.respostas || {};
+  if (!replay) await bot(p.q, { delay: 900 });
+  const registrar = async (valor, labelTxt) => {
+    user(labelTxt);
+    state.data.respostas[p.id] = valor;
+    state.step = PASSOS_CONTATO + i + 1;
+    persist(); setProgress(state.step);
+    salvarLead('parcial');
+    if (i + 1 < QUIZ.length) await etapaQuiz(i + 1);
+    else await etapaResultado();
+  };
+  if (p.multi) {
+    askChipsMulti(p.opts.map((o) => o.t), async (idxs) => {
+      await registrar(idxs, idxs.map((x) => p.opts[x].t).join(' · '));
+    });
+  } else {
+    askChips(p.opts.map((o) => o.t), async (t) => {
+      const idx = p.opts.findIndex((o) => o.t === t);
+      await registrar(idx, t);
+    });
+  }
+}
+
+/* calcula, mostra o resultado e encaminha pro destino certo */
+async function etapaResultado() {
+  lgpdEl.style.display = 'none';
+  const res = calcularResultado();
+  state.data.score = res.score;
+  state.data.qualificado = true;   // todo mundo segue — o destino vem da renda (q6)
+  state.data.perfil = res.perfil;
+  state.data.callTrack = destinoQ6();  // grava o destino JÁ — mesmo que a lead saia antes da agenda
+  persist();
+  salvarLead('completo');
+
+  const loader = showLoader('💚 Um instante, estou te lendo com atenção...',
+    ['Acolhendo o que você me contou', 'Entendendo o seu momento emocional', 'Preparando suas orientações personalizadas'], 800);
+  await sleep(2500);
+  await loader.done();
+
+  await mostrarResultado(res);
+
+  await finalPresente();
+  state.done = true; persist();
+}
+
+/* ---------- FINAL (todas): presente + destino pela renda ---------- */
+async function finalPresente() {
+  const s = safeData();
+  await sleep(400);
+  await bot('Ah, e antes que eu me esqueça... preparei uma coisinha pra você 👀', { delay: 800 });
+  await sleep(300);
+  addRow('bot', `🎁 <b>É seu, ${s.primeiro}!</b> Meu ebook<br><b class="gift-prod">7 DICAS<br>COMO MANTER SEU IDOSO FELIZ E VOCÊ MENOS ESTRESSADA</b>`, 'gift-announce');
+  await sleep(700);
+  renderProdutoCard();
+  await sleep(800);
+  await bot('Ele já é seu! 🗝️ E a <b>chave pra destravar</b> eu te entrego pessoalmente no final do nosso <b>Encontro</b>: um encontro gratuito, ao vivo comigo. É o espaço pra você se sentir acolhido e ouvido de verdade, sem compromisso nenhum 💚', { delay: 900 });
+  // o destino vem da resposta de renda familiar (q6)
+  const destino = destinoQ6();
+  if (destino === 'premium') await ctaWhatsPremium();
+  else if (destino === 'imersao') await renderAgendaSuavis(CONFIG.CAL_IMERSAO, 'imersao');
+  else await renderAgendaSuavis(CONFIG.CAL_COMUNIDADE, 'comunidade');
+}
+
+/* agenda embutida do cal.com (COMUNIDADE ou IMERSÃO) */
+async function renderAgendaSuavis(link, track) {
+  state.data.callTrack = track; persist();
+  salvarLead('completo');
+  await bot('Escolhe aqui embaixo o dia e o horário que ficam melhores pra você 👇 Vou te esperar com muito carinho e com seu ebook 💚', { delay: 1100 });
+  // demonstração: agenda simulada (local) no lugar do Cal.com de verdade
+  if (MODO_DEMO) { renderAgendaInline({ track }); return; }
+  renderAgendaEmbed({ embedLink: link, track, vendor: '' });
+}
+
+/* faixa acima de R$20 mil → contato direto no WhatsApp da Suely */
+async function ctaWhatsPremium() {
+  state.data.callTrack = 'premium'; persist();
+  salvarLead('completo');
+  const s = safeData();
+  await bot(`${s.primeiro}, pelo que você me contou, eu quero marcar nossa conversa pessoalmente com você. Clica no botão aqui embaixo que a gente combina o melhor horário. Pode vir, é comigo mesma que você vai falar 👇`, { delay: 1300 });
+  addRow('bot', `<a class="ag-link" href="${waLink()}" target="_blank" rel="noopener">💬&nbsp; Agendar minha conversa no WhatsApp</a>`);
+}
+
+/* botão para o site da Suavitatis (reservado p/ produtos low-ticket no futuro) */
+async function ctaSite(intro) {
+  if (intro) await bot(intro, { delay: 1300 });
+  addRow('bot', `<a class="ag-link" href="${CONFIG.SITE_URL}" target="_blank" rel="noopener">🌿&nbsp; Conhecer a Suavitatis Terapias</a>`);
+}
+
+/* ================================================================
+   PREVIEW DO PRESENTE — ebook "7 Dicas" da Suavitatis.
+   Se CONFIG.PRODUTO_IMG estiver preenchido, usa a capa real.
+   ================================================================ */
+function renderProdutoCard() {
+  if (CONFIG.PRODUTO_IMG) {
+    addRow('bot', `<img class="produto-img" src="${esc(CONFIG.PRODUTO_IMG)}" alt="Ebook 7 Dicas Suavitatis">`, 'produto-bubble');
+    return;
+  }
+  addRow('bot', `
+    <div class="pr-body">
+      <div class="pr-glow"></div>
+      <span class="pr-badge">🎁 PRESENTE DESBLOQUEADO</span>
+      <div class="pr-kicker">EBOOK SUAVITATIS</div>
+      <div class="pr-title">7 DICAS</div>
+      <div class="pr-sub">Como manter seu idoso <b>feliz</b> e você <b>menos estressada</b>. Um guia prático da Suavitatis Terapias Integrativas.</div>
+      <div class="pr-foot"><b>GRÁTIS</b> <span>no seu Encontro com a Suely</span></div>
+    </div>
+  `, 'produto-bubble');
+}
+
+/* (o fechamento antigo do quiz de Instagram foi substituído por
+   etapaResultado/finalQualificada/finalNaoQualificada, acima) */
+
+/* booker da instância embutido no chat — agendamento REAL sem API */
+function renderAgendaEmbed(info) {
+  // base derivada do próprio link do backend (evita hardcodar a instância do Cal no front)
+  const base = (() => { try { return new URL(info.embedLink).origin; } catch { return ''; } })();
+  const path = String(info.embedLink || '').replace(base, '').replace(/^\/+/, '');
+  const row = addRow('bot', `
+    <div class="ag-head">
+      <span class="ag-ic">📅</span>
+      <div><h4>Escolhe o melhor horário</h4><p>Encontro gratuito com a Suely · online</p></div>
+    </div>
+    <div class="cal-embed-body"><div class="cal-embed-slot"></div></div>
+  `, 'agenda-card cal-embed-card');
+  const slot = row.querySelector('.cal-embed-slot');
+
+  /* snippet oficial do embed, apontando pra NOSSA instância */
+  (function (C, A, L) { let p = function (a, ar) { a.q.push(ar); }; let d = C.document; C.Cal = C.Cal || function () { let cal = C.Cal; let ar = arguments; if (!cal.loaded) { cal.ns = {}; cal.q = cal.q || []; d.head.appendChild(d.createElement("script")).src = A; cal.loaded = true; } if (ar[0] === L) { const api = function () { p(api, arguments); }; const namespace = ar[1]; api.q = api.q || []; if (typeof namespace === "string") { cal.ns[namespace] = cal.ns[namespace] || api; p(cal.ns[namespace], ar); p(cal, ["initNamespace", namespace]); } else p(cal, ar); return; } p(cal, ar); }; })(window, base + "/embed/embed.js", "init");
+
+  Cal("init", "core", { origin: base });
+  Cal.ns.core("inline", {
+    elementOrSelector: slot,
+    calLink: path,
+    config: { theme: "light", name: state.data.nome || '', email: state.data.email || '' },
+  });
+  Cal.ns.core("ui", { theme: "light", styles: { branding: { brandColor: "#a155f2" } }, hideEventTypeDetails: false });
+  Cal.ns.core("on", { action: "bookingSuccessful", callback: (e) => onEmbedAgendado(e, row, info) });
+  scrollDown();
+}
+
+async function onEmbedAgendado(e, row, info) {
+  if (state.data.agendado) return;
+  const det = (e && e.detail && e.detail.data) || {};
+  const startISO = det.date || det.startTime || (det.booking && (det.booking.startTime || det.booking.start)) || '';
+  // código do booking no Cal (confirmação) — o payload varia por versão do embed
+  const uid = (det.booking && (det.booking.uid || det.booking.id)) || det.uid || det.bookingId || '';
+  state.data.bookingUid = uid ? String(uid) : '';
+  const vUrl = (det.booking && (det.booking.videoCallUrl || (det.booking.metadata && det.booking.metadata.videoCallUrl))) || '';
+  if (vUrl) state.data.videoUrl = vUrl;
+  state.data.agendado = true;
+  state.data.agendamentoEm = startISO ? new Date(startISO).toISOString() : null;
+  state.data.callTrack = info.track || state.data.callTrack || '';
+  state.data.vendedor = info.vendor || state.data.vendedor || '';
+  persist();
+  salvarLead('agendado');
+  dispararAgendamento();
+
+  const pageUrl = state.data.agendamentoEm
+    ? `call.html?t=${encodeURIComponent(state.data.agendamentoEm)}&n=${encodeURIComponent(state.data.nome || '')}`
+    : `call.html?n=${encodeURIComponent(state.data.nome || '')}`;
+
+  const card = row.querySelector('.bubble');
+  let quandoTxt = '';
+  if (state.data.agendamentoEm) {
+    const q = new Date(state.data.agendamentoEm);
+    quandoTxt = `${capitalizar(fmtSemana.format(q))}, ${fmtDiaLongo.format(q)} às ${String(q.getHours()).padStart(2, '0')}:${String(q.getMinutes()).padStart(2, '0')}`;
+  }
+  card.innerHTML = `
+    <div class="ag-head">
+      <span class="ag-ic">📅</span>
+      <div><h4>Tá marcado!</h4><p>Vou te esperar 💚</p></div>
+    </div>
+    <div class="ag-done">
+      <div class="ag-check">✓</div>
+      <h4>${quandoTxt ? esc(quandoTxt) : 'Confirmado!'}</h4>
+      <p>Confirmação chega no seu WhatsApp e e-mail.</p>
+      <a class="ag-link" href="${pageUrl}" target="_blank" rel="noopener">📄&nbsp; Minha página da reunião</a>
+    </div>
+  `;
+  scrollDown();
+
+  const s = safeData();
+  await bot(`Prontinho, <b>${s.primeiro}</b> 💚 Seu Encontro está marcado! Guardei sua <a href="${pageUrl}" target="_blank" rel="noopener"><b>página do Encontro</b></a> com todos os detalhes, e seu ebook <b>7 Dicas</b> já está separado pra você. Até lá!`, { delay: 900 });
+}
+
+function waLink() {
+  const d = state.data;
+  const perfilNome = d.perfil === 'high' ? 'Alta Consciência' : d.perfil === 'mid' ? 'Média Consciência' : 'Baixa Consciência';
+  const msg = encodeURIComponent(
+    `Olá, Suely! Acabei de fazer o quiz "Reconstrua Suas Emoções".\n\n` +
+    `Nome: ${d.nome}\nResultado: ${perfilNome}\n\n` +
+    `Quero agendar minha conversa sobre o Programa SUAVIS! 💚`
+  );
+  return `https://wa.me/${CONFIG.WHATSAPP_NUMERO}?text=${msg}`;
+}
+
+/* ================================================================
+   AGENDA INLINE — calendário nativo no chat (estilo Viver de IA).
+   Disponibilidade vem das regras em CONFIG.AGENDA; o horário escolhido
+   vai pro Supabase (status 'agendado' + agendamento_em).
+   ================================================================ */
+const DIAS_SEMANA_ABREV = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+const fmtMes = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' });
+const fmtDiaLongo = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long' });
+const fmtSemana = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' });
+const keyDia = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+const capitalizar = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+function slotsDoDia(dt) {
+  const A = CONFIG.AGENDA;
+  const agora = new Date();
+  const minTs = agora.getTime() + A.minHorasAntecedencia * 3600000;
+  return A.horarios.filter((h) => {
+    const [hh, mm] = h.split(':').map(Number);
+    const slot = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), hh, mm);
+    return slot.getTime() >= minTs;
+  });
+}
+
+function diasDisponiveis() {
+  const A = CONFIG.AGENDA;
+  const dias = new Map(); // key → Date
+  const hoje = new Date();
+  for (let i = 0; i <= A.diasAdiante; i++) {
+    const dt = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + i);
+    if (!A.diasSemana.includes(dt.getDay())) continue;
+    if (slotsDoDia(dt).length === 0) continue;
+    dias.set(keyDia(dt), dt);
+  }
+  return dias;
+}
+
+async function renderAgendaInline(rota = {}) {
+  /* tenta o motor Cal (invisível pro lead); sem horários → embed (fallback) → regras locais */
+  let modo = 'local';
+  let slotsCal = null, isoCal = null;
+  const dStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  if (!MODO_DEMO) {   // demonstração usa só a agenda simulada (regras locais)
+    const hoje = new Date();
+    const fimJanela = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + CONFIG.AGENDA.diasAdiante);
+    const r = await postJSON(CONFIG.API_AGENDA, {
+      action: 'slots', start: dStr(hoje), end: dStr(fimJanela),
+      // perfil pro roteamento de trilha (premium/padrão) no backend
+      renda: state.data.faturamento || '', nicho: state.data.nicho || '',
+      bio: (state.data.profile && state.data.profile.biography) || '',
+      // mantém o vendedor já sorteado no route (consistência slot ↔ booking)
+      vendorEventTypeId: state.data.vendorEventTypeId || rota.vendorEventTypeId || null,
+    }, 8000);
+    if (r && r.ok && r.slots && Object.keys(r.slots).length) {
+      modo = 'cal'; slotsCal = r.slots; isoCal = r.iso || {};
+      state.data.callTrack = r.track || '';
+      state.data.vendedor = r.vendor || '';
+      state.data.vendorEventTypeId = r.vendorEventTypeId || null;
+    }
+  }
+  state.data.agendaModo = modo; persist();
+
+  // API não trouxe horários (sem chave, sem event type da trilha, ou erro):
+  // se a trilha tem booker, usa o embed; senão segue pra agenda local.
+  if (!MODO_DEMO && modo !== 'cal' && rota && rota.embedLink) { renderAgendaEmbed(rota); return; }
+
+  let disponiveis;
+  if (modo === 'cal') {
+    disponiveis = new Map();
+    Object.keys(slotsCal).sort().forEach((k) => {
+      const [y, mo, d] = k.split('-').map(Number);
+      disponiveis.set(k, new Date(y, mo - 1, d));
+    });
+  } else {
+    disponiveis = diasDisponiveis();
+  }
+  const horariosDo = (dt) => modo === 'cal' ? (slotsCal[keyDia(dt)] || []) : slotsDoDia(dt);
+  const isoDe = (dt, hora) => {
+    if (modo === 'cal') return (isoCal[keyDia(dt)] || {})[hora] || '';
+    const [hh, mm] = hora.split(':').map(Number);
+    return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), hh, mm).toISOString();
+  };
+
+  const agora = new Date();
+  const semanaHoje = fmtSemana.format(agora);
+  const horaAgora = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+
+  const row = addRow('bot', `
+    <div class="ag-head">
+      <span class="ag-ic">📅</span>
+      <div><h4>Agenda hoje</h4><p>Para sua reunião gratuita</p></div>
+    </div>
+    <div class="ag-body">
+      <div class="ag-today"><span>📍 Hoje é ${esc(semanaHoje)}, ${horaAgora}</span></div>
+      <div class="ag-nav">
+        <button type="button" class="ag-prev" aria-label="Mês anterior">‹</button>
+        <b class="ag-mes"></b>
+        <button type="button" class="ag-next" aria-label="Próximo mês">›</button>
+      </div>
+      <div class="ag-grid">
+        <div class="ag-week">${DIAS_SEMANA_ABREV.map(d => `<span>${d}</span>`).join('')}</div>
+        <div class="ag-days"></div>
+      </div>
+      <div class="ag-slots-area"></div>
+      <div class="ag-foot">Toque em um horário para agendar</div>
+    </div>
+  `, 'agenda-card');
+
+  const card = row.querySelector('.agenda-card');
+  const mesEl = card.querySelector('.ag-mes');
+  const daysEl = card.querySelector('.ag-days');
+  const slotsArea = card.querySelector('.ag-slots-area');
+  const btnPrev = card.querySelector('.ag-prev');
+  const btnNext = card.querySelector('.ag-next');
+
+  const datas = [...disponiveis.values()];
+  const primeiroMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const ultimoMes = datas.length
+    ? new Date(datas[datas.length - 1].getFullYear(), datas[datas.length - 1].getMonth(), 1)
+    : primeiroMes;
+
+  let mesAtual = primeiroMes;
+  let diaSel = null;
+
+  function renderMes() {
+    mesEl.textContent = capitalizar(fmtMes.format(mesAtual));
+    btnPrev.disabled = mesAtual <= primeiroMes;
+    btnNext.disabled = mesAtual >= ultimoMes;
+    daysEl.textContent = '';
+    const primeiroDiaSemana = mesAtual.getDay();
+    const totalDias = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0).getDate();
+    for (let i = 0; i < primeiroDiaSemana; i++) {
+      daysEl.appendChild(document.createElement('span'));
+    }
+    for (let d = 1; d <= totalDias; d++) {
+      const dt = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), d);
+      const k = keyDia(dt);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ag-d';
+      btn.textContent = d;
+      if (disponiveis.has(k)) {
+        btn.classList.add('on');
+        if (diaSel && keyDia(diaSel) === k) btn.classList.add('sel');
+        btn.onclick = () => { diaSel = dt; renderMes(); renderSlots(); };
+      }
+      daysEl.appendChild(btn);
+    }
+  }
+
+  function renderSlots() {
+    slotsArea.textContent = '';
+    if (!diaSel) return;
+    const titulo = document.createElement('div');
+    titulo.className = 'ag-slots-title';
+    titulo.textContent = `Horários para ${fmtDiaLongo.format(diaSel)}`;
+    const grid = document.createElement('div');
+    grid.className = 'ag-slots';
+    horariosDo(diaSel).forEach((h) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ag-slot';
+      b.textContent = h;
+      b.onclick = () => confirmarAgendamento(card, diaSel, h, isoDe(diaSel, h));
+      grid.appendChild(b);
+    });
+    slotsArea.appendChild(titulo);
+    slotsArea.appendChild(grid);
+    scrollDown();
+  }
+
+  // pré-seleciona o primeiro dia disponível (igual ao mockup)
+  if (datas.length) { diaSel = datas[0]; mesAtual = new Date(diaSel.getFullYear(), diaSel.getMonth(), 1); }
+  renderMes();
+  renderSlots();
+}
+
+async function confirmarAgendamento(card, dia, hora, iso) {
+  if (state.data.agendado) return;
+  const d = state.data;
+
+  // trava a UI do card enquanto confirma
+  card.style.pointerEvents = 'none';
+  const foot = card.querySelector('.ag-foot');
+  if (foot) foot.textContent = 'Confirmando seu horário…';
+
+  let quandoISO = iso || new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), +hora.split(':')[0], +hora.split(':')[1]).toISOString();
+  let bookingUid = '', videoUrl = '';
+
+  if (d.agendaModo === 'cal') {
+    const r = await postJSON(CONFIG.API_AGENDA, {
+      action: 'book', start: quandoISO,
+      nome: d.nome, email: d.email, whatsapp: d.whatsapp,
+      renda: d.faturamento || '', nicho: d.nicho || '',
+      bio: (d.profile && d.profile.biography) || '',
+      vendorEventTypeId: d.vendorEventTypeId || null,
+      metadata: { instagram: '@' + (d.instagram || ''), nicho: d.nicho || '', lead_ref: state.leadRef, origem: 'diagnostico-instagram' },
+    }, 14000);
+    if (r && r.ok) {
+      bookingUid = r.uid || '';
+      videoUrl = r.videoUrl || '';
+      state.data.callTrack = r.track || state.data.callTrack || '';
+      state.data.vendedor = r.vendor || state.data.vendedor || '';
+      if (r.start) quandoISO = r.start;
+    } else if (r && r.reason === 'slot_taken') {
+      card.closest('.row')?.remove();
+      await bot('Eita! Esse horário acabou de ser preenchido por outra pessoa 😅 Escolhe outro aqui:', { delay: 800 });
+      await renderAgendaInline();
+      return;
+    } else {
+      // qualquer outra falha do Cal (erro/timeout/sem chave): NÃO confirmar uma reunião
+      // que não existe. Pede pra escolher de novo em vez de mostrar "confirmado" no escuro.
+      card.closest('.row')?.remove();
+      await bot('Ops, não consegui confirmar esse horário agora 😅 Pode escolher de novo aqui? Aí eu já registro certinho:', { delay: 800 });
+      await renderAgendaInline();
+      return;
+    }
+  }
+
+  state.data.agendado = true;
+  state.data.agendamentoEm = quandoISO;
+  state.data.bookingUid = bookingUid;
+  state.data.videoUrl = videoUrl;
+  persist();
+  salvarLead('agendado');
+  dispararAgendamento();
+
+  const quando = new Date(quandoISO);
+  const diaTxt = `${capitalizar(fmtSemana.format(quando))}, ${fmtDiaLongo.format(quando)}`;
+  const horaTxt = `${String(quando.getHours()).padStart(2, '0')}:${String(quando.getMinutes()).padStart(2, '0')}`;
+  const vParam = videoUrl ? `&v=${encodeURIComponent(videoUrl)}` : '';
+  const pageUrl = bookingUid
+    ? `call.html?id=${encodeURIComponent(bookingUid)}${vParam}`
+    : `call.html?t=${encodeURIComponent(quandoISO)}&n=${encodeURIComponent(d.nome || '')}${vParam}`;
+
+  card.style.pointerEvents = '';
+  card.innerHTML = `
+    <div class="ag-head">
+      <span class="ag-ic">📅</span>
+      <div><h4>Tá marcado!</h4><p>Vou te esperar 💚</p></div>
+    </div>
+    <div class="ag-done">
+      <div class="ag-check">✓</div>
+      <h4>${esc(diaTxt)} às ${esc(horaTxt)}</h4>
+      <p>Confirmação chega no seu WhatsApp e e-mail.</p>
+      <a class="ag-link" href="${pageUrl}" target="_blank" rel="noopener">📄&nbsp; Minha página da reunião</a>
+    </div>
+  `;
+  scrollDown();
+
+  const s = safeData();
+  await bot(`Prontinho, <b>${s.primeiro}</b> 💚 Seu Encontro está marcado pra <b>${esc(diaTxt)} às ${esc(horaTxt)}</b>! Guardei sua <a href="${pageUrl}" target="_blank" rel="noopener"><b>página do Encontro</b></a> com todos os detalhes, e seu ebook <b>7 Dicas</b> já está separado pra você. Até lá!`, { delay: 900 });
+}
+
+/* ================================================================
+   REPLAY (refresh no meio do fluxo) + BOOT
+   ================================================================ */
+function replayUserLabel(st) {
+  const d = state.data;
+  if (st === 0) return d.nome;
+  if (st === 1) return (d.paisDDI && d.paisDDI !== '55')
+    ? '+' + d.paisDDI + ' ' + (d.whatsapp || '').slice(d.paisDDI.length)
+    : maskFone((d.whatsapp || '').slice(2));
+  if (st === 2) return d.email;
+  const p = QUIZ[st - PASSOS_CONTATO];
+  if (!p) return '';
+  const r = (d.respostas || {})[p.id];
+  if (p.multi) return (Array.isArray(r) ? r : []).map((i) => (p.opts[i] ? p.opts[i].t : '')).filter(Boolean).join(' · ');
+  return p.opts[r] ? p.opts[r].t : '';
+}
+/* mensagens do bot que antecedem a resposta do passo st */
+function replayBotBefore(st) {
+  if (st === 0) return [
+    'Você se sente exausta pelos cuidados que tem enfrentado? Eu estou aqui para te mostrar o quanto você está preparada para transformar sua realidade e reconquistar sua vida. Responda com sinceridade! 💚',
+    'Pra começar, me diz: qual seu nome?',
+  ];
+  if (st === 1) return [`Que bom ter você aqui, <b>${esc((state.data.nome || '').split(' ')[0])}</b> 💚 Me passa seu WhatsApp? É por ele que eu te envio suas orientações depois da nossa conversa.`];
+  if (st === 2) return ['Obrigada pela confiança 🙏 E qual e-mail você mais usa no dia a dia?'];
+  if (st === 3) return ['Agora quero te conhecer um pouquinho melhor, tá? Fica à vontade pra responder com o coração 🌿', QUIZ[0].q];
+  const p = QUIZ[st - PASSOS_CONTATO];
+  return p ? [p.q] : [];
+}
+
+async function boot() {
+  sendBtn.onclick = () => onSubmit && onSubmit();
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); onSubmit && onSubmit(); } });
+  await carregarQuizConfig();   // perguntas do painel (ou padrão embutido)
+
+  if (state.step > 0 && state.data.nome && !state.done) {
+    const ate = Math.min(state.step, TOTAL_PASSOS);
+    for (let st = 0; st < ate; st++) {
+      replayBotBefore(st).forEach((m) => addRow('bot', m));
+      user(replayUserLabel(st));
+    }
+    setProgress(ate);
+    await bot('Que bom te ver de novo 💚 Vamos continuar de onde paramos?', { delay: 600 });
+    if (state.step >= TOTAL_PASSOS) await etapaResultado();   // completou mas saiu antes da agenda → resultado + agenda de novo
+    else if (state.step === 1) await etapaWhats();
+    else if (state.step === 2) await etapaEmail();
+    else await etapaQuiz(state.step - PASSOS_CONTATO);
+  } else {
+    await sleep(500);
+    await etapaNome();
+  }
+}
+boot();
+</script>
+</body>
+</html>
