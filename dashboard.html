@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Painel de Leads · Quiz SUAVIS | Suavitatis</title>
+<title>Painel de Leads · ChatQuizz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -322,9 +322,9 @@
   <!-- LOGIN -->
   <div id="gate">
     <div class="gate-card">
-      <div class="gate-logo" style="background:var(--sidebar);">S</div>
+      <div class="gate-logo" style="background:var(--sidebar);">Q</div>
       <h1>Painel de Leads</h1>
-      <p>Quiz SUAVIS · Suavitatis Terapias Integrativas</p>
+      <p>ChatQuizz</p>
       <input id="gate-pass" type="password" placeholder="Senha de acesso" autocomplete="current-password" />
       <button id="gate-btn">Entrar</button>
       <div class="gate-err" id="gate-err"></div>
@@ -444,10 +444,9 @@
   <div id="app">
     <div class="topbar">
       <div class="brand">
-        <div class="logo" style="background:var(--sidebar);">S</div>
+        <div class="logo" style="background:var(--sidebar);">Q</div>
         <div>
-          <h1>CRM SUAVIS</h1>
-          <small>Suavitatis Terapias Integrativas</small>
+          <h1>ChatQuizz CRM</h1>
         </div>
       </div>
       <div class="topsearch" title="Pesquisa global de leads (nome, telefone ou e-mail)">
@@ -467,7 +466,7 @@
         </div>
         <button class="btn" id="btn-refresh" title="Atualizar dados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
         <button class="btn" id="btn-csv" title="Exportar relatório CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></button>
-        <div class="userchip" title="Usuário conectado"><span class="uavatar" id="userAvatar">S</span><b id="userName">…</b></div>
+        <div class="userchip" title="Usuário conectado"><span class="uavatar" id="userAvatar">A</span><b id="userName">…</b></div>
         <button class="btn" id="btn-config" title="Configurações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
         <button class="btn" id="btn-logout" title="Sair do painel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
       </div>
@@ -509,7 +508,7 @@
     <div class="panel" style="display:none;align-items:center;gap:14px;flex-wrap:wrap;">
       <div>
         <h2>Priorizar closer (trilha premium)</h2>
-        <div class="sub">(Recurso do funil original com time de vendedores — oculto no SUAVIS. Reativa quando houver equipe.)</div>
+        <div class="sub">(Recurso do funil original com time de vendedores — oculto por padrão. Reativa quando houver equipe.)</div>
       </div>
       <select id="priorSelect" style="margin-left:auto;padding:10px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-weight:600;min-width:230px;cursor:pointer;">
         <option value="">Automático (sorteio)</option>
@@ -646,8 +645,11 @@
           <option value="agendado">Agendado</option>
           <option value="perdido">✕ Perdido</option>
         </select>
-        <select id="leadsOrigemSel" title="Origem / destino do lead">
+        <select id="leadsOrigemSel" title="Origem do lead (link de rastreio)">
           <option value="">Origem: Todas</option>
+        </select>
+        <select id="leadsQualificadorSel" title="Qualificador (resultado do quiz)">
+          <option value="">Qualificador: Todos</option>
         </select>
         <button class="fmais" id="leadsMaisBtn" title="Filtros menos usados">Mais filtros</button>
         <span class="muted-cell" id="tbl-count"></span>
@@ -736,7 +738,7 @@
     <!-- ===== CONVERSAS — inbox do WhatsApp ===== -->
     <div class="panel" id="pConversas" hidden>
       <h2>Conversas</h2>
-      <div class="sub">Inbox do WhatsApp da SUAVIS. Clique numa conversa para abrir o chat interno. <span id="cvAviso"></span></div>
+      <div class="sub">Inbox do WhatsApp. Clique numa conversa para abrir o chat interno. <span id="cvAviso"></span></div>
       <div class="fbar">
         <input id="cvBusca" class="fbusca" placeholder="Buscar conversa por nome ou telefone...">
         <button class="btn" id="cvAtualizar">Atualizar</button>
@@ -832,7 +834,7 @@
         <button class="btn" id="agNext">›</button>
         <button class="btn" id="agHoje">Hoje</button>
         <span style="flex:1"></span>
-        <a class="btn" href="https://cal.com/suavitatisterapias/comunidade" target="_blank" rel="noopener" title="Agendar manualmente em nome de uma lead (agenda única dos Encontros)">+ Novo agendamento</a>
+        <button class="btn" id="agNovoBtn" title="Abre o link de Cal.com configurado no Roteamento">+ Novo agendamento</button>
       </div>
       <div class="ag-cal" id="agGrid"></div>
       <div id="agDia" style="margin-top:14px;"></div>
@@ -899,7 +901,7 @@
     <!-- ===== CONFIG — WhatsApp (Evolution API) ===== -->
     <div class="panel" id="pWhats" hidden>
       <h2>WhatsApp — conexão e controles</h2>
-      <div class="sub">Conecte o número da SUAVIS pela Evolution API e controle os dois interruptores de forma independente. Com <b>Conversas</b> desligadas, os botões Conversar abrem o WhatsApp Web normalmente; com <b>Disparos</b> desligados, nenhuma mensagem automática sai.</div>
+      <div class="sub">Conecte seu número pela Evolution API e controle os dois interruptores de forma independente. Com <b>Conversas</b> desligadas, os botões Conversar abrem o WhatsApp Web normalmente; com <b>Disparos</b> desligados, nenhuma mensagem automática sai.</div>
       <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
         <div style="flex:1;min-width:230px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
@@ -931,7 +933,7 @@
       <div class="sub">
         <b>Usuários (atendentes):</b> gestão completa logo abaixo (somente a administradora).<br>
         <b>Quiz:</b> edite as perguntas no quadro "Quiz — perguntas" abaixo (somente a administradora).<br>
-        <b>Administração:</b> hospedagem no Netlify (site <i>quiz-suavitatis</i>) · banco de dados no Supabase (projeto Suavitatis) · agendas no cal.com (<i>suavitatisterapias</i>).
+        <b>Administração:</b> hospedagem no Netlify · banco de dados no Supabase · agendas configuradas na aba Roteamento (Cal.com).
       </div>
     </div>
 
@@ -1101,7 +1103,7 @@ async function doLogin(token) {
     // chip do usuário no cabeçalho (Design System)
     const nomeChip = USUARIO || 'Administradora';
     $('#userName').textContent = nomeChip;
-    $('#userAvatar').textContent = (nomeChip.trim()[0] || 'S').toUpperCase();
+    $('#userAvatar').textContent = (nomeChip.trim()[0] || 'A').toUpperCase();
     render();
     carregarPrioridade();
     carregarRendaCfg();   // faixas de renda atuais do quiz (pro quadro de renda)
@@ -1307,7 +1309,7 @@ function render() {
 /* ===== NAVEGAÇÃO — menu lateral do CRM ===== */
 const SECTIONS = {
   /* Visão Geral concentra TODOS os quadros analíticos; cada módulo fica
-     só com o seu card essencial (pedido da Suely em 21/07/2026) */
+     só com o seu card essencial */
   geral: ['#kpis', '#pFunil', '#pRenda', '#pNicho', '#pIdadeAreas', '#pDiaUF', '#pOrigemUtm', '#pDestino', '#pAgendaram', '#pPorAtendente'],
   agendaDash: ['#pAgendaDash'],      // só o Calendário
   agendados: ['#pUpcoming'],         // só Leads Agendados
@@ -1701,7 +1703,7 @@ function abrirLeadModal(r) {
   c.appendChild(lmLinha('Quando', r.agendamento_em ? fmtDateTime(r.agendamento_em) : '—'));
   c.appendChild(lmLinha('Atendente', selAtendente(r)));
   c.appendChild(lmLinha('Ações', acoesAgendamento(r)));
-  if (r.booking_uid && r.booking_uid !== 'confirmado_manual_suely') c.appendChild(lmLinha('Código no Cal', r.booking_uid));
+  if (r.booking_uid && r.booking_uid !== 'confirmado_manual') c.appendChild(lmLinha('Código no Cal', r.booking_uid));
 
   const h2 = el('h2'); h2.textContent = 'Respostas do quiz'; h2.style.marginTop = '14px'; c.appendChild(h2);
   if (r.whatsapp) {
@@ -1776,13 +1778,20 @@ $('#leadModal').addEventListener('click', (e) => { if (e.target === $('#leadModa
    A tela oficial do Cal abre DENTRO do CRM, já preenchida com nome/e-mail
    do lead; quando o horário é confirmado, o painel registra tudo sozinho
    (data, código do Cal, status agendado e linha no histórico).
-   Agenda ÚNICA: a Imersão foi unificada na Comunidade (29/07/2026). */
-const CM_BASE = 'https://cal.com';
-const CM_AGENDA = 'suavitatisterapias/comunidade';
+   O link usado é o do roteamento configurado pro qualificador DESSE lead
+   (aba Roteamento) — cada qualificador pode ter uma agenda diferente. */
+const CM_BASE_PADRAO = 'https://cal.com';
 let CM_LEAD = null;
+let CM_LINK = '';   // link de Cal.com resolvido pro qualificador do lead atual
 let CM_NS = 0;   // o embed do Cal não é reaproveitável: namespace novo a cada montagem
 function abrirCalModal(r) {
   if (!podeAcessarLead(r)) { avisarLeadBloqueado(r); return; }
+  const rota = ROTEAMENTO_CACHE[r.call_track] || {};
+  if (rota.tipo !== 'calcom' || !rota.calLink) {
+    alert('Este lead não tem um qualificador com roteamento Cal.com configurado (Configurações → Editor do Quiz → Roteamento).');
+    return;
+  }
+  CM_LINK = rota.calLink;
   CM_LEAD = r;
   $('#cmTitulo').textContent = 'Agendar Encontro · ' + (r.nome || '(sem nome)');
   $('#calModal').style.display = 'flex';
@@ -1803,14 +1812,18 @@ function cmMontarEmbed() {
     + (r.email ? ' (' + r.email + ')' : '') + '.';
   const slot = $('#cmSlot'); clear(slot);
 
+  // base derivada do próprio link configurado (evita hardcodar a instância do Cal)
+  const base = (() => { try { return new URL(CM_LINK).origin; } catch { return CM_BASE_PADRAO; } })();
+  const path = String(CM_LINK || '').replace(base, '').replace(/^\/+/, '');
+
   /* snippet oficial do embed (carrega o embed.js uma única vez) */
-  (function (C, A, L) { let p = function (a, ar) { a.q.push(ar); }; let d = C.document; C.Cal = C.Cal || function () { let cal = C.Cal; let ar = arguments; if (!cal.loaded) { cal.ns = {}; cal.q = cal.q || []; d.head.appendChild(d.createElement("script")).src = A; cal.loaded = true; } if (ar[0] === L) { const api = function () { p(api, arguments); }; const namespace = ar[1]; api.q = api.q || []; if (typeof namespace === "string") { cal.ns[namespace] = cal.ns[namespace] || api; p(cal.ns[namespace], ar); p(cal, ["initNamespace", namespace]); } else p(cal, ar); return; } p(cal, ar); }; })(window, CM_BASE + "/embed/embed.js", "init");
+  (function (C, A, L) { let p = function (a, ar) { a.q.push(ar); }; let d = C.document; C.Cal = C.Cal || function () { let cal = C.Cal; let ar = arguments; if (!cal.loaded) { cal.ns = {}; cal.q = cal.q || []; d.head.appendChild(d.createElement("script")).src = A; cal.loaded = true; } if (ar[0] === L) { const api = function () { p(api, arguments); }; const namespace = ar[1]; api.q = api.q || []; if (typeof namespace === "string") { cal.ns[namespace] = cal.ns[namespace] || api; p(cal.ns[namespace], ar); p(cal, ["initNamespace", namespace]); } else p(cal, ar); return; } p(cal, ar); }; })(window, base + "/embed/embed.js", "init");
 
   const ns = 'crm' + (++CM_NS);
-  Cal("init", ns, { origin: CM_BASE });
+  Cal("init", ns, { origin: base });
   Cal.ns[ns]("inline", {
     elementOrSelector: slot,
-    calLink: CM_AGENDA,
+    calLink: path,
     config: { theme: "light", name: r.nome || '', email: r.email || '' },
   });
   Cal.ns[ns]("ui", { theme: "light", styles: { branding: { brandColor: "#a155f2" } }, hideEventTypeDetails: false });
@@ -3399,7 +3412,8 @@ function trilhaPill(t) {
 }
 
 let LEADS_VIEW = [];
-let ORIGEM_FILTER = '';   // '' | 't:<trilha>' (destino) | 'u:<utm_source>' (origem de tráfego)
+let ORIGEM_FILTER = '';        // '' | utm_source (de onde veio o clique — link de rastreio)
+let QUALIFICADOR_FILTER = '';  // '' | chave do qualificador (resultado do quiz)
 let STATUS_FILTER = '';
 let LEADS_UF = '';
 let LEADS_RENDA = '';
@@ -3433,11 +3447,13 @@ function popularLeadsAtendente() {
    veio de um link cadastrado) */
 let ORIGEM_QUALIFICADORES = [];
 let ORIGEM_LINKS = [];
+let ROTEAMENTO_CACHE = {};
 async function carregarQualificadoresOrigem() {
   try {
     const d = await fetch('/api/quiz-config').then((x) => x.json());
     if (d && d.ok && Array.isArray(d.qualificadores)) ORIGEM_QUALIFICADORES = d.qualificadores;
-  } catch (e) { /* fica vazio — cai no fallback fixo */ }
+    if (d && d.ok && d.roteamento) ROTEAMENTO_CACHE = d.roteamento;
+  } catch (e) { /* fica vazio */ }
   try {
     const r = await fetch('/api/links', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3447,38 +3463,60 @@ async function carregarQualificadoresOrigem() {
   } catch (e) { /* sem links cadastrados */ }
   render();
 }
+/* qualificadores configurados — sem nenhum valor de exemplo fixo; lista
+   vazia até você criar algum na aba Qualificadores. */
+function qualificadoresOuFallback() { return ORIGEM_QUALIFICADORES; }
+/* primeiro link de Cal.com configurado em algum qualificador (usado pelo
+   botão "+ Novo agendamento" quando não há um lead específico associado) */
+function primeiroCalLinkConfigurado() {
+  const q = ORIGEM_QUALIFICADORES.find((x) => (ROTEAMENTO_CACHE[x.chave] || {}).tipo === 'calcom' && (ROTEAMENTO_CACHE[x.chave] || {}).calLink);
+  return q ? ROTEAMENTO_CACHE[q.chave].calLink : '';
+}
+
+/* dropdown "Origem": só os links de rastreio cadastrados (de onde veio o
+   clique) — qualificador (resultado do quiz) é um filtro à parte. */
 function popularLeadsOrigem() {
   const sel = $('#leadsOrigemSel');
   const fontes = [...new Set(LEADS_VIEW.map((r) => String(r.utm_source || '').trim() || '(direto)'))].sort();
-  const want = fontes.join('|') + '#' + ORIGEM_QUALIFICADORES.map((q) => q.chave).join(',');
+  const want = fontes.join('|');
   if (sel.dataset.opts === want) return;
   sel.dataset.opts = want;
   const atual = ORIGEM_FILTER;
   clear(sel);
   const add = (v, tx) => { const o = document.createElement('option'); o.value = v; o.textContent = tx; sel.appendChild(o); };
   add('', 'Origem: Todas');
-  const qualifs = ORIGEM_QUALIFICADORES.length ? ORIGEM_QUALIFICADORES : [{ chave: 'comunidade', nome: 'Comunidade' }, { chave: 'premium', nome: 'WhatsApp' }];
-  qualifs.forEach((q) => add('t:' + q.chave, q.nome || q.chave));
   fontes.forEach((f) => {
     const link = ORIGEM_LINKS.find((l) => l.utm_source === f);
-    add('u:' + f, link ? link.nome : f);
+    add(f, link ? link.nome : f);
   });
   ORIGEM_FILTER = [...sel.options].some((o) => o.value === atual) ? atual : '';
   sel.value = ORIGEM_FILTER;
 }
+/* dropdown "Qualificador": lista dos qualificadores configurados */
+function popularLeadsQualificador() {
+  const sel = $('#leadsQualificadorSel');
+  const qualifs = qualificadoresOuFallback();
+  const want = qualifs.map((q) => q.chave).join(',');
+  if (sel.dataset.opts === want) return;
+  sel.dataset.opts = want;
+  const atual = QUALIFICADOR_FILTER;
+  clear(sel);
+  const add = (v, tx) => { const o = document.createElement('option'); o.value = v; o.textContent = tx; sel.appendChild(o); };
+  add('', 'Qualificador: Todos');
+  qualifs.forEach((q) => add(q.chave, q.nome || q.chave));
+  QUALIFICADOR_FILTER = [...sel.options].some((o) => o.value === atual) ? atual : '';
+  sel.value = QUALIFICADOR_FILTER;
+}
 function drawLeads() {
   popularLeadsAtendente();
   popularLeadsOrigem();
+  popularLeadsQualificador();
   LEADS_UF = popularDistintos($('#leadsUf'), LEADS_VIEW.map((r) => r.uf), 'Estado (UF): Todos', LEADS_UF);
   LEADS_RENDA = popularDistintos($('#leadsRenda'), LEADS_VIEW.map((r) => r.renda), 'Renda familiar: Todas', LEADS_RENDA);
   const q = ($('#search').value || '').trim().toLowerCase();
   let data = LEADS_VIEW.filter((r) => abaDoLead(r) === LEADS_ABA).filter(inLeadsRange);
-  if (ORIGEM_FILTER) {
-    const val = ORIGEM_FILTER.slice(2);
-    data = ORIGEM_FILTER.startsWith('t:')
-      ? data.filter((r) => r.call_track === val)
-      : data.filter((r) => (String(r.utm_source || '').trim() || '(direto)') === val);
-  }
+  if (ORIGEM_FILTER) data = data.filter((r) => (String(r.utm_source || '').trim() || '(direto)') === ORIGEM_FILTER);
+  if (QUALIFICADOR_FILTER) data = data.filter((r) => r.call_track === QUALIFICADOR_FILTER);
   if (STATUS_FILTER) data = data.filter((r) => statusCRM(r) === STATUS_FILTER);
   if (LEADS_RESPOSTA) data = data.filter((r) => respostaDe(r) === LEADS_RESPOSTA);
   if (LEADS_ATEND) {
@@ -3496,7 +3534,7 @@ function drawLeads() {
   $('#tbl-count').textContent = nf(data.length) + ' lead(s)';
 
   // paginação: 50 por página; mudou qualquer filtro/busca, volta pra 1ª página
-  const assinatura = [LEADS_ABA, LEADS_ATEND, ORIGEM_FILTER, STATUS_FILTER, LEADS_RESPOSTA, LEADS_UF, LEADS_RENDA, LEADS_AGENDOU, q, JSON.stringify(LEADS_RANGE)].join('§');
+  const assinatura = [LEADS_ABA, LEADS_ATEND, ORIGEM_FILTER, QUALIFICADOR_FILTER, STATUS_FILTER, LEADS_RESPOSTA, LEADS_UF, LEADS_RENDA, LEADS_AGENDOU, q, JSON.stringify(LEADS_RANGE)].join('§');
   if (assinatura !== LEADS_ASSINATURA) { LEADS_ASSINATURA = assinatura; LEADS_PAG = 0; }
   const totalPag = Math.max(1, Math.ceil(data.length / LEADS_POR_PAGINA));
   if (LEADS_PAG >= totalPag) LEADS_PAG = totalPag - 1;   // lista encolheu? recua
@@ -3504,10 +3542,10 @@ function drawLeads() {
 
   const t = $('#leads'); clear(t);
   /* lista COMPACTA: só o essencial cabe na tela, sem rolagem horizontal —
-     todo o resto (e-mail, origem, destino...) vive no Cartão do Lead */
-  const cols = ['Atualizado em', 'Nome', 'Telefone', 'Renda familiar', 'Atendente', 'Status', 'Resposta', ''];
-  if (LEADS_ABA === 'convertido') cols.splice(7, 0, 'Convertido em');
-  if (LEADS_ABA === 'perdido') cols.splice(7, 0, 'Perdido em', 'Motivo');
+     todo o resto (e-mail, origem...) vive no Cartão do Lead */
+  const cols = ['Atualizado em', 'Nome', 'Telefone', 'Qualificador', 'Renda familiar', 'Atendente', 'Status', 'Resposta', ''];
+  if (LEADS_ABA === 'convertido') cols.splice(8, 0, 'Convertido em');
+  if (LEADS_ABA === 'perdido') cols.splice(8, 0, 'Perdido em', 'Motivo');
   t.appendChild(tableHead(cols));
   const tb = el('tbody');
   pagina.forEach((r) => {
@@ -3519,6 +3557,7 @@ function drawLeads() {
       td(fmtDateTime(r.updated_at || r.created_at)),
       td(nomeLink(r), 'nome'),
       td(r.whatsapp),
+      td(trilhaPill(r.call_track)),
       td(r.renda),
       td(selAtendente(r)),
       td(crmPill(r)),
@@ -3850,7 +3889,7 @@ $('#waBtnQr').onclick = async () => {
   if (!r.ok) { $('#waMsg').textContent = r.error || 'Erro.'; $('#waQrBox').style.display = 'none'; return; }
   $('#waQrImg').src = String(r.qr).startsWith('data:') ? r.qr : 'data:image/png;base64,' + r.qr;
   $('#waQrBox').style.display = 'block';
-  $('#waMsg').textContent = 'Escaneie com o celular do número da SUAVIS. Depois clique em "Atualizar situação".';
+  $('#waMsg').textContent = 'Escaneie com o celular do número que vai enviar as mensagens. Depois clique em "Atualizar situação".';
 };
 
 /* --- porta de entrada única dos botões Conversar --- */
@@ -4107,6 +4146,12 @@ function utmCell(r) {
 }
 $('#search').addEventListener('input', drawLeads);
 $('#leadsOrigemSel').addEventListener('change', (e) => { ORIGEM_FILTER = e.target.value; drawLeads(); });
+$('#leadsQualificadorSel').addEventListener('change', (e) => { QUALIFICADOR_FILTER = e.target.value; drawLeads(); });
+$('#agNovoBtn').onclick = () => {
+  const link = primeiroCalLinkConfigurado();
+  if (!link) { alert('Nenhum link de Cal.com configurado ainda. Configure em Configurações → Editor do Quiz → Roteamento.'); return; }
+  window.open(link, '_blank', 'noopener');
+};
 $('#leadsStatusSel').addEventListener('change', (e) => {
   const v = e.target.value;
   // Convertido/Perdido são "abas" internas (colunas próprias); os demais filtram os ativos
@@ -4142,7 +4187,7 @@ $('#btn-csv').onclick = () => {
   const body = rows.map((r) => cols.map((c) => csvCell(r[c])).join(',')).join('\n');
   const blob = new Blob(['﻿' + head + '\n' + body], { type: 'text/csv;charset=utf-8;' });
   const a = el('a'); a.href = URL.createObjectURL(blob);
-  a.download = 'leads-quiz-suavis.csv';
+  a.download = 'leads-chatquizz.csv';
   document.body.appendChild(a); a.click(); a.remove();
   // registra a extração no livro de registros (melhor-esforço)
   fetch(API, {

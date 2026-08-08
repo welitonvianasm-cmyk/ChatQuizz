@@ -1,7 +1,8 @@
 /**
  * Espelho dos agendamentos do Cal (aba "Espelho do Cal" do painel).
- * Puxa direto da API OFICIAL do cal.com (v2) com a chave da Suely —
- * fonte da verdade: inclui bookings feitos fora do funil e o status real.
+ * Puxa direto da API OFICIAL do cal.com (v2) com a chave configurada em
+ * CALCOM_API_KEY — fonte da verdade: inclui bookings feitos fora do funil
+ * e o status real.
  * Protegido pelas senhas do painel.
  *
  *   GET /api/cal-bookings → { ok, count, bookings:[{uid,eventTypeId,evento,start,end,created,status,attendee,attendeesCount}] }

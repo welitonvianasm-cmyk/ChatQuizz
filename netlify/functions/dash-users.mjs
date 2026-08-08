@@ -19,11 +19,11 @@ const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 
-/* senha temporária legível, ex: suavis-K4TQ-7MX2 */
+/* senha temporária legível, ex: chatquizz-K4TQ-7MX2 */
 function gerarSenhaTemp() {
   const abc = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   const bloco = (n) => Array.from(randomBytes(n)).map((b) => abc[b % abc.length]).join('');
-  return `suavis-${bloco(4)}-${bloco(4)}`;
+  return `chatquizz-${bloco(4)}-${bloco(4)}`;
 }
 
 export default async (req) => {

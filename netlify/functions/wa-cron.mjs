@@ -17,8 +17,9 @@ const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const EV_URL = (process.env.EVOLUTION_URL || '').replace(/\/+$/, '');
 const EV_KEY = process.env.EVOLUTION_KEY || '';
-const EV_INST = process.env.EVOLUTION_INSTANCE || 'suavis';
-const SITE = 'https://quiz-suavitatis.netlify.app';
+const EV_INST = process.env.EVOLUTION_INSTANCE || 'chatquizz';
+// URL pública do site — Netlify preenche isso automaticamente (URL de produção)
+const SITE = (process.env.URL || '').replace(/\/+$/, '');
 
 const sb = (path, opts = {}) => fetch(`${SB_URL}/rest/v1/${path}`, { ...opts, headers: { ...H, ...(opts.headers || {}) } });
 

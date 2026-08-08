@@ -4,17 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#ffffff">
-  <title>Reconstrua Suas Emoções | Suavitatis Terapias Integrativas</title>
-  <meta name="description" content="Descubra em 2 minutos o quanto você está pronta para voltar a viver — diagnóstico emocional para quem cuida dos pais idosos.">
-  <link rel="icon" type="image/png" href="logo.png">
-  <!-- Pixel do Meta removido (o original enviava dados para a conta do autor).
-       Quando houver Pixel próprio da Suavitatis, reinstalar aqui com o ID dela. -->
+  <title>ChatQuizz</title>
+  <meta name="description" content="Responda em poucos minutos e descubra seu resultado personalizado.">
+  <!-- Pixel do Meta removido. Se for usar um Pixel próprio, reinstalar aqui. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* ===== TEMA SUAVITATIS (claro) — verde da marca como acento ===== */
+      /* ===== TEMA (claro) — cor de acento vem de APARENCIA.cor_primaria ===== */
       --bg-page: #fafcfb;
       --bg-header: #04302f;
       --bg-card: #ffffff;
@@ -501,7 +499,7 @@
     .pr-foot b { color: #7ef0a5; font-size: 16px; letter-spacing: .03em; }
     .produto-img { width: 100%; display: block; }
 
-    /* chips de múltipla escolha (quiz SUAVIS) */
+    /* chips de múltipla escolha */
     .chip.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
     .chip-ok { background: var(--gradient); color: #fff; font-weight: 700; }
 
@@ -518,7 +516,6 @@
   <header>
     <div class="topbar">
       <div class="brand">
-        <span class="brand-badge"><img src="logo.png" alt="Suavitatis Terapias Integrativas"></span>
         <span class="brand-sub">Reconstrua Suas Emoções</span>
       </div>
       <div class="step-pill" id="stepPill">0 de 11</div>
@@ -735,7 +732,7 @@ const RESULTADOS_PADRAO = {
   },
 };
 const ROTEAMENTO_PADRAO = {
-  comunidade: { tipo: 'calcom', calLink: 'https://cal.com/suavitatisterapias/comunidade' },
+  comunidade: { tipo: 'calcom', calLink: 'https://cal.com/sua-agenda/comunidade' },
   premium: { tipo: 'whatsapp', mensagem: 'Olá {nome}! Vi que você concluiu o quiz 💚 Vamos marcar nossa conversa?' },
 };
 
@@ -898,7 +895,7 @@ async function mostrarResultado(res) {
 /* ================================================================
    ESTADO + PERSISTÊNCIA
    ================================================================ */
-const SKEY = 'suavis_quiz_v1';
+const SKEY = 'chatquizz_quiz_v1';
 let state = { step: 0, data: {}, leadRef: null, done: false };
 /* ?demo na URL = MODO DEMONSTRAÇÃO (pra apresentar o sistema a clientes):
    o quiz roda inteirinho, mas NADA é gravado — sem banco de dados, sem
@@ -1277,12 +1274,12 @@ async function postJSON(url, payload, timeoutMs = 9000) {
   return null;
 }
 
-/* (a busca de perfil no Instagram via Apify foi removida do fluxo SUAVIS) */
+/* (a busca de perfil no Instagram via Apify foi removida do fluxo) */
 
-/* (o pré-diagnóstico de Instagram via IA foi removido do fluxo SUAVIS) */
+/* (o pré-diagnóstico de Instagram via IA foi removido do fluxo) */
 
 /* ================================================================
-   FLUXO PRINCIPAL SUAVIS — 11 passos
+   FLUXO PRINCIPAL — 11 passos
    0 nome · 1 whats · 2 email · 3-10 quiz (q1..q8) · resultado
    ================================================================ */
 async function etapaNome(replay = false) {
@@ -1419,16 +1416,17 @@ async function finalPresente() {
   if (convite) await mostrarTemplate(convite.texto, 1000);
 
   const rota = (qualificador && ROTEAMENTO[qualificador]) || { tipo: 'crm' };
-  if (rota.tipo === 'calcom' && rota.calLink) await renderAgendaSuavis(rota.calLink, qualificador);
+  if (rota.tipo === 'calcom' && rota.calLink) await renderAgendaEmbutida(rota.calLink, qualificador);
   else if (rota.tipo === 'whatsapp') await ctaWhatsAutomatico();
   else await ctaCRM();
 }
 
 /* agenda embutida do cal.com (link configurado no roteamento do qualificador) */
-async function renderAgendaSuavis(link, qualificador) {
+async function renderAgendaEmbutida(link, qualificador) {
   state.data.callTrack = qualificador; persist();
   salvarLead('completo');
-  await bot('Escolhe aqui embaixo o dia e o horário que ficam melhores pra você 👇 Vou te esperar com muito carinho e com seu ebook 💚', { delay: 1100 });
+  const comPresente = APARENCIA.tem_presente ? ' e com seu presente' : '';
+  await bot(`Escolhe aqui embaixo o dia e o horário que ficam melhores pra você 👇 Vou te esperar com muito carinho${comPresente} 💚`, { delay: 1100 });
   // demonstração: agenda simulada (local) no lugar do Cal.com de verdade
   if (MODO_DEMO) { renderAgendaInline({ track: qualificador }); return; }
   renderAgendaEmbed({ embedLink: link, track: qualificador, vendor: '' });
@@ -1493,7 +1491,7 @@ function renderAgendaEmbed(info) {
   const row = addRow('bot', `
     <div class="ag-head">
       <span class="ag-ic">📅</span>
-      <div><h4>Escolhe o melhor horário</h4><p>Encontro gratuito com a Suely · online</p></div>
+      <div><h4>Escolhe o melhor horário</h4><p>Encontro gratuito · online</p></div>
     </div>
     <div class="cal-embed-body"><div class="cal-embed-slot"></div></div>
   `, 'agenda-card cal-embed-card');
@@ -1819,7 +1817,8 @@ async function confirmarAgendamento(card, dia, hora, iso) {
   scrollDown();
 
   const s = safeData();
-  await bot(`Prontinho, <b>${s.primeiro}</b> 💚 Seu Encontro está marcado pra <b>${esc(diaTxt)} às ${esc(horaTxt)}</b>! Guardei sua <a href="${pageUrl}" target="_blank" rel="noopener"><b>página do Encontro</b></a> com todos os detalhes, e seu ebook <b>7 Dicas</b> já está separado pra você. Até lá!`, { delay: 900 });
+  const presenteMsg2 = APARENCIA.tem_presente ? `, e seu presente <b>${esc(APARENCIA.presente_nome || '')}</b> já está separado pra você` : '';
+  await bot(`Prontinho, <b>${s.primeiro}</b> 💚 Seu Encontro está marcado pra <b>${esc(diaTxt)} às ${esc(horaTxt)}</b>! Guardei sua <a href="${pageUrl}" target="_blank" rel="noopener"><b>página do Encontro</b></a> com todos os detalhes${presenteMsg2}. Até lá!`, { delay: 900 });
 }
 
 /* ================================================================

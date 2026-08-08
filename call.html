@@ -4,9 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#ffffff">
-  <title>Sua Conversa com a Suely | Suavitatis Terapias Integrativas</title>
+  <title>Sua Conversa | ChatQuizz</title>
   <meta name="robots" content="noindex">
-  <link rel="icon" type="image/png" href="logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -99,18 +98,17 @@
 <body>
   <header>
     <div class="topbar">
-      <span class="brand-badge"><img src="logo.png" alt="Suavitatis Terapias Integrativas"></span>
-      <span class="brand-sub">Sua conversa com a Suely</span>
+      <span class="brand-sub">Sua conversa</span>
     </div>
   </header>
 
   <main>
     <div class="card">
       <div class="card-head">
-        <div class="avatar"><img src="suely.png" alt="" onerror="this.onerror=null;this.src='logo.png';this.style.objectFit='contain';this.style.padding='6px'"></div>
+        <div class="avatar" id="avatarBox"></div>
         <div>
           <h1>Sua conversa está confirmada 🎉</h1>
-          <p>Conversa de acolhimento · Suavitatis · online</p>
+          <p>Conversa de acolhimento · online</p>
         </div>
       </div>
       <div class="card-body">
@@ -131,11 +129,11 @@
         <p class="hint" id="hintEntrar" hidden>O botão libera 15 minutos antes do horário.</p>
         <a class="btn gcal" id="btnGcal" target="_blank" rel="noopener" hidden>📅&nbsp; Adicionar ao Google Agenda</a>
 
-        <div class="gift">🎁 <b>Não esquece:</b> seu ebook <b>7 Dicas — Como manter seu idoso feliz e você menos estressada</b> é entregue nessa conversa.</div>
+        <div class="gift" id="giftBox" hidden></div>
       </div>
     </div>
   </main>
-  <footer>Suavitatis Terapias Integrativas · chegue 2 minutinhos antes 😉</footer>
+  <footer>chegue 2 minutinhos antes 😉</footer>
 
 <script>
 /* SEGURANÇA: todo dado dinâmico (nome via query/API, datas, links) entra no
@@ -149,6 +147,27 @@
   // o link do Meet vem capturado no booking (POST) e passado aqui no param `v`,
   // porque o GET /bookings/{uid} (info) não devolve a URL da sala.
   let videoUrl = q.get('v') || '';
+
+  // avatar + presente (mesma config do quiz — Editor do Quiz → Aparência)
+  try {
+    const ap = await fetch('/api/aparencia').then((x) => x.json());
+    if (ap && ap.ok) {
+      const url = ap.avatar_url || ap.avatar_fallback;
+      if (url) {
+        const img = document.createElement('img');
+        img.src = url; img.alt = '';
+        img.onerror = () => { img.remove(); };
+        $('avatarBox').appendChild(img);
+      }
+      if (ap.tem_presente) {
+        const b = document.createElement('b'); b.textContent = 'Não esquece:';
+        $('giftBox').append('🎁 ', b, ' seu presente ');
+        const nomeB = document.createElement('b'); nomeB.textContent = ap.presente_nome || '';
+        $('giftBox').append(nomeB, ' é entregue nessa conversa.');
+        $('giftBox').hidden = false;
+      }
+    }
+  } catch (e) { /* segue sem avatar/presente */ }
 
   // dados reais do booking (motor Cal.com), com fallback pros params
   if (uid) {
@@ -195,9 +214,9 @@
   // Google Agenda
   const gdate = (d) => d.toISOString().replace(/[-:]|\.\d{3}/g, '');
   $('btnGcal').href = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
-    '&text=' + encodeURIComponent('Conversa — Suavitatis Terapias Integrativas') +
+    '&text=' + encodeURIComponent('Sua conversa') +
     '&dates=' + gdate(start) + '/' + gdate(fim) +
-    '&details=' + encodeURIComponent('Conversa de acolhimento com a Suely — Suavitatis Terapias Integrativas.' + (videoUrl ? ' Entrar: ' + videoUrl : ''));
+    '&details=' + encodeURIComponent('Conversa de acolhimento.' + (videoUrl ? ' Entrar: ' + videoUrl : ''));
   $('btnGcal').hidden = false;
 
   // botão de entrar (libera 15 min antes)

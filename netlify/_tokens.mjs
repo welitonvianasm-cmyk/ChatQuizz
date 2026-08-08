@@ -1,6 +1,6 @@
 /* ====================================================================
    Autenticação do painel administrativo — ADMIN + EQUIPE + LOG.
-   - DASHBOARD_TOKEN (env): senha da ADMINISTRADORA (Suely).
+   - DASHBOARD_TOKEN (env): senha da administradora.
    - dash_users (Supabase): usuários da equipe. A senha fica guardada
      como HASH (criptografada) — nem a administradora consegue ler.
      `trocar_senha = true` força o usuário a definir a própria senha
@@ -14,7 +14,7 @@ const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const SB_HEADERS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 
 export function hashSenha(s) {
-  return createHash('sha256').update('suavis::' + String(s || '')).digest('hex');
+  return createHash('sha256').update('chatquizz::' + String(s || '')).digest('hex');
 }
 
 /* o painel só liga se a senha da administradora existir no ambiente */

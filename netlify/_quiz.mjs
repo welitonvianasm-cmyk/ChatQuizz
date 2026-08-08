@@ -123,7 +123,7 @@ export const PADRAO = {
     },
   },
   roteamento: {
-    comunidade: { tipo: 'calcom', calLink: 'https://cal.com/suavitatisterapias/comunidade' },
+    comunidade: { tipo: 'calcom', calLink: 'https://cal.com/sua-agenda/comunidade' },
     premium: { tipo: 'whatsapp', mensagem: 'Olá {nome}! Vi que você concluiu o quiz 💚 Vamos marcar nossa conversa?' },
   },
 };

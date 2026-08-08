@@ -1,7 +1,8 @@
 /**
  * WEBHOOK da Evolution API — recebe as mensagens do WhatsApp em tempo real.
  * Configurado na Evolution apontando para:
- *   https://quiz-suavitatis.netlify.app/api/wa-webhook?t=<WA_WEBHOOK_SECRET>
+ *   https://SEU-SITE.netlify.app/api/wa-webhook?t=<WA_WEBHOOK_SECRET>
+ * (isso já é feito automaticamente ao conectar o WhatsApp pelo painel)
  *
  * Grava cada mensagem em wa_mensagens e tenta casar o telefone com um lead.
  * Env: WA_WEBHOOK_SECRET (segredo do webhook — recusa chamadas sem ele).

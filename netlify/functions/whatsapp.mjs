@@ -8,10 +8,10 @@
  *   { token, action:'inbox' }                    → { ok, conversas }   (agrupado por telefone)
  *   { token, action:'historico', telefone }      → { ok, mensagens }   (e marca como lidas)
  *
- * Env (preencher quando a VPS estiver no ar):
- *   EVOLUTION_URL      — ex.: https://api.suavitatisterapias.com.br
+ * Env (preencher quando o servidor da Evolution estiver no ar):
+ *   EVOLUTION_URL      — ex.: https://sua-evolution-api.com
  *   EVOLUTION_KEY      — apikey global da Evolution
- *   EVOLUTION_INSTANCE — nome da instância (padrão: suavis)
+ *   EVOLUTION_INSTANCE — nome da instância (padrão: chatquizz)
  * Sem essas envs, tudo responde configurada:false e o painel cai no WhatsApp Web.
  */
 import { temConfig, autenticar } from '../_tokens.mjs';
@@ -21,7 +21,9 @@ const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const EV_URL = (process.env.EVOLUTION_URL || '').replace(/\/+$/, '');
 const EV_KEY = process.env.EVOLUTION_KEY || '';
-const EV_INST = process.env.EVOLUTION_INSTANCE || 'suavis';
+const EV_INST = process.env.EVOLUTION_INSTANCE || 'chatquizz';
+// URL pública do site — Netlify preenche isso automaticamente (URL de produção)
+const SITE_URL = (process.env.URL || '').replace(/\/+$/, '');
 const AVISO_SQL = 'Falta rodar o setup-whatsapp.sql no Supabase (módulo WhatsApp).';
 
 const configurada = () => !!(EV_URL && EV_KEY);
@@ -98,11 +100,11 @@ export default async (req) => {
       try { await ev('/instance/create', { method: 'POST', body: JSON.stringify({ instanceName: EV_INST, qrcode: true, integration: 'WHATSAPP-BAILEYS' }) }); } catch { /* já existe */ }
       // garante o webhook: toda mensagem recebida chega ao CRM em tempo real
       const segredo = process.env.WA_WEBHOOK_SECRET || '';
-      if (segredo) {
+      if (segredo && SITE_URL) {
         try {
           await ev(`/webhook/set/${EV_INST}`, {
             method: 'POST',
-            body: JSON.stringify({ webhook: { enabled: true, url: `https://quiz-suavitatis.netlify.app/api/wa-webhook?t=${segredo}`, events: ['MESSAGES_UPSERT'], base64: false, byEvents: false } }),
+            body: JSON.stringify({ webhook: { enabled: true, url: `${SITE_URL}/api/wa-webhook?t=${segredo}`, events: ['MESSAGES_UPSERT'], base64: false, byEvents: false } }),
           });
         } catch { /* reconfigura no próximo QR */ }
       }
