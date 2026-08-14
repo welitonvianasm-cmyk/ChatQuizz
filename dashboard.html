@@ -453,6 +453,33 @@
     </div>
   </div>
 
+  <!-- NOVO LEAD — cadastro manual pelo painel (botão "+ Novo Lead" do Quadro) -->
+  <div id="novoLeadModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:520px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;">Novo Lead</h2>
+        <button class="acao-btn" id="nlFechar" title="Fechar">✕</button>
+      </div>
+      <div class="sub" style="margin:0 0 12px;">Cadastro manual — o lead entra direto na lista de Leads e, se você já vincular um atendente, cai automaticamente na coluna <b>Atribuído</b> do quadro dele.</div>
+      <div style="display:grid;gap:10px;">
+        <label style="font-size:11.5px;font-weight:700;">Nome<span style="color:var(--red);">*</span><input id="nlNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Nome completo"></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label style="font-size:11.5px;font-weight:700;">WhatsApp<input id="nlWhats" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="(11) 99999-9999"></label>
+          <label style="font-size:11.5px;font-weight:700;">E-mail<input id="nlEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="nome@email.com"></label>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;">
+          <label style="font-size:11.5px;font-weight:700;">Estado (UF)<input id="nlUf" maxlength="2" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;text-transform:uppercase;" placeholder="SP"></label>
+          <label style="font-size:11.5px;font-weight:700;">Renda familiar<input id="nlRenda" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Ex: Entre R$ 5.000,00 e R$ 10.000,00"></label>
+        </div>
+        <label style="font-size:11.5px;font-weight:700;">Atendente responsável<select id="nlAtendente" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;"><option value="">— sem responsável —</option></select></label>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
+        <button id="nlSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Cadastrar lead</button>
+        <span class="muted-cell" id="nlStatus"></span>
+      </div>
+    </div>
+  </div>
+
   <!-- CHAT INTERNO DO WHATSAPP (popup de conversa) -->
   <div id="chatModal" style="display:none;position:fixed;inset:0;z-index:76;background:rgba(17,24,39,.5);align-items:center;justify-content:center;padding:16px;">
     <div style="background:var(--card);border-radius:16px;max-width:480px;width:100%;height:min(640px,92vh);display:flex;flex-direction:column;box-shadow:var(--shadow-md);overflow:hidden;">
@@ -992,6 +1019,7 @@
       <div class="sub">Organize os leads em colunas e <b>arraste os cartões</b> entre elas. Crie quantos quadros (funis) precisar.</div>
       <div class="kb-toolbar" data-pbanner="quadro">
         <select id="kbBoardSel" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;min-width:200px;"></select>
+        <button id="kbNovoLead" style="padding:9px 14px;border:none;border-radius:9px;background:#fff;color:var(--lime);font-weight:700;font-size:13px;cursor:pointer;">+ Novo Lead</button>
         <button class="btn" id="kbNovoQuadro">+ Novo Quadro</button>
         <button class="btn" id="kbNovaCol">+ Nova Coluna</button>
         <button class="btn" id="kbVinculo" title="Trocar o atendente responsável pelo quadro (só administradora)">Responsável</button>
@@ -3057,6 +3085,41 @@ $('#kbExcluirQuadro').onclick = async () => {
   await kbApi({ action: 'board_excluir', id: KB_BOARD });
   KB_BOARD = null;
   kbCarregar();
+};
+
+/* ===== NOVO LEAD — cadastro manual pelo painel ===== */
+function abrirNovoLeadModal() {
+  $('#nlNome').value = ''; $('#nlWhats').value = ''; $('#nlEmail').value = '';
+  $('#nlUf').value = ''; $('#nlRenda').value = ''; $('#nlStatus').textContent = '';
+  const sel = $('#nlAtendente'); clear(sel);
+  const o0 = el('option'); o0.value = ''; o0.textContent = '— sem responsável —'; sel.appendChild(o0);
+  (ATENDENTES || []).forEach((n) => { const o = el('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
+  if (!IS_ADMIN && USUARIO) sel.value = USUARIO;
+  $('#novoLeadModal').style.display = 'flex';
+  $('#nlNome').focus();
+}
+function fecharNovoLeadModal() { $('#novoLeadModal').style.display = 'none'; }
+$('#kbNovoLead').onclick = abrirNovoLeadModal;
+$('#nlFechar').onclick = fecharNovoLeadModal;
+$('#novoLeadModal').addEventListener('click', (e) => { if (e.target === $('#novoLeadModal')) fecharNovoLeadModal(); });
+$('#nlSalvar').onclick = async () => {
+  const nome = $('#nlNome').value.trim();
+  if (!nome) { $('#nlStatus').textContent = 'Informe o nome do lead.'; $('#nlNome').focus(); return; }
+  $('#nlStatus').textContent = 'salvando…';
+  const r = await fetch('/api/lead-admin', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token: localStorage.getItem(TKEY) || '', action: 'criar',
+      lead: {
+        nome, whatsapp: $('#nlWhats').value.trim(), email: $('#nlEmail').value.trim(),
+        uf: $('#nlUf').value.trim(), renda: $('#nlRenda').value.trim(), atendente: $('#nlAtendente').value,
+      },
+    }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  if (!r.ok) { $('#nlStatus').textContent = r.error || 'Erro ao cadastrar.'; return; }
+  fecharNovoLeadModal();
+  await refresh();
+  if (KB_CARREGADO) kbCarregar();
 };
 
 /* ===== navegação horizontal fluida do Kanban =====

@@ -5,6 +5,8 @@
  *     → { ok, equipe_json }   (equipe_json = anotações/campos/histórico atualizados)
  *   POST /api/lead-admin { token, action:'excluir', lead_ref }
  *     → { ok }   (remove o lead da base e dos quadros Kanban)
+ *   POST /api/lead-admin { token, action:'criar', lead: { nome, whatsapp?, email?, uf?, renda?, atendente? } }
+ *     → { ok, lead }   (cadastro manual pelo painel — ex: botão "+ Novo Lead" do Quadro)
  *
  * equipe_json (coluna no lead) = { obs, campos:[{k,v}], historico:[{t,quem,txt}] }
  * O histórico é preenchido AUTOMATICAMENTE a cada mudança, com o nome de quem fez.
@@ -80,6 +82,56 @@ export default async (req) => {
   try { body = await req.json(); } catch { /* sem body */ }
   const auth = await autenticar(req.headers.get('x-dash-token') || body.token || '');
   if (!auth.ok) return json({ error: 'unauthorized' }, 401);
+
+  /* ---------- CRIAR lead manualmente pelo painel (Kanban → "+ Novo Lead") ---------- */
+  if (body.action === 'criar') {
+    try {
+      const quem0 = auth.user.nome || 'Equipe';
+      const d = body.lead || {};
+      const nome = String(d.nome || '').trim().slice(0, 160);
+      if (!nome) return json({ ok: false, error: 'Informe o nome do lead.' });
+      const lead_ref = 'manual_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+      const atendente = String(d.atendente || '').trim().slice(0, 120);
+      const agora = new Date().toISOString();
+      const eq = {
+        obs: '', campos: [],
+        historico: [{ t: agora, quem: quem0, txt: 'Lead cadastrado manualmente pelo painel' + (atendente ? ' — atribuído a ' + atendente : '') }],
+      };
+      const novo = {
+        lead_ref, nome,
+        whatsapp: String(d.whatsapp || '').trim().slice(0, 40),
+        email: String(d.email || '').trim().slice(0, 160),
+        uf: String(d.uf || '').trim().slice(0, 2).toUpperCase(),
+        renda: String(d.renda || '').trim().slice(0, 80),
+        atendente,
+        status: 'completo',
+        origem: 'painel-crm',
+        equipe_json: JSON.stringify(eq),
+        created_at: agora, updated_at: agora,
+      };
+      if (atendente) novo.etapa = 'atribuido';
+      let r = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads`, {
+        method: 'POST', headers: { ...H, Prefer: 'return=representation' }, body: JSON.stringify(novo),
+      });
+      if (!r.ok) {
+        // colunas mais novas (etapa/equipe_json) podem não existir ainda — tenta sem elas
+        delete novo.etapa; delete novo.equipe_json;
+        r = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads`, {
+          method: 'POST', headers: { ...H, Prefer: 'return=representation' }, body: JSON.stringify(novo),
+        });
+      }
+      if (!r.ok) {
+        console.error('lead-admin criar:', await r.text().catch(() => ''));
+        return json({ ok: false, error: 'Erro ao criar o lead.' });
+      }
+      const linha = (await r.json())[0] || novo;
+      if (atendente) await moverNoKanban(lead_ref, atendente, 'atribuido');
+      return json({ ok: true, lead: linha });
+    } catch (e) {
+      console.error('lead-admin criar:', e?.message || e);
+      return json({ ok: false, error: 'error' }, 500);
+    }
+  }
 
   const ref = String(body.lead_ref || '').trim();
   if (!ref) return json({ ok: false, error: 'lead_ref obrigatório' });
