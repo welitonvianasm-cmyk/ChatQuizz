@@ -140,6 +140,9 @@
     .layout { grid-template-columns: 1fr; }
     .sidenav { position: static; }
   }
+  /* cards dentro do painel "Conexões" */
+  .conexao-card { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; background: var(--bg); }
+  .conexao-card h3 { font-size: 14px; margin-bottom: 6px; }
 
   /* ===== AGENDA — calendário ===== */
   .ag-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 14px; }
@@ -949,43 +952,61 @@
     <!-- ===== CONEXÕES — WhatsApp, Cal.com, webhook e infraestrutura (só administradora) ===== -->
     <div class="panel" id="pConexoes" hidden>
       <h2>Conexões</h2>
-      <div class="sub">Tudo que liga o sistema a serviços externos: WhatsApp, Cal.com, o webhook de mensagens e a infraestrutura (Netlify/Supabase).</div>
+      <div class="sub">Tudo que liga o sistema a serviços externos.</div>
 
-      <h3 style="margin:20px 0 8px;font-size:14px;">WhatsApp</h3>
-      <div class="sub">Conecte seu número pela Evolution API e controle os dois interruptores de forma independente. Com <b>Conversas</b> desligadas, os botões Conversar abrem o WhatsApp Web normalmente; com <b>Disparos</b> desligados, nenhuma mensagem automática sai.</div>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;margin-top:10px;">
-        <div style="flex:1;min-width:230px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-            <b>Situação:</b> <span id="waEstado" class="pill parcial">verificando…</span>
+      <!-- ===== card: WhatsApp ===== -->
+      <div class="conexao-card">
+        <h3>WhatsApp</h3>
+        <div class="sub">Conecte seu número pela Evolution API e controle os dois interruptores de forma independente. Com <b>Conversas</b> desligadas, os botões Conversar abrem o WhatsApp Web normalmente; com <b>Disparos</b> desligados, nenhuma mensagem automática sai.</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;margin-top:10px;">
+          <div style="flex:1;min-width:230px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <b>Situação:</b> <span id="waEstado" class="pill parcial">verificando…</span>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;margin:8px 0;cursor:pointer;">
+              <input type="checkbox" id="waTgConversas" style="width:17px;height:17px;accent-color:var(--lime);">
+              Conversas <span class="muted-cell" style="font-weight:400;">(inbox + popup interno em tempo real)</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;margin:8px 0;cursor:pointer;">
+              <input type="checkbox" id="waTgDisparos" style="width:17px;height:17px;accent-color:var(--lime);">
+              Disparos <span class="muted-cell" style="font-weight:400;">(automações, agendadas e lembretes)</span>
+            </label>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn" id="waBtnQr">Gerar QR Code</button>
+              <button class="btn" id="waBtnStatus">Atualizar situação</button>
+            </div>
+            <div class="muted-cell" id="waMsg" style="margin-top:10px;font-size:12.5px;"></div>
+            <div class="muted-cell" style="margin-top:10px;font-size:12px;border-top:1px solid var(--line);padding-top:8px;">
+              Webhook de mensagens recebidas: registrado automaticamente ao conectar. Se precisar configurar manualmente na Evolution, use <code id="waWebhookUrl" style="background:var(--bg);padding:2px 6px;border-radius:5px;">carregando…</code>
+            </div>
           </div>
-          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;margin:8px 0;cursor:pointer;">
-            <input type="checkbox" id="waTgConversas" style="width:17px;height:17px;accent-color:var(--lime);">
-            Conversas <span class="muted-cell" style="font-weight:400;">(inbox + popup interno em tempo real)</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;margin:8px 0;cursor:pointer;">
-            <input type="checkbox" id="waTgDisparos" style="width:17px;height:17px;accent-color:var(--lime);">
-            Disparos <span class="muted-cell" style="font-weight:400;">(automações, agendadas e lembretes)</span>
-          </label>
-          <div style="display:flex;gap:8px;margin-top:12px;">
-            <button class="btn" id="waBtnQr">Gerar QR Code</button>
-            <button class="btn" id="waBtnStatus">Atualizar situação</button>
+          <div id="waQrBox" style="display:none;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;">
+            <img id="waQrImg" alt="QR Code do WhatsApp" style="width:220px;height:220px;object-fit:contain;">
+            <div class="muted-cell" style="font-size:12px;margin-top:6px;">WhatsApp → Aparelhos conectados → Conectar aparelho</div>
           </div>
-          <div class="muted-cell" id="waMsg" style="margin-top:10px;font-size:12.5px;"></div>
-        </div>
-        <div id="waQrBox" style="display:none;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;">
-          <img id="waQrImg" alt="QR Code do WhatsApp" style="width:220px;height:220px;object-fit:contain;">
-          <div class="muted-cell" style="font-size:12px;margin-top:6px;">WhatsApp → Aparelhos conectados → Conectar aparelho</div>
         </div>
       </div>
 
-      <h3 style="margin:20px 0 8px;font-size:14px;">Webhook do WhatsApp</h3>
-      <div class="sub">Registrado automaticamente ao conectar (é assim que as mensagens recebidas chegam em tempo real). URL, se precisar configurar manualmente na Evolution: <code id="waWebhookUrl" style="background:var(--bg);padding:2px 6px;border-radius:5px;">carregando…</code></div>
+      <!-- ===== card: Cal.com ===== -->
+      <div class="conexao-card">
+        <h3>Cal.com</h3>
+        <div class="sub">Chave da API oficial do Cal.com (v2) — usada pela aba "Espelho do Cal" e pra saber se dá pra oferecer agendamento por Cal.com no roteamento. O link de cada qualificador continua sendo configurado em Editor do Quiz → Roteamento; aqui é só a chave de acesso.</div>
+        <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
+          <b>Situação:</b> <span id="calEstado" class="pill parcial">verificando…</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input type="password" id="calApiKey" placeholder="Cole a chave da API do Cal.com" style="flex:1;min-width:240px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
+          <button class="btn" id="calBtnSalvar">Salvar</button>
+          <button class="btn" id="calBtnRemover" style="display:none;">Remover</button>
+        </div>
+        <div class="muted-cell" id="calMsg" style="margin-top:8px;font-size:12.5px;"></div>
+      </div>
 
-      <h3 style="margin:20px 0 8px;font-size:14px;">Cal.com</h3>
-      <div class="sub" id="calStatusBox">verificando…</div>
-
-      <h3 style="margin:20px 0 8px;font-size:14px;">Infraestrutura</h3>
-      <div class="sub">Hospedagem no Netlify · banco de dados no Supabase · agendas configuradas por qualificador em Editor do Quiz → Roteamento.</div>
+      <!-- ===== card: Infraestrutura ===== -->
+      <div class="conexao-card">
+        <h3>Infraestrutura</h3>
+        <div class="sub">Hospedagem no Netlify · banco de dados no Supabase.</div>
+      </div>
     </div>
 
     <!-- ===== EDITOR DO QUIZ — só a administradora vê ===== -->
@@ -1419,7 +1440,7 @@ function navGo(sec) {
     if (!QE_CARREGADO) qeCarregar(); else qeRenderTudo();
   }
   if (sec === 'links' && !LINKS_CARREGADO) linksCarregar();
-  if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); }
+  if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); }
   if (sec === 'conversas') carregarWaStatus().then(carregarInbox);
   if (sec === 'automacoes') carregarAutomacoes();
   if (sec === 'disparos') carregarDisparos();
@@ -3547,18 +3568,52 @@ function primeiroCalLinkConfigurado() {
 function renderConexoesInfo() {
   const wh = $('#waWebhookUrl');
   if (wh) wh.textContent = location.origin + '/api/wa-webhook?t=••••••••';
-  const cal = $('#calStatusBox');
-  if (cal) {
-    cal.innerHTML = '';
-    const st = el('span'); st.textContent = CALCOM_CONECTADO
-      ? '✓ Conectado — a aba "Espelho do Cal" e a integração oficial estão disponíveis.'
-      : '○ Não conectado (CALCOM_API_KEY não configurado) — o roteamento por link continua funcionando normalmente, isso só afeta o Espelho do Cal.';
-    cal.appendChild(st);
-    const nota = el('div', 'muted-cell'); nota.style.marginTop = '6px';
-    nota.textContent = 'O link de agendamento de cada qualificador é configurado em Editor do Quiz → Roteamento.';
-    cal.appendChild(nota);
+}
+
+/* ===== Cal.com — interface de conexão (aba Configurações → Conexões) ===== */
+async function carregarConexaoCalcom() {
+  const estado = $('#calEstado'), msg = $('#calMsg'), btnRemover = $('#calBtnRemover'), input = $('#calApiKey');
+  estado.className = 'pill parcial'; estado.textContent = 'verificando…';
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'status' }),
+  }).then((x) => x.json()).catch(() => null);
+  if (!r || !r.ok) { estado.className = 'pill parcial'; estado.textContent = 'erro ao verificar'; return; }
+  const c = r.calcom;
+  estado.className = 'pill ' + (c.conectado ? 'agendado' : 'parcial');
+  estado.textContent = c.conectado ? 'conectada' : 'não conectada';
+  btnRemover.style.display = c.temSalva ? '' : 'none';
+  if (c.temEnv) {
+    msg.textContent = 'Configurada por variável de ambiente (CALCOM_API_KEY) no Netlify — não editável por aqui.';
+    input.disabled = true; input.placeholder = 'já configurada por variável de ambiente';
+    $('#calBtnSalvar').disabled = true;
+  } else {
+    msg.textContent = c.temSalva ? 'Chave salva pelo painel.' : '';
+    input.disabled = false; input.placeholder = 'Cole a chave da API do Cal.com';
+    $('#calBtnSalvar').disabled = false;
   }
 }
+$('#calBtnSalvar').onclick = async () => {
+  const api_key = ($('#calApiKey').value || '').trim();
+  if (!api_key) { $('#calMsg').textContent = 'Cole a chave antes de salvar.'; return; }
+  $('#calMsg').textContent = 'salvando…';
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'salvar_calcom', api_key }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  $('#calMsg').textContent = r.ok ? '✓ Salvo!' : ('' + (r.error || 'Erro ao salvar.'));
+  if (r.ok) { $('#calApiKey').value = ''; carregarConexaoCalcom(); carregarQualificadoresOrigem(); }
+};
+$('#calBtnRemover').onclick = async () => {
+  if (!confirm('Remover a chave do Cal.com salva pelo painel?')) return;
+  $('#calMsg').textContent = 'removendo…';
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'remover_calcom' }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  $('#calMsg').textContent = r.ok ? 'Removida.' : ('' + (r.error || 'Erro ao remover.'));
+  if (r.ok) { carregarConexaoCalcom(); carregarQualificadoresOrigem(); }
+};
 
 /* dropdown "Origem": só os links de rastreio cadastrados (de onde veio o
    clique) — qualificador (resultado do quiz) é um filtro à parte. */

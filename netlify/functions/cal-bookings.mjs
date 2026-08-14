@@ -8,6 +8,7 @@
  *   GET /api/cal-bookings → { ok, count, bookings:[{uid,eventTypeId,evento,start,end,created,status,attendee,attendeesCount}] }
  */
 import { temConfig, autenticar } from '../_tokens.mjs';
+import { obterCalcomApiKey } from '../_conexoes.mjs';
 const CAL_API = 'https://api.cal.com/v2';
 const CAL_VERSAO = '2024-08-13';
 
@@ -15,7 +16,7 @@ export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
 
   if (!temConfig()) return json({ error: 'DASHBOARD_TOKEN not configured' }, 503);
-  const apiKey = process.env.CALCOM_API_KEY;
+  const apiKey = await obterCalcomApiKey();
   if (!apiKey) return json({ error: 'CALCOM_API_KEY not configured' }, 500);
 
   let body = {};
