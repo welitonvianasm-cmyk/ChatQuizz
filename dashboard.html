@@ -73,15 +73,8 @@
   /* ===== APP SHELL =====
      Sem teto de largura: em telas grandes o painel usa a tela toda (só um
      teto bem alto pra não esticar demais em monitores ultrawide). */
-  #app { display: none; max-width: 1920px; margin: 0 auto; padding: 22px clamp(20px, 3vw, 48px) 60px; }
+  #app { display: none; max-width: 1920px; margin: 0 auto; }
   .topbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
-  .brand { display: flex; align-items: center; gap: 11px; margin-right: auto; }
-  .brand .logo {
-    width: 38px; height: 38px; border-radius: 10px; background: #16161e; color: #fff;
-    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;
-  }
-  .brand h1 { font-size: 16px; line-height: 1.2; }
-  .brand small { color: var(--text-dim); font-size: 11.5px; font-weight: 500; }
   .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .seg { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
   .seg button {
@@ -100,9 +93,27 @@
   /* elementos escondidos pela navegação SEMPRE somem (vence display:grid etc.) */
   [hidden] { display: none !important; }
 
-  /* ===== LAYOUT CRM — menu lateral escuro, recolhível (2-3 níveis) ===== */
-  .layout { display: grid; grid-template-columns: 225px minmax(0, 1fr); gap: 18px; align-items: start; }
-  .sidenav { position: sticky; top: 14px; background: var(--sidebar); border: none; border-radius: 16px; padding: 12px 10px; display: flex; flex-direction: column; gap: 3px; box-shadow: var(--shadow-md); }
+  /* ===== LAYOUT CRM — menu lateral fixo, tela cheia, recolhível (2-3 níveis) ===== */
+  .layout { display: block; }
+  .sidenav {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 225px; z-index: 40;
+    background: var(--sidebar); border: none; border-radius: 0; box-shadow: var(--shadow-md);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sidenav-topo { flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .sidenav-topo .logo { width: 34px; height: 34px; border-radius: 9px; background: var(--lime); color: var(--ink); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+  .sidenav-topo b { color: #fff; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidenav-corpo { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 3px; }
+  .sidenav-rodape { flex-shrink: 0; padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.08); }
+  .sidenav-user { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+  .sidenav-user .uavatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,.12); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .sidenav-user div { overflow: hidden; }
+  .sidenav-user b { display: block; color: #fff; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidenav-user small { display: block; color: #9CA3AF; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidenav-sair { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 9px; border-radius: 9px; border: none; background: none; color: #D1D5DB; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .sidenav-sair:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .sidenav-sair svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .maincol { margin-left: 225px; padding: 22px clamp(20px, 3vw, 48px) 60px; }
   .sidenav button { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: none; background: none; padding: 9px 11px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #D1D5DB; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sidenav button svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .85; }
   .sidenav button:hover { background: rgba(255, 255, 255, .08); color: #fff; }
@@ -136,10 +147,6 @@
   .fextra select { padding: 8px 11px; border: 1.5px solid var(--line); border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; background: #fff; max-width: 190px; }
   .fdatas { display: none; gap: 6px; align-items: center; font-size: 13px; font-weight: 600; flex-wrap: wrap; }
   .fdatas input { padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 9px; font-size: 13px; }
-  @media (max-width: 900px) {
-    .layout { grid-template-columns: 1fr; }
-    .sidenav { position: static; }
-  }
   /* cards dentro do painel "Conexões" */
   .conexao-card { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; background: var(--bg); }
   .conexao-card h3 { font-size: 14px; margin-bottom: 6px; }
@@ -300,14 +307,11 @@
   }
 
   /* ===== CABEÇALHO (busca global + usuário) ===== */
-  .topsearch { display: flex; align-items: center; gap: 7px; background: var(--card); border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 12px; flex: 0 1 250px; min-width: 170px; box-shadow: var(--shadow); }
+  .topsearch { display: flex; align-items: center; gap: 7px; background: var(--card); border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 12px; flex: 0 1 250px; min-width: 170px; box-shadow: var(--shadow); margin-right: auto; }
   .topsearch svg { width: 15px; height: 15px; color: var(--text-dim); flex-shrink: 0; }
   .topsearch input { border: none; outline: none; font-size: 13px; width: 100%; background: transparent; color: var(--text); }
   .topsearch:focus-within { border-color: var(--accent); }
-  .userchip { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 99px; padding: 4px 13px 4px 5px; box-shadow: var(--shadow); }
-  .userchip img { width: 29px; height: 29px; border-radius: 50%; object-fit: cover; }
   .uavatar { width: 29px; height: 29px; border-radius: 50%; background: var(--lime); color: var(--ink); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
-  .userchip b { font-size: 12.5px; white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
   .btn svg, .acao-btn svg { width: 15px; height: 15px; vertical-align: -3px; }
 
   /* ===== MODAIS — abertura suave ===== */
@@ -317,11 +321,11 @@
 
   /* ===== RESPONSIVO (notebook / tablet / celular) ===== */
   @media (max-width: 640px) {
-    #app { padding: 12px 10px 40px; }
+    /* tela pequena: sidebar sai do modo fixo tela-cheia e empilha em cima do conteúdo */
+    .sidenav { position: static; width: 100%; height: auto; }
+    .maincol { margin-left: 0; padding: 12px 10px 40px; }
     .topbar { gap: 8px; }
-    .brand small { display: none; }
     .topsearch { flex: 1 1 100%; order: 5; }
-    .userchip b { display: none; }
     .fbar select, .fbar .fmais { max-width: none; flex: 1 1 45%; }
     .kpis { grid-template-columns: 1fr 1fr; gap: 9px; }
     .kpi .k-num { font-size: 22px; }
@@ -456,12 +460,6 @@
   <!-- DASHBOARD -->
   <div id="app">
     <div class="topbar">
-      <div class="brand">
-        <div class="logo" style="background:var(--sidebar);">Q</div>
-        <div>
-          <h1>ChatQuizz CRM</h1>
-        </div>
-      </div>
       <div class="topsearch" title="Pesquisa global de leads (nome, telefone ou e-mail)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="buscaGlobal" placeholder="Buscar lead em todo o CRM...">
@@ -479,9 +477,7 @@
         </div>
         <button class="btn" id="btn-refresh" title="Atualizar dados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
         <button class="btn" id="btn-csv" title="Exportar relatório CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></button>
-        <div class="userchip" title="Usuário conectado"><span class="uavatar" id="userAvatar">A</span><b id="userName">…</b></div>
         <button class="btn" id="btn-config" title="Configurações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
-        <button class="btn" id="btn-logout" title="Sair do painel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
       </div>
       <div class="updated" id="updated"></div>
     </div>
@@ -493,6 +489,11 @@
 
     <div class="layout">
       <aside class="sidenav" id="sidenav">
+        <div class="sidenav-topo">
+          <div class="logo">Q</div>
+          <b>ChatQuizz CRM</b>
+        </div>
+        <div class="sidenav-corpo">
         <div class="nav-menu">
           <button class="nav-menu-btn aberto" data-menu="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Home<span class="nav-chevron">▾</span></button>
           <div class="nav-sub" data-menu-body="home">
@@ -549,6 +550,17 @@
             <button data-sec="conexoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Conexões</button>
             <button data-sec="usuarios"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Usuários</button>
           </div>
+        </div>
+        </div>
+        <div class="sidenav-rodape">
+          <div class="sidenav-user">
+            <span class="uavatar" id="userAvatar">A</span>
+            <div>
+              <b id="userName">…</b>
+              <small id="userPapel"></small>
+            </div>
+          </div>
+          <button class="sidenav-sair" id="btn-logout" title="Sair do painel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>Sair</button>
         </div>
       </aside>
       <div class="maincol">
@@ -1163,10 +1175,11 @@ async function doLogin(token) {
     }
     $('#gate').style.display = 'none';
     $('#app').style.display = 'block';
-    // chip do usuário no cabeçalho (Design System)
+    // cartão do usuário no rodapé do menu lateral
     const nomeChip = USUARIO || 'Administradora';
     $('#userName').textContent = nomeChip;
     $('#userAvatar').textContent = (nomeChip.trim()[0] || 'A').toUpperCase();
+    $('#userPapel').textContent = IS_ADMIN ? 'Administradora' : (IS_CS ? 'Customer Success' : 'Equipe');
     render();
     carregarPrioridade();
     carregarRendaCfg();   // faixas de renda atuais do quiz (pro quadro de renda)
