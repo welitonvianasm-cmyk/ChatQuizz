@@ -241,6 +241,33 @@
   .panel .sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; }
   .panel.grid2-item { margin-bottom: 0; }
 
+  /* ===== CABEÇALHO COLORIDO DE SEÇÃO (banner por submenu) ===== */
+  .pbanner { --pb-fg: #fff; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-radius: 16px; padding: 16px 22px; margin-bottom: 18px; color: var(--pb-fg); }
+  .pbanner-esq { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .pbanner-ic { width: 38px; height: 38px; border-radius: 11px; background: rgba(255, 255, 255, .2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .pbanner-ic svg { width: 20px; height: 20px; stroke: var(--pb-fg); }
+  .pbanner-tit { font-size: 15px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; line-height: 1.3; color: var(--pb-fg); }
+  .pbanner-sub { font-size: 12px; font-weight: 500; opacity: .88; margin-top: 2px; color: var(--pb-fg); }
+  .pbanner-acoes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .pbanner-acoes:empty { display: none; }
+  .pbanner-acoes .fbar, .pbanner-acoes .ag-toolbar, .pbanner-acoes .kb-toolbar, .pbanner-acoes .tbl-tools { margin: 0; }
+  .pbanner-acoes input, .pbanner-acoes select, .pbanner-acoes .fmais, .pbanner-acoes .btn { background: rgba(255, 255, 255, .16); border: 1.5px solid rgba(255, 255, 255, .38); color: var(--pb-fg); }
+  .pbanner-acoes input::placeholder { color: rgba(255, 255, 255, .78); }
+  .pbanner-acoes select option { color: #111; }
+  .pbanner-acoes .fmais:hover, .pbanner-acoes .btn:hover { background: rgba(255, 255, 255, .28); border-color: rgba(255, 255, 255, .6); }
+  .pbanner-acoes .fmais.on { background: #fff; border-color: #fff; color: var(--ink); }
+  .pbanner-acoes .muted-cell, .pbanner-acoes b, .pbanner-acoes span { color: var(--pb-fg); opacity: .92; }
+  .pbanner-acoes .seg { background: rgba(255, 255, 255, .16); border-radius: 10px; padding: 3px; }
+  .pbanner-acoes .seg button { color: var(--pb-fg); opacity: .85; background: none; border: none; }
+  .pbanner-acoes .seg button.on { background: #fff; color: var(--ink); opacity: 1; }
+  .pbanner.cor-azul { background: linear-gradient(120deg, #4F8CFF, #2F6FE0); }
+  .pbanner.cor-verde { background: linear-gradient(120deg, #34D399, #0EA36B); }
+  .pbanner.cor-laranja { background: linear-gradient(120deg, #FBBF24, #F59E0B); }
+  .pbanner.cor-roxo { background: linear-gradient(120deg, #A78BFA, #7C5CE0); }
+  .pbanner.cor-cinza { background: linear-gradient(120deg, #6B7280, #4B5563); }
+  .pbanner.cor-kanban { background: linear-gradient(120deg, #A78BFA, #34D399); }
+  .panel.tem-banner > h2:first-of-type, .panel.tem-banner > .sub:first-of-type { display: none; }
+
   /* ===== FUNNEL ===== */
   .funnel-stage { margin-bottom: 13px; }
   .fs-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
@@ -331,6 +358,8 @@
     .kpi .k-num { font-size: 22px; }
     .panel { padding: 14px; border-radius: 13px; }
     .kb-col { min-width: 82vw; max-width: 82vw; }
+    .pbanner { padding: 13px 16px; border-radius: 13px; }
+    .pbanner-tit { font-size: 13px; }
   }
 </style>
 </head>
@@ -565,6 +594,17 @@
       </aside>
       <div class="maincol">
 
+    <div class="pbanner" id="pbanner">
+      <div class="pbanner-esq">
+        <span class="pbanner-ic" id="pbannerIc"></span>
+        <div>
+          <div class="pbanner-tit" id="pbannerTit"></div>
+          <div class="pbanner-sub" id="pbannerSub"></div>
+        </div>
+      </div>
+      <div class="pbanner-acoes" id="pbannerAcoes"></div>
+    </div>
+
     <div id="tabFunil">
     <div class="kpis" id="kpis"></div>
 
@@ -642,11 +682,11 @@
       <div class="tbl-wrap"><table id="utmTable"></table></div>
     </div>
 
-    <div class="panel" id="pUpcoming" hidden>
+    <div class="panel tem-banner" id="pUpcoming" hidden>
       <h2>Leads Agendados</h2>
       <div class="sub">Todos os leads com Encontro marcado: futuros primeiro, depois os que já passaram (esmaecidos). Atribua o atendente responsável e controle o status. <b>Atenção:</b> Reagendar/Cancelar aqui muda só o status no painel — ajuste a agenda real no cal.com (a integração direta chega em breve).</div>
       <!-- barra única de filtros -->
-      <div class="fbar">
+      <div class="fbar" data-pbanner="agendados">
         <input id="uaBusca" class="fbusca" placeholder="Buscar por nome, telefone, e-mail ou WhatsApp...">
         <select id="uaPeriodoSel" title="Período pela data do Encontro">
           <option value="tudo">Encontro: Tudo</option>
@@ -685,10 +725,10 @@
       <div class="tbl-wrap"><table id="upcoming"></table></div>
     </div>
 
-    <div class="panel" id="pLeads" hidden>
+    <div class="panel tem-banner" id="pLeads" hidden>
       <h2>Leads</h2>
       <!-- barra única de filtros -->
-      <div class="fbar">
+      <div class="fbar" data-pbanner="leads">
         <input id="search" class="fbusca" placeholder="Buscar por nome, telefone, e-mail ou WhatsApp..." />
         <select id="leadsPeriodoSel" title="Período pela data de cadastro">
           <option value="tudo">Período: Tudo</option>
@@ -741,10 +781,10 @@
     </div>
 
     <!-- ===== PÓS-VENDA — Convertidos ===== -->
-    <div class="panel" id="pPosConv" hidden>
+    <div class="panel tem-banner" id="pPosConv" hidden>
       <h2>Pós-Venda · Convertidos</h2>
       <div class="sub">Leads convertidos saem da Gestão e chegam aqui para o Customer Success. Complete os dados da venda e marque <b>Recebido</b> quando o CS fizer o primeiro contato (só é possível com o cadastro completo).</div>
-      <div class="fbar">
+      <div class="fbar" data-pbanner="posConv">
         <input id="pvBusca" class="fbusca" placeholder="Buscar por nome, telefone ou e-mail...">
         <select id="pvStatus">
           <option value="">Situação: Todas</option>
@@ -757,10 +797,10 @@
     </div>
 
     <!-- ===== PÓS-VENDA — Conversões por Atendente ===== -->
-    <div class="panel" id="pPosAtend" hidden>
+    <div class="panel tem-banner" id="pPosAtend" hidden>
       <h2>Conversões por Atendente</h2>
       <div class="sub">Ranking de quem converteu: quantidade e valor vendido. O atendente que fez a conversão fica registrado para sempre no lead.</div>
-      <div class="fbar">
+      <div class="fbar" data-pbanner="posAtend">
         <select id="paPeriodo">
           <option value="tudo">Período: Tudo</option>
           <option value="hoje">Hoje</option>
@@ -773,11 +813,11 @@
     </div>
 
     <!-- ===== PÓS-VENDA — Financeiro ===== -->
-    <div class="panel" id="pPosFin" hidden>
+    <div class="panel tem-banner" id="pPosFin" hidden>
       <h2>Pós-Venda · Financeiro</h2>
       <div class="sub">Relatório financeiro dos leads convertidos e recebidos pelo CS.</div>
       <div class="kpis" id="pfKpis" style="margin:12px 0;"></div>
-      <div class="fbar">
+      <div class="fbar" data-pbanner="posFin">
         <select id="pfPeriodo">
           <option value="tudo">Período: Tudo</option>
           <option value="hoje">Hoje</option>
@@ -799,10 +839,10 @@
     </div>
 
     <!-- ===== CONVERSAS — inbox do WhatsApp ===== -->
-    <div class="panel" id="pConversas" hidden>
+    <div class="panel tem-banner" id="pConversas" hidden>
       <h2>Conversas</h2>
       <div class="sub">Inbox do WhatsApp. Clique numa conversa para abrir o chat interno. <span id="cvAviso"></span></div>
-      <div class="fbar">
+      <div class="fbar" data-pbanner="conversas">
         <input id="cvBusca" class="fbusca" placeholder="Buscar conversa por nome ou telefone...">
         <button class="btn" id="cvAtualizar">Atualizar</button>
         <span class="muted-cell" id="cvCount"></span>
@@ -811,7 +851,7 @@
     </div>
 
     <!-- ===== AUTOMAÇÕES ===== -->
-    <div class="panel" id="pAutomacoes" hidden>
+    <div class="panel tem-banner" id="pAutomacoes" hidden>
       <h2>Automações</h2>
       <div class="sub">Mensagens automáticas 100% editáveis (nada fixo no código). O gatilho <b>"1 hora antes da reunião"</b> usa os agendamentos reais do módulo Reuniões: configure uma vez e vale para todas as reuniões futuras, sempre sincronizado com remarcações e cancelamentos.</div>
       <div style="display:grid;gap:10px;max-width:640px;margin-bottom:6px;">
@@ -842,7 +882,7 @@
     </div>
 
     <!-- ===== DISPAROS AGENDADOS ===== -->
-    <div class="panel" id="pDisparos" hidden>
+    <div class="panel tem-banner" id="pDisparos" hidden>
       <h2>Disparos Agendados</h2>
       <div class="sub">Agende mensagens para um ou vários contatos. O robô confere a fila a cada 5 minutos e envia com o controle <b>Disparos</b> ativado. Lembretes de reunião criados pela automação também aparecem aqui.</div>
       <div style="display:grid;gap:10px;max-width:640px;margin-bottom:6px;">
@@ -884,10 +924,10 @@
     </div>
 
     <!-- ===== AGENDA — Dashboard (calendário) ===== -->
-    <div class="panel" id="pAgendaDash" hidden>
+    <div class="panel tem-banner" id="pAgendaDash" hidden>
       <h2>Agenda</h2>
       <div class="sub">Todos os Encontros agendados no calendário. Clique num dia para ver os compromissos dele e agir (atendente, status).</div>
-      <div class="ag-toolbar">
+      <div class="ag-toolbar" data-pbanner="agendaDash">
         <div class="seg" id="agModo">
           <button data-m="mes" class="on">Mês</button>
           <button data-m="semana">Semana</button>
@@ -929,15 +969,15 @@
     </div>
 
     <!-- ===== REUNIÕES — presença por data ===== -->
-    <div class="panel" id="pReunioes" hidden>
+    <div class="panel tem-banner" id="pReunioes" hidden>
       <h2>Reuniões</h2>
       <div class="sub">Todas as reuniões vêm automaticamente da Agenda. Marque a presença de cada lead: ✓ move para a aba Compareceu, ✕ para Não Compareceu — e o atendente responsável recebe um alerta no sino .</div>
-      <div class="seg" id="reTabs" style="margin:10px 0 12px;">
+      <div class="seg" id="reTabs" data-pbanner="reunioes" style="margin:10px 0 12px;">
         <button data-rt="pendentes" class="on">Reuniões do Dia (Pendentes)</button>
         <button data-rt="compareceu">✓ Compareceu</button>
         <button data-rt="nao_compareceu">✕ Não Compareceu</button>
       </div>
-      <div class="ag-toolbar" style="margin:0 0 12px;">
+      <div class="ag-toolbar" data-pbanner="reunioes" style="margin:0 0 12px;">
         <button class="btn" id="rePrev">‹</button>
         <b id="reTitulo" style="min-width:180px;text-align:center;font-size:14px;"></b>
         <button class="btn" id="reNext">›</button>
@@ -948,10 +988,10 @@
     </div>
 
     <!-- ===== QUADRO (FUNIL) — Kanban ===== -->
-    <div class="panel" id="pQuadro" hidden>
+    <div class="panel tem-banner" id="pQuadro" hidden>
       <h2>Quadro (Funil)</h2>
       <div class="sub">Organize os leads em colunas e <b>arraste os cartões</b> entre elas. Crie quantos quadros (funis) precisar.</div>
-      <div class="kb-toolbar">
+      <div class="kb-toolbar" data-pbanner="quadro">
         <select id="kbBoardSel" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;min-width:200px;"></select>
         <button class="btn" id="kbNovoQuadro">+ Novo Quadro</button>
         <button class="btn" id="kbNovaCol">+ Nova Coluna</button>
@@ -962,7 +1002,7 @@
       <div class="kb-cols" id="kbCols"></div>
     </div>
     <!-- ===== CONEXÕES — WhatsApp, Cal.com, webhook e infraestrutura (só administradora) ===== -->
-    <div class="panel" id="pConexoes" hidden>
+    <div class="panel tem-banner" id="pConexoes" hidden>
       <h2>Conexões</h2>
       <div class="sub">Tudo que liga o sistema a serviços externos.</div>
 
@@ -1022,7 +1062,7 @@
     </div>
 
     <!-- ===== EDITOR DO QUIZ — só a administradora vê ===== -->
-    <div class="panel" id="pQuizEditor" hidden>
+    <div class="panel tem-banner" id="pQuizEditor" hidden>
       <h2>Editor do Quiz</h2>
       <div class="sub">
         Perguntas, Qualificadores, Níveis de Consciência, os textos de resultado e o roteamento de cada qualificador — tudo é editado aqui e publicado junto. Nada muda no site até você clicar em <b>Publicar</b>.<br>
@@ -1039,7 +1079,7 @@
     </div>
 
     <!-- ===== LINKS DE RASTREIO — só a administradora vê ===== -->
-    <div class="panel" id="pLinks" hidden>
+    <div class="panel tem-banner" id="pLinks" hidden>
       <h2>Links de Rastreio</h2>
       <div class="sub">Crie um link curto por origem (Instagram, Facebook, um grupo de WhatsApp...) — quem entra no quiz por ele já chega marcado com essa origem no painel. Pode criar quantos quiser, ou nenhum.</div>
       <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;align-items:end;">
@@ -1051,7 +1091,7 @@
     </div>
 
     <!-- ===== ÁREA EQUIPE — só a administradora vê ===== -->
-    <div class="panel" id="equipePanel" hidden>
+    <div class="panel tem-banner" id="equipePanel" hidden>
       <h2>Usuários</h2>
       <div class="sub">Só você (administradora) vê esta área. Ao criar um usuário, o sistema gera uma <b>senha temporária</b> para você enviar à pessoa — no primeiro acesso ela cria a própria senha (que ninguém consegue ver, nem você). A data de validade corta o acesso automaticamente ao vencer (vazia = sem prazo).</div>
 
@@ -1075,14 +1115,12 @@
     </div><!-- /tabFunil -->
 
     <div id="tabCal" hidden>
-      <div class="panel" style="padding:12px 16px;">
-        <div class="tbl-tools" style="gap:12px;flex-wrap:wrap;">
-          <div class="seg" id="calScope">
-            <button data-s="" class="on">Todos os eventos</button>
-            <button data-s="funil">Só deste funil</button>
-          </div>
-          <span class="muted-cell">Esta aba conta <b>agendamentos registrados no Cal.com</b>. O card <b>"Agendaram conversa"</b> da aba Funil conta <b>pessoas</b>. A API do Cal devolve só os <b>50 agendamentos mais recentes de TODAS as suas agendas</b>, então pode <b>não bater 1:1</b> com o Funil. Use <b>"Só deste funil"</b> pra ver só o que veio do quiz.</span>
+      <div class="tbl-tools" id="calScopeBar" data-pbanner="calEspelho" style="gap:12px;flex-wrap:wrap;">
+        <div class="seg" id="calScope">
+          <button data-s="" class="on">Todos os eventos</button>
+          <button data-s="funil">Só deste funil</button>
         </div>
+        <span class="muted-cell">Esta aba conta <b>agendamentos registrados no Cal.com</b>. O card <b>"Agendaram conversa"</b> da aba Funil conta <b>pessoas</b>. A API do Cal devolve só os <b>50 agendamentos mais recentes de TODAS as suas agendas</b>, então pode <b>não bater 1:1</b> com o Funil. Use <b>"Só deste funil"</b> pra ver só o que veio do quiz.</span>
       </div>
       <div class="panel">
         <h2>Agendamentos no Cal — por evento</h2>
@@ -1442,6 +1480,7 @@ function navGo(sec) {
   NAV_ATUAL = sec;
   document.querySelectorAll('#sidenav button[data-sec]').forEach((b) => b.classList.toggle('on', b.dataset.sec === sec));
   sincronizarMenu(sec);
+  sincronizarBanner(sec);
   const cal = sec === 'calEspelho';
   $('#tabFunil').hidden = cal;
   $('#tabCal').hidden = !cal;
@@ -1529,6 +1568,45 @@ document.querySelectorAll('.panel h2').forEach((h) => {
   s.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="' + DS_CORES[cor] + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="19" height="19">' + DS_PATHS[ic] + '</svg>';
   h.prepend(s);
 });
+
+/* ===== cabeçalho colorido por seção (banner com ícone + título + subtítulo + ações) ===== */
+const PBANNER = {
+  geral: { tit: 'Visão Geral', sub: 'Painel de controle e métricas do funil', ic: 'grafico', cor: 'roxo' },
+  agendaDash: { tit: 'Agenda', sub: 'Todos os Encontros agendados no calendário', ic: 'calendario', cor: 'azul' },
+  agendados: { tit: 'Leads Agendados', sub: 'Encontros marcados: futuros e passados', ic: 'calendario', cor: 'azul' },
+  reunioes: { tit: 'Reuniões', sub: 'Presença das reuniões por data', ic: 'usuarios', cor: 'roxo' },
+  calEspelho: { tit: 'Espelho do Cal', sub: 'Agendamentos direto da agenda do Cal.com', ic: 'calendario', cor: 'azul' },
+  quadro: { tit: 'Quadro (Funil)', sub: 'Organize os leads em colunas — arraste os cartões', ic: 'kanban', cor: 'kanban' },
+  leads: { tit: 'Leads', sub: 'Todos os leads cadastrados no funil', ic: 'usuarios', cor: 'azul' },
+  posConv: { tit: 'Pós-Venda · Convertidos', sub: 'Leads aguardando o primeiro contato do CS', ic: 'trofeu', cor: 'laranja' },
+  posAtend: { tit: 'Conversões por Atendente', sub: 'Ranking de quem converteu: quantidade e valor', ic: 'medalha', cor: 'laranja' },
+  posFin: { tit: 'Pós-Venda · Financeiro', sub: 'Relatório financeiro dos leads convertidos', ic: 'carteira', cor: 'verde' },
+  conversas: { tit: 'Conversas', sub: 'Inbox do WhatsApp', ic: 'conversa', cor: 'verde' },
+  automacoes: { tit: 'Automações', sub: 'Mensagens automáticas 100% editáveis', ic: 'raio', cor: 'laranja' },
+  disparos: { tit: 'Disparos Agendados', sub: 'Fila de mensagens agendadas para envio', ic: 'envio', cor: 'laranja' },
+  qePerguntas: { tit: 'Editor do Quiz', sub: 'Perguntas do quiz e suas opções de resposta', ic: 'lista', cor: 'cinza' },
+  qeQualificadores: { tit: 'Editor do Quiz', sub: 'Qualificadores usados na classificação dos leads', ic: 'lista', cor: 'cinza' },
+  qeNiveis: { tit: 'Editor do Quiz', sub: 'Níveis de consciência do lead', ic: 'lista', cor: 'cinza' },
+  qeResultados: { tit: 'Editor do Quiz', sub: 'Textos de resultado mostrados ao final do quiz', ic: 'lista', cor: 'cinza' },
+  qeRoteamento: { tit: 'Editor do Quiz', sub: 'Para onde cada qualificador é direcionado', ic: 'lista', cor: 'cinza' },
+  qeAparencia: { tit: 'Editor do Quiz', sub: 'Identidade visual do quiz: cores, logo e mensagens', ic: 'lista', cor: 'cinza' },
+  links: { tit: 'Links de Rastreio', sub: 'Crie um link curto por origem de tráfego', ic: 'envio', cor: 'cinza' },
+  conexoes: { tit: 'Conexões', sub: 'Tudo que liga o sistema a serviços externos', ic: 'conversa', cor: 'cinza' },
+  usuarios: { tit: 'Usuários', sub: 'Gerencie o acesso da sua equipe ao painel', ic: 'usuarios', cor: 'roxo' },
+};
+/* leva cada barra de filtros/ações pra dentro do banner (uma vez só, no carregamento) */
+document.querySelectorAll('[data-pbanner]').forEach((elx) => $('#pbannerAcoes').appendChild(elx));
+function sincronizarBanner(sec) {
+  const info = PBANNER[sec];
+  const box = $('#pbanner');
+  if (!info) { box.hidden = true; return; }
+  box.hidden = false;
+  box.className = 'pbanner cor-' + info.cor;
+  $('#pbannerIc').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + DS_PATHS[info.ic] + '</svg>';
+  $('#pbannerTit').textContent = info.tit;
+  $('#pbannerSub').textContent = info.sub;
+  document.querySelectorAll('#pbannerAcoes [data-pbanner]').forEach((elx) => { elx.hidden = elx.dataset.pbanner !== sec; });
+}
 
 /* ===== ações da equipe sobre um lead (atendente / status do agendamento) ===== */
 /* ===== permissões: lead com atendente é exclusivo dele (e da administradora) ===== */
