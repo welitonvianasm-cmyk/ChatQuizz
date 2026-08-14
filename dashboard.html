@@ -74,7 +74,7 @@
      Sem teto de largura: em telas grandes o painel usa a tela toda (só um
      teto bem alto pra não esticar demais em monitores ultrawide). */
   #app { display: none; max-width: 1920px; margin: 0 auto; }
-  .topbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+  .topbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-left: 225px; padding: 18px clamp(20px, 3vw, 48px) 0; margin-bottom: 6px; }
   .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .seg { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
   .seg button {
@@ -113,7 +113,7 @@
   .sidenav-sair { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 9px; border-radius: 9px; border: none; background: none; color: #D1D5DB; font-size: 12.5px; font-weight: 600; cursor: pointer; }
   .sidenav-sair:hover { background: rgba(255,255,255,.08); color: #fff; }
   .sidenav-sair svg { width: 15px; height: 15px; flex-shrink: 0; }
-  .maincol { margin-left: 225px; padding: 22px clamp(20px, 3vw, 48px) 60px; }
+  .maincol { margin-left: 225px; padding: 10px clamp(20px, 3vw, 48px) 60px; }
   .sidenav button { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: none; background: none; padding: 9px 11px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #D1D5DB; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sidenav button svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .85; }
   .sidenav button:hover { background: rgba(255, 255, 255, .08); color: #fff; }
@@ -257,9 +257,14 @@
   .pbanner-acoes .fmais:hover, .pbanner-acoes .btn:hover { background: rgba(255, 255, 255, .28); border-color: rgba(255, 255, 255, .6); }
   .pbanner-acoes .fmais.on { background: #fff; border-color: #fff; color: var(--ink); }
   .pbanner-acoes .muted-cell, .pbanner-acoes b, .pbanner-acoes span { color: var(--pb-fg); opacity: .92; }
-  .pbanner-acoes .seg { background: rgba(255, 255, 255, .16); border-radius: 10px; padding: 3px; }
+  .pbanner-acoes .seg { background: rgba(255, 255, 255, .16); border-radius: 8px; padding: 2px; }
   .pbanner-acoes .seg button { color: var(--pb-fg); opacity: .85; background: none; border: none; }
   .pbanner-acoes .seg button.on { background: #fff; color: var(--ink); opacity: 1; }
+  /* filtros bem mais compactos dentro do banner (caixa e fonte menores) */
+  .pbanner .pbanner-acoes select, .pbanner .pbanner-acoes .fmais, .pbanner .pbanner-acoes .btn { padding: 6px 10px; font-size: 11.5px; max-width: 160px; }
+  .pbanner .pbanner-acoes .fbusca { padding: 6px 10px; font-size: 11.5px; min-width: 150px; }
+  .pbanner .pbanner-acoes .seg button { padding: 5px 9px; font-size: 11px; }
+  .pbanner .pbanner-acoes .muted-cell, .pbanner .pbanner-acoes b { font-size: 11px; }
   .panel.tem-banner > h2:first-of-type, .panel.tem-banner > .sub:first-of-type { display: none; }
 
   /* ===== FUNNEL ===== */
@@ -345,7 +350,7 @@
     /* tela pequena: sidebar sai do modo fixo tela-cheia e empilha em cima do conteúdo */
     .sidenav { position: static; width: 100%; height: auto; }
     .maincol { margin-left: 0; padding: 12px 10px 40px; }
-    .topbar { gap: 8px; }
+    .topbar { gap: 8px; margin-left: 0; padding: 12px 10px 0; }
     .topsearch { flex: 1 1 100%; order: 5; }
     .fbar select, .fbar .fmais { max-width: none; flex: 1 1 45%; }
     .kpis { grid-template-columns: 1fr 1fr; gap: 9px; }
