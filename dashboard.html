@@ -482,12 +482,13 @@
 
     <div class="layout">
       <aside class="sidenav" id="sidenav">
+        <div class="nav-grupo">HOME</div>
         <button data-sec="geral" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Visão Geral</button>
         <div class="nav-grupo">AGENDA</div>
         <button data-sec="agendaDash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Dashboard</button>
-        <button data-sec="agendados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>Leads Agendados</button>
         <button data-sec="reunioes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/></svg>Reuniões</button>
-        <button data-sec="calEspelho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Espelho do Cal</button>
+        <button data-sec="agendados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>Leads Agendados</button>
+        <button data-sec="calEspelho" id="navCalEspelho" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Espelho do Cal</button>
         <div class="nav-grupo">GESTÃO</div>
         <button data-sec="quadro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" opacity=".35"/><path d="M8 7v9"/><path d="M12 7v5"/><path d="M16 7v7"/></svg>Quadro (Funil)</button>
         <button data-sec="leads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Leads</button>
@@ -3455,6 +3456,12 @@ async function carregarQualificadoresOrigem() {
     const d = await fetch('/api/quiz-config').then((x) => x.json());
     if (d && d.ok && Array.isArray(d.qualificadores)) ORIGEM_QUALIFICADORES = d.qualificadores;
     if (d && d.ok && d.roteamento) ROTEAMENTO_CACHE = d.roteamento;
+    // "Espelho do Cal" só aparece no menu quando o CALCOM_API_KEY está configurado
+    const navCal = $('#navCalEspelho');
+    if (navCal) {
+      navCal.hidden = !(d && d.ok && d.calcomConectado);
+      if (navCal.hidden && NAV_ATUAL === 'calEspelho') navGo('geral');
+    }
   } catch (e) { /* fica vazio */ }
   try {
     const r = await fetch('/api/links', {

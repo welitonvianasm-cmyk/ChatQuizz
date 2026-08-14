@@ -21,6 +21,9 @@ const CHAVE = 'quiz_perguntas';
 // credenciais da Evolution existem (checagem de estado ao vivo é cara
 // demais pra rodar em toda carga pública do quiz).
 const whatsappConectado = () => !!(process.env.EVOLUTION_URL && process.env.EVOLUTION_KEY);
+// idem pro Cal.com — só confirma que a chave existe (decide se o painel
+// mostra a aba "Espelho do Cal")
+const calcomConectado = () => !!process.env.CALCOM_API_KEY;
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
@@ -28,7 +31,7 @@ export default async (req) => {
   /* GET público — o quiz e o editor leem daqui */
   if (req.method === 'GET') {
     const { doc, personalizado } = await carregarConfigPublicada(SB_URL, H);
-    return json({ ok: true, ...doc, personalizado, whatsappConectado: whatsappConectado() });
+    return json({ ok: true, ...doc, personalizado, whatsappConectado: whatsappConectado(), calcomConectado: calcomConectado() });
   }
 
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
