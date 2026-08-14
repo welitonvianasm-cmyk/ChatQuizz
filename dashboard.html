@@ -15,9 +15,9 @@
      Sidebar:    #111827 escura · Fundo geral: #F8FAFC · Cards: brancos
      ~80% branco · 15% cinzas · 5% cor de destaque                  */
   :root {
-    /* Design System v2: Verde Lima é a PRIMÁRIA; roxo claro só em gráficos */
-    --lime: #D9FF3F; --lime-hover: #C4E92E; --lime-soft: rgba(217, 255, 63, .25);
-    --lime-icon: #9DBE12;   /* lima escurecido p/ ícones legíveis sobre branco */
+    /* Design System v3: Azul #0028b3 é a PRIMÁRIA (substituiu o verde lima); roxo claro só em gráficos */
+    --lime: #0028B3; --lime-hover: #001F8A; --lime-soft: rgba(0, 40, 179, .14);
+    --lime-icon: #0028B3;
     --ink: #1F2937;
     --accent: #4F8CFF; --accent-dark: #3B75E0; --accent-soft: rgba(79, 140, 255, .12);
     --chart: #A78BFA; --chart-dark: #8B5CF6;   /* roxo claro: gráficos e informativos */
@@ -65,7 +65,7 @@
   .gate-card input:focus { border-color: var(--accent); }
   .gate-card button {
     width: 100%; padding: 13px; border: none; border-radius: 11px; cursor: pointer;
-    background: var(--lime); color: var(--ink); font-size: 15px; font-weight: 700;
+    background: var(--lime); color: #fff; font-size: 15px; font-weight: 700;
   }
   .gate-card button:hover { background: var(--lime-hover); }
   .gate-err { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 16px; }
@@ -81,7 +81,7 @@
     border: none; background: transparent; padding: 8px 12px; cursor: pointer; font-size: 12.5px;
     color: var(--text-muted); font-weight: 600; transition: all .12s;
   }
-  .seg button.on { background: var(--lime); color: var(--ink); }
+  .seg button.on { background: var(--lime); color: #fff; }
   .btn {
     border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 13px;
     cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text); box-shadow: var(--shadow);
@@ -101,7 +101,7 @@
     display: flex; flex-direction: column; overflow: hidden;
   }
   .sidenav-topo { flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
-  .sidenav-topo .logo { width: 34px; height: 34px; border-radius: 9px; background: var(--lime); color: var(--ink); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+  .sidenav-topo .logo { width: 34px; height: 34px; border-radius: 9px; background: var(--lime); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
   .sidenav-topo b { color: #fff; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sidenav-corpo { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 3px; }
   .sidenav-rodape { flex-shrink: 0; padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.08); }
@@ -117,7 +117,7 @@
   .sidenav button { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: none; background: none; padding: 9px 11px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #D1D5DB; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sidenav button svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .85; }
   .sidenav button:hover { background: rgba(255, 255, 255, .08); color: #fff; }
-  .sidenav button.on { background: var(--lime); color: var(--ink); font-weight: 700; }
+  .sidenav button.on { background: var(--lime); color: #fff; font-weight: 700; }
   .sidenav button.on svg { opacity: 1; }
   /* grupo de topo (Home/Gestão/Agenda/...): maiúsculas, negrito, fonte maior */
   .nav-menu-btn { font-size: 13.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: #9CA3AF; margin-top: 4px; }
@@ -225,8 +225,8 @@
   .kpi .k-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 6px; }
   .kpi { transition: box-shadow .18s ease, transform .18s ease; }
   .kpi:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-  .kpi.hero { background: linear-gradient(140deg, var(--lime), #E4F57A); border: none; }
-  .kpi.hero .k-label, .kpi.hero .k-num, .kpi.hero .k-sub { color: var(--ink); }
+  .kpi.hero { background: linear-gradient(140deg, var(--lime), #1E4BD8); border: none; }
+  .kpi.hero .k-label, .kpi.hero .k-num, .kpi.hero .k-sub { color: #fff; }
   .kpi.hero .k-sub { opacity: .72; }
   .kpi .k-num.green { color: var(--green); }
   .kpi .k-num.blue { color: var(--blue); }
@@ -242,7 +242,7 @@
   .panel.grid2-item { margin-bottom: 0; }
 
   /* ===== CABEÇALHO COLORIDO DE SEÇÃO (banner por submenu) ===== */
-  .pbanner { --pb-fg: #fff; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-radius: 16px; padding: 16px 22px; margin-bottom: 18px; color: var(--pb-fg); }
+  .pbanner { --pb-fg: #fff; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-radius: 16px; padding: 16px 22px; margin-bottom: 18px; color: var(--pb-fg); background: linear-gradient(120deg, #0028B3, #001A73); }
   .pbanner-esq { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .pbanner-ic { width: 38px; height: 38px; border-radius: 11px; background: rgba(255, 255, 255, .2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .pbanner-ic svg { width: 20px; height: 20px; stroke: var(--pb-fg); }
@@ -260,12 +260,6 @@
   .pbanner-acoes .seg { background: rgba(255, 255, 255, .16); border-radius: 10px; padding: 3px; }
   .pbanner-acoes .seg button { color: var(--pb-fg); opacity: .85; background: none; border: none; }
   .pbanner-acoes .seg button.on { background: #fff; color: var(--ink); opacity: 1; }
-  .pbanner.cor-azul { background: linear-gradient(120deg, #4F8CFF, #2F6FE0); }
-  .pbanner.cor-verde { background: linear-gradient(120deg, #34D399, #0EA36B); }
-  .pbanner.cor-laranja { background: linear-gradient(120deg, #FBBF24, #F59E0B); }
-  .pbanner.cor-roxo { background: linear-gradient(120deg, #A78BFA, #7C5CE0); }
-  .pbanner.cor-cinza { background: linear-gradient(120deg, #6B7280, #4B5563); }
-  .pbanner.cor-kanban { background: linear-gradient(120deg, #A78BFA, #34D399); }
   .panel.tem-banner > h2:first-of-type, .panel.tem-banner > .sub:first-of-type { display: none; }
 
   /* ===== FUNNEL ===== */
@@ -338,7 +332,7 @@
   .topsearch svg { width: 15px; height: 15px; color: var(--text-dim); flex-shrink: 0; }
   .topsearch input { border: none; outline: none; font-size: 13px; width: 100%; background: transparent; color: var(--text); }
   .topsearch:focus-within { border-color: var(--accent); }
-  .uavatar { width: 29px; height: 29px; border-radius: 50%; background: var(--lime); color: var(--ink); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
+  .uavatar { width: 29px; height: 29px; border-radius: 50%; background: var(--lime); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
   .btn svg, .acao-btn svg { width: 15px; height: 15px; vertical-align: -3px; }
 
   /* ===== MODAIS — abertura suave ===== */
@@ -448,7 +442,7 @@
         <label style="font-size:11.5px;font-weight:700;">Responsável CS<select id="vmCs" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;"><option value="">— definir depois —</option></select></label>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
-        <button id="vmSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar dados</button>
+        <button id="vmSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Salvar dados</button>
         <span class="muted-cell" id="vmStatus"></span>
       </div>
     </div>
@@ -469,7 +463,7 @@
       <div id="chMsgs" style="flex:1;overflow-y:auto;padding:14px;background:#F1F5F9;display:flex;flex-direction:column;gap:6px;"></div>
       <div style="display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:var(--card);">
         <input id="chInput" placeholder="Escreva uma mensagem..." style="flex:1;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;">
-        <button id="chEnviar" title="Enviar" style="padding:0 16px;border:none;border-radius:10px;background:var(--lime);color:var(--ink);font-weight:700;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+        <button id="chEnviar" title="Enviar" style="padding:0 16px;border:none;border-radius:10px;background:var(--lime);color:#fff;font-weight:700;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
       </div>
     </div>
   </div>
@@ -873,7 +867,7 @@
           <textarea id="amMsg" rows="4" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;resize:vertical;" placeholder="Oi {{nome}}! Nosso Encontro é hoje às {{horario}} 💚 Te espero aqui: {{link_reuniao}}"></textarea>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button id="amSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar automação</button>
+          <button id="amSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Salvar automação</button>
           <button class="btn" id="amCancelar" style="display:none;">Cancelar edição</button>
           <span class="muted-cell" id="amStatus"></span>
         </div>
@@ -906,7 +900,7 @@
           <textarea id="dpMsg" rows="3" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;resize:vertical;" placeholder="Mensagem a enviar..."></textarea>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button id="dpAgendar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--ink);font-weight:700;font-size:13.5px;cursor:pointer;">Agendar disparo</button>
+          <button id="dpAgendar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Agendar disparo</button>
           <span class="muted-cell" id="dpStatus"></span>
         </div>
       </div>
@@ -1073,7 +1067,7 @@
         <button class="btn" id="qeNova">+ Nova pergunta</button>
         <span style="flex:1"></span>
         <button class="btn" id="qeRestaurar">Restaurar padrão</button>
-        <button id="qePublicar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--ink);font-weight:700;font-size:13.5px;cursor:pointer;">Publicar</button>
+        <button id="qePublicar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Publicar</button>
       </div>
       <div class="muted-cell" id="qeStatus" style="margin-top:8px;"></div>
     </div>
@@ -1084,7 +1078,7 @@
       <div class="sub">Crie um link curto por origem (Instagram, Facebook, um grupo de WhatsApp...) — quem entra no quiz por ele já chega marcado com essa origem no painel. Pode criar quantos quiser, ou nenhum.</div>
       <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;align-items:end;">
         <label style="font-size:11.5px;font-weight:600;">Nome<input id="lkNome" style="width:220px;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Ex: Instagram Bio"></label>
-        <button id="lkCriar" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:var(--ink);font-weight:700;font-size:13px;cursor:pointer;">+ Criar link</button>
+        <button id="lkCriar" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">+ Criar link</button>
       </div>
       <span class="muted-cell" id="lkStatus"></span>
       <div class="tbl-wrap"><table id="lkTable"></table></div>
@@ -1102,7 +1096,7 @@
         <label style="font-size:11.5px;font-weight:600;">Validade<input id="eqVal" type="date" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
         <label style="font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:5px;white-space:nowrap;padding-bottom:10px;" title="Recebe leads convertidos no Pós-Venda (Customer Success)"><input id="eqCS" type="checkbox" style="width:16px;height:16px;accent-color:var(--accent);">Função CS</label>
         <label style="font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:5px;white-space:nowrap;padding-bottom:10px;" title="Privilégios completos de administradora em todos os módulos"><input id="eqADM" type="checkbox" style="width:16px;height:16px;accent-color:var(--accent);">Funções de ADM</label>
-        <button id="eqSalvar" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:var(--ink);font-weight:700;font-size:13px;cursor:pointer;">Adicionar</button>
+        <button id="eqSalvar" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">Adicionar</button>
         <button id="eqCancelar" style="padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;background:#fff;font-weight:600;font-size:13px;cursor:pointer;display:none;">Cancelar</button>
       </div>
       <span class="muted-cell" id="eqStatus"></span>
@@ -1601,7 +1595,6 @@ function sincronizarBanner(sec) {
   const box = $('#pbanner');
   if (!info) { box.hidden = true; return; }
   box.hidden = false;
-  box.className = 'pbanner cor-' + info.cor;
   $('#pbannerIc').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + DS_PATHS[info.ic] + '</svg>';
   $('#pbannerTit').textContent = info.tit;
   $('#pbannerSub').textContent = info.sub;
@@ -1860,7 +1853,7 @@ function abrirLeadModal(r) {
   const ag = el('button');
   ag.textContent = 'Agendar';
   ag.title = 'Abre a agenda do Cal.com aqui dentro, já no nome deste lead — a confirmação é registrada no painel na hora';
-  ag.style.cssText = 'background:var(--lime);color:var(--ink);font-weight:700;font-size:13px;padding:9px 16px;border-radius:9px;border:0;cursor:pointer;';
+  ag.style.cssText = 'background:var(--lime);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:9px;border:0;cursor:pointer;';
   ag.onclick = () => abrirCalModal(r);
   acoes.appendChild(ag);
   if (!r.resultado) {
@@ -1947,7 +1940,7 @@ function abrirLeadModal(r) {
   bAdd.onclick = () => { LM_DRAFT.campos.push({ k: '', v: '' }); abrirLeadModal(r); };
   const bSalvar = el('button');
   bSalvar.textContent = 'Salvar anotações';
-  bSalvar.style.cssText = 'background:var(--lime);color:var(--ink);border:none;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:9px;cursor:pointer;';
+  bSalvar.style.cssText = 'background:var(--lime);color:#fff;border:none;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:9px;cursor:pointer;';
   bSalvar.onclick = () => salvarLeadCampos(r, { obs: LM_DRAFT.obs, campos_extras: LM_DRAFT.campos });
   rodape.append(bAdd, bSalvar);
   c.appendChild(rodape);
@@ -2501,7 +2494,7 @@ function qeRenderAparencia(box) {
 
   const btnRow = el('div'); btnRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:6px;';
   const btnSalvar = el('button'); btnSalvar.textContent = 'Salvar aparência';
-  btnSalvar.style.cssText = 'padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--ink);font-weight:700;font-size:13.5px;cursor:pointer;';
+  btnSalvar.style.cssText = 'padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;';
   const status = el('span', 'muted-cell'); status.style.marginLeft = '4px';
   btnSalvar.onclick = async () => {
     status.textContent = 'salvando…';
@@ -4170,7 +4163,7 @@ async function carregarChat(primeira) {
     const dt = new Date(m.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     b.style.cssText = 'max-width:78%;padding:8px 11px;border-radius:12px;font-size:13.5px;line-height:1.4;box-shadow:var(--shadow);'
       + (m.direcao === 'out'
-        ? 'align-self:flex-end;background:var(--lime-soft);border:1px solid #dbe9a8;'
+        ? 'align-self:flex-end;background:var(--lime-soft);border:1px solid #b9c6ec;'
         : 'align-self:flex-start;background:#fff;border:1px solid var(--line);');
     const tx = el('div'); tx.textContent = m.texto;
     const hs = el('div'); hs.textContent = (m.direcao === 'out' && m.quem ? m.quem + ' · ' : '') + dt;
@@ -4233,7 +4226,7 @@ function renderInbox() {
     dir.appendChild(hr);
     if (c.nao_lidas) {
       const bd = el('span'); bd.textContent = c.nao_lidas;
-      bd.style.cssText = 'display:inline-block;margin-top:3px;background:var(--lime);color:var(--ink);font-size:11px;font-weight:800;border-radius:99px;padding:1px 8px;';
+      bd.style.cssText = 'display:inline-block;margin-top:3px;background:var(--lime);color:#fff;font-size:11px;font-weight:800;border-radius:99px;padding:1px 8px;';
       dir.appendChild(bd);
     }
     row.append(av, meio, dir);
@@ -4307,7 +4300,7 @@ function dpRenderEscolhidos() {
   const box = $('#dpEscolhidos'); clear(box);
   DP_CONTATOS.forEach((c, i) => {
     const chip = el('span');
-    chip.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:var(--lime-soft);border:1px solid #dbe9a8;border-radius:99px;padding:4px 11px;font-size:12.5px;font-weight:600;';
+    chip.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:var(--lime-soft);border:1px solid #b9c6ec;border-radius:99px;padding:4px 11px;font-size:12.5px;font-weight:600;';
     chip.append(c.nome || c.telefone);
     const x = el('button'); x.textContent = '✕'; x.style.cssText = 'border:none;background:none;cursor:pointer;font-size:11px;color:var(--text-muted);';
     x.onclick = () => { DP_CONTATOS.splice(i, 1); dpRenderEscolhidos(); };
