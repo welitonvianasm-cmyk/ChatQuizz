@@ -100,15 +100,24 @@
   /* elementos escondidos pela navegação SEMPRE somem (vence display:grid etc.) */
   [hidden] { display: none !important; }
 
-  /* ===== LAYOUT CRM — menu lateral escuro ===== */
+  /* ===== LAYOUT CRM — menu lateral escuro, recolhível (2-3 níveis) ===== */
   .layout { display: grid; grid-template-columns: 225px minmax(0, 1fr); gap: 18px; align-items: start; }
   .sidenav { position: sticky; top: 14px; background: var(--sidebar); border: none; border-radius: 16px; padding: 12px 10px; display: flex; flex-direction: column; gap: 3px; box-shadow: var(--shadow-md); }
-  .sidenav button { display: flex; align-items: center; gap: 9px; text-align: left; border: none; background: none; padding: 9px 11px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #D1D5DB; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidenav button { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: none; background: none; padding: 9px 11px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #D1D5DB; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sidenav button svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .85; }
   .sidenav button:hover { background: rgba(255, 255, 255, .08); color: #fff; }
   .sidenav button.on { background: var(--lime); color: var(--ink); font-weight: 700; }
   .sidenav button.on svg { opacity: 1; }
-  .nav-grupo { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: #6B7280; padding: 12px 11px 4px; }
+  /* grupo de topo (Home/Gestão/Agenda/...): maiúsculas, negrito, fonte maior */
+  .nav-menu-btn { font-size: 13.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: #9CA3AF; margin-top: 4px; }
+  .nav-menu-btn:hover { color: #fff; }
+  .nav-menu-btn.aberto { color: #fff; }
+  .nav-chevron { margin-left: auto; font-size: 10px; opacity: .6; flex-shrink: 0; }
+  .nav-sub { display: flex; flex-direction: column; gap: 2px; padding: 2px 0 6px; }
+  .nav-sub button:not(.nav-menu-btn) { padding-left: 27px; font-size: 12.5px; }
+  /* 2º nível dentro de Configurações (ex: Editor do Quiz): expansível, mas sem o estilo maiúsculo do topo */
+  .nav-sub .nav-menu-btn { font-size: 12.5px; font-weight: 700; letter-spacing: 0; text-transform: none; padding-left: 27px; margin-top: 0; }
+  .nav-sub .nav-sub button:not(.nav-menu-btn) { padding-left: 44px; }
   .acao-btn { cursor: pointer; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 4px 9px; font-size: 12px; color: var(--text-body); }
   .acao-btn:hover { background: var(--bg); border-color: var(--text-dim); }
   .pager { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 0 4px; }
@@ -129,8 +138,7 @@
   .fdatas input { padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 9px; font-size: 13px; }
   @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; }
-    .sidenav { position: static; flex-direction: row; flex-wrap: wrap; }
-    .nav-grupo { display: none; }
+    .sidenav { position: static; }
   }
 
   /* ===== AGENDA — calendário ===== */
@@ -482,26 +490,63 @@
 
     <div class="layout">
       <aside class="sidenav" id="sidenav">
-        <div class="nav-grupo">HOME</div>
-        <button data-sec="geral" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Visão Geral</button>
-        <div class="nav-grupo">AGENDA</div>
-        <button data-sec="agendaDash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Dashboard</button>
-        <button data-sec="reunioes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/></svg>Reuniões</button>
-        <button data-sec="agendados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>Leads Agendados</button>
-        <button data-sec="calEspelho" id="navCalEspelho" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Espelho do Cal</button>
-        <div class="nav-grupo">GESTÃO</div>
-        <button data-sec="quadro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" opacity=".35"/><path d="M8 7v9"/><path d="M12 7v5"/><path d="M16 7v7"/></svg>Quadro (Funil)</button>
-        <button data-sec="leads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Leads</button>
-        <button data-sec="conversas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Conversas</button>
-        <div class="nav-grupo">AUTOMAÇÕES</div>
-        <button data-sec="automacoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Automações</button>
-        <button data-sec="disparos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Disparos Agendados</button>
-        <div class="nav-grupo">PÓS-VENDA</div>
-        <button data-sec="posConv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Convertidos</button>
-        <button data-sec="posAtend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>Conversões por Atendente</button>
-        <button data-sec="posFin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>Financeiro</button>
-        <div class="nav-grupo">SISTEMA</div>
-        <button data-sec="config"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Configurações</button>
+        <div class="nav-menu">
+          <button class="nav-menu-btn aberto" data-menu="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Home<span class="nav-chevron">▾</span></button>
+          <div class="nav-sub" data-menu-body="home">
+            <button data-sec="geral" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Visão Geral</button>
+          </div>
+        </div>
+        <div class="nav-menu">
+          <button class="nav-menu-btn" data-menu="gestao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Gestão<span class="nav-chevron">▸</span></button>
+          <div class="nav-sub" data-menu-body="gestao" hidden>
+            <button data-sec="quadro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" opacity=".35"/><path d="M8 7v9"/><path d="M12 7v5"/><path d="M16 7v7"/></svg>Quadros (Funil)</button>
+            <button data-sec="leads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Leads</button>
+            <button data-sec="conversas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Conversas</button>
+          </div>
+        </div>
+        <div class="nav-menu">
+          <button class="nav-menu-btn" data-menu="agenda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Agenda<span class="nav-chevron">▸</span></button>
+          <div class="nav-sub" data-menu-body="agenda" hidden>
+            <button data-sec="agendaDash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Dashboard</button>
+            <button data-sec="reunioes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/></svg>Reuniões</button>
+            <button data-sec="agendados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>Leads Agendados</button>
+            <button data-sec="calEspelho" id="navCalEspelho" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Espelho do Cal</button>
+          </div>
+        </div>
+        <div class="nav-menu">
+          <button class="nav-menu-btn" data-menu="automacao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Automação<span class="nav-chevron">▸</span></button>
+          <div class="nav-sub" data-menu-body="automacao" hidden>
+            <button data-sec="automacoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Automações</button>
+            <button data-sec="disparos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Disparos Agendados</button>
+          </div>
+        </div>
+        <div class="nav-menu">
+          <button class="nav-menu-btn" data-menu="posvenda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Pós-Venda<span class="nav-chevron">▸</span></button>
+          <div class="nav-sub" data-menu-body="posvenda" hidden>
+            <button data-sec="posConv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Conversão</button>
+            <button data-sec="posAtend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>Conversão por Atendente</button>
+            <button data-sec="posFin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>Financeiro</button>
+          </div>
+        </div>
+        <div class="nav-menu">
+          <button class="nav-menu-btn" data-menu="config"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Configurações<span class="nav-chevron">▸</span></button>
+          <div class="nav-sub" data-menu-body="config" hidden>
+            <div class="nav-menu">
+              <button class="nav-menu-btn" data-menu="editorquiz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>Editor do Quiz<span class="nav-chevron">▸</span></button>
+              <div class="nav-sub" data-menu-body="editorquiz" hidden>
+                <button data-sec="qeQualificadores"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>Qualificadores</button>
+                <button data-sec="qeRoteamento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Roteamento</button>
+                <button data-sec="qeNiveis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 13v4"/><path d="M12 9v8"/><path d="M17 5v12"/></svg>Níveis</button>
+                <button data-sec="qePerguntas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>Perguntas</button>
+                <button data-sec="qeResultados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Resultados</button>
+                <button data-sec="qeAparencia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>Aparência</button>
+              </div>
+            </div>
+            <button data-sec="links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Links de Rastreio</button>
+            <button data-sec="conexoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Conexões</button>
+            <button data-sec="usuarios"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Usuários</button>
+          </div>
+        </div>
       </aside>
       <div class="maincol">
 
@@ -901,11 +946,14 @@
       </div>
       <div class="kb-cols" id="kbCols"></div>
     </div>
-    <!-- ===== CONFIG — WhatsApp (Evolution API) ===== -->
-    <div class="panel" id="pWhats" hidden>
-      <h2>WhatsApp — conexão e controles</h2>
+    <!-- ===== CONEXÕES — WhatsApp, Cal.com, webhook e infraestrutura (só administradora) ===== -->
+    <div class="panel" id="pConexoes" hidden>
+      <h2>Conexões</h2>
+      <div class="sub">Tudo que liga o sistema a serviços externos: WhatsApp, Cal.com, o webhook de mensagens e a infraestrutura (Netlify/Supabase).</div>
+
+      <h3 style="margin:20px 0 8px;font-size:14px;">WhatsApp</h3>
       <div class="sub">Conecte seu número pela Evolution API e controle os dois interruptores de forma independente. Com <b>Conversas</b> desligadas, os botões Conversar abrem o WhatsApp Web normalmente; com <b>Disparos</b> desligados, nenhuma mensagem automática sai.</div>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;margin-top:10px;">
         <div style="flex:1;min-width:230px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
             <b>Situação:</b> <span id="waEstado" class="pill parcial">verificando…</span>
@@ -929,15 +977,15 @@
           <div class="muted-cell" style="font-size:12px;margin-top:6px;">WhatsApp → Aparelhos conectados → Conectar aparelho</div>
         </div>
       </div>
-    </div>
 
-    <div class="panel" id="pConfigExtras" hidden>
-      <h2>Configurações</h2>
-      <div class="sub">
-        <b>Usuários (atendentes):</b> gestão completa logo abaixo (somente a administradora).<br>
-        <b>Quiz:</b> edite as perguntas no quadro "Quiz — perguntas" abaixo (somente a administradora).<br>
-        <b>Administração:</b> hospedagem no Netlify · banco de dados no Supabase · agendas configuradas na aba Roteamento (Cal.com).
-      </div>
+      <h3 style="margin:20px 0 8px;font-size:14px;">Webhook do WhatsApp</h3>
+      <div class="sub">Registrado automaticamente ao conectar (é assim que as mensagens recebidas chegam em tempo real). URL, se precisar configurar manualmente na Evolution: <code id="waWebhookUrl" style="background:var(--bg);padding:2px 6px;border-radius:5px;">carregando…</code></div>
+
+      <h3 style="margin:20px 0 8px;font-size:14px;">Cal.com</h3>
+      <div class="sub" id="calStatusBox">verificando…</div>
+
+      <h3 style="margin:20px 0 8px;font-size:14px;">Infraestrutura</h3>
+      <div class="sub">Hospedagem no Netlify · banco de dados no Supabase · agendas configuradas por qualificador em Editor do Quiz → Roteamento.</div>
     </div>
 
     <!-- ===== EDITOR DO QUIZ — só a administradora vê ===== -->
@@ -946,15 +994,6 @@
       <div class="sub">
         Perguntas, Qualificadores, Níveis de Consciência, os textos de resultado e o roteamento de cada qualificador — tudo é editado aqui e publicado junto. Nada muda no site até você clicar em <b>Publicar</b>.<br>
         Cada pergunta pode apontar suas opções pra um <b>Qualificador</b> e/ou um <b>Nível</b>; o lead é classificado pela resposta mais votada em cada eixo (empate é resolvido pela pergunta marcada como <b>critério de desempate</b>).
-      </div>
-      <div class="seg" id="qeTabs" style="margin-top:12px;">
-        <button data-tab="perguntas" class="on">Perguntas</button>
-        <button data-tab="qualificadores">Qualificadores</button>
-        <button data-tab="niveis">Níveis</button>
-        <button data-tab="resultados">Resultados</button>
-        <button data-tab="roteamento">Roteamento</button>
-        <button data-tab="conexoes">Conexões</button>
-        <button data-tab="aparencia">Aparência</button>
       </div>
       <div id="qeLista" style="margin-top:14px;"></div>
       <div id="qeFooter" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;">
@@ -980,7 +1019,7 @@
 
     <!-- ===== ÁREA EQUIPE — só a administradora vê ===== -->
     <div class="panel" id="equipePanel" hidden>
-      <h2>Equipe — usuários do painel</h2>
+      <h2>Usuários</h2>
       <div class="sub">Só você (administradora) vê esta área. Ao criar um usuário, o sistema gera uma <b>senha temporária</b> para você enviar à pessoa — no primeiro acesso ela cria a própria senha (que ninguém consegue ver, nem você). A data de validade corta o acesso automaticamente ao vencer (vazia = sem prazo).</div>
 
       <div style="display:grid;grid-template-columns:2fr 2fr 1.4fr 1.2fr auto auto auto auto;gap:8px;margin:14px 0;align-items:end;">
@@ -1326,28 +1365,61 @@ const SECTIONS = {
   conversas: ['#pConversas'],        // Inbox do WhatsApp
   automacoes: ['#pAutomacoes'],      // automações de mensagens
   disparos: ['#pDisparos'],          // fila de disparos agendados
-  config: ['#pWhats', '#pConfigExtras', '#pQuizEditor', '#pLinks', '#equipePanel'],
+  // Configurações > Editor do Quiz (3º nível — cada aba de antes virou um item de menu)
+  qePerguntas: ['#pQuizEditor'], qeQualificadores: ['#pQuizEditor'], qeNiveis: ['#pQuizEditor'],
+  qeResultados: ['#pQuizEditor'], qeRoteamento: ['#pQuizEditor'], qeAparencia: ['#pQuizEditor'],
+  links: ['#pLinks'],
+  conexoes: ['#pConexoes'],
+  usuarios: ['#equipePanel'],
 };
 const TODOS_PANEIS = [...new Set(Object.values(SECTIONS).flat())];
+// itens só-administradora (equivalente ao antigo bloco único "config")
+const SECOES_ADMIN = new Set(['qePerguntas', 'qeQualificadores', 'qeNiveis', 'qeResultados', 'qeRoteamento', 'qeAparencia', 'links', 'conexoes', 'usuarios']);
+const QE_TAB_POR_SEC = { qePerguntas: 'perguntas', qeQualificadores: 'qualificadores', qeNiveis: 'niveis', qeResultados: 'resultados', qeRoteamento: 'roteamento', qeAparencia: 'aparencia' };
+// a qual grupo (e sub-grupo, quando existir) do menu lateral cada `sec` pertence
+const SEC_MENU = {
+  geral: 'home',
+  quadro: 'gestao', leads: 'gestao', conversas: 'gestao',
+  agendaDash: 'agenda', reunioes: 'agenda', agendados: 'agenda', calEspelho: 'agenda',
+  automacoes: 'automacao', disparos: 'automacao',
+  posConv: 'posvenda', posAtend: 'posvenda', posFin: 'posvenda',
+  links: 'config', conexoes: 'config', usuarios: 'config',
+  qePerguntas: 'config', qeQualificadores: 'config', qeNiveis: 'config', qeResultados: 'config', qeRoteamento: 'config', qeAparencia: 'config',
+};
+const SEC_SUBMENU = { // 3º nível — só existe dentro de Configurações (Editor do Quiz)
+  qePerguntas: 'editorquiz', qeQualificadores: 'editorquiz', qeNiveis: 'editorquiz', qeResultados: 'editorquiz', qeRoteamento: 'editorquiz', qeAparencia: 'editorquiz',
+};
+/* abre no menu lateral o(s) grupo(s) a que `sec` pertence, fecha o resto (accordion) */
+function sincronizarMenu(sec) {
+  const alvoTopo = SEC_MENU[sec];
+  const alvoSub = SEC_SUBMENU[sec];
+  document.querySelectorAll('.nav-menu-btn').forEach((btn) => {
+    const aberto = btn.dataset.menu === alvoTopo || btn.dataset.menu === alvoSub;
+    const corpo = btn.nextElementSibling;
+    corpo.hidden = !aberto;
+    btn.classList.toggle('aberto', aberto);
+    const chev = btn.querySelector('.nav-chevron');
+    if (chev) chev.textContent = aberto ? '▾' : '▸';
+  });
+}
 let NAV_ATUAL = 'geral';
 function navGo(sec) {
+  if (SECOES_ADMIN.has(sec) && !IS_ADMIN) { navGo('geral'); return; }
   NAV_ATUAL = sec;
   document.querySelectorAll('#sidenav button[data-sec]').forEach((b) => b.classList.toggle('on', b.dataset.sec === sec));
+  sincronizarMenu(sec);
   const cal = sec === 'calEspelho';
   $('#tabFunil').hidden = cal;
   $('#tabCal').hidden = !cal;
   if (cal) { if (CAL_BOOKINGS === null) carregarCal(); return; }
   const mostrar = new Set(SECTIONS[sec] || []);
   TODOS_PANEIS.forEach((sel) => { const e = $(sel); if (e) e.hidden = !mostrar.has(sel); });
-  if (sec === 'config') {   // Equipe, Editor do Quiz, Links de Rastreio e WhatsApp: só administradora
-    $('#equipePanel').hidden = !IS_ADMIN;
-    $('#pQuizEditor').hidden = !IS_ADMIN;
-    $('#pLinks').hidden = !IS_ADMIN;
-    $('#pWhats').hidden = !IS_ADMIN;
-    if (IS_ADMIN) carregarWaStatus();
-    if (IS_ADMIN && !QE_CARREGADO) qeCarregar();
-    if (IS_ADMIN && !LINKS_CARREGADO) linksCarregar();
+  if (QE_TAB_POR_SEC[sec]) {
+    QE_TAB = QE_TAB_POR_SEC[sec];
+    if (!QE_CARREGADO) qeCarregar(); else qeRenderTudo();
   }
+  if (sec === 'links' && !LINKS_CARREGADO) linksCarregar();
+  if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); }
   if (sec === 'conversas') carregarWaStatus().then(carregarInbox);
   if (sec === 'automacoes') carregarAutomacoes();
   if (sec === 'disparos') carregarDisparos();
@@ -1360,8 +1432,21 @@ function navGo(sec) {
   if (sec === 'posFin') renderPosFin();
 }
 $('#sidenav').addEventListener('click', (e) => {
-  const b = e.target.closest('button[data-sec]');
-  if (b) navGo(b.dataset.sec);
+  const leaf = e.target.closest('button[data-sec]');
+  if (leaf) { navGo(leaf.dataset.sec); return; }
+  const grupo = e.target.closest('.nav-menu-btn');
+  if (!grupo) return;
+  const corpo = grupo.nextElementSibling;
+  const vaiAbrir = corpo.hidden;
+  const container = grupo.closest('.nav-menu').parentElement;
+  container.querySelectorAll(':scope > .nav-menu > .nav-menu-btn').forEach((outro) => {
+    outro.nextElementSibling.hidden = true;
+    outro.classList.remove('aberto');
+    const chev = outro.querySelector('.nav-chevron'); if (chev) chev.textContent = '▸';
+  });
+  corpo.hidden = !vaiAbrir;
+  grupo.classList.toggle('aberto', vaiAbrir);
+  const chev = grupo.querySelector('.nav-chevron'); if (chev) chev.textContent = vaiAbrir ? '▾' : '▸';
 });
 /* pesquisa global do cabeçalho: joga a busca no módulo Leads */
 $('#buscaGlobal').addEventListener('input', (e) => {
@@ -1369,7 +1454,7 @@ $('#buscaGlobal').addEventListener('input', (e) => {
   $('#search').value = e.target.value;
   drawLeads();
 });
-$('#btn-config').onclick = () => navGo('config');
+$('#btn-config').onclick = () => navGo('conexoes');
 /* Design System: títulos das telas sem emoji (os ícones vivem no menu) */
 document.querySelectorAll('.panel h2, #alertModal h2').forEach((h) => {
   const n = h.firstChild;
@@ -1400,7 +1485,7 @@ const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verd
   pQuadro: ['kanban', 'azul'], pLeads: ['usuarios', 'lima'],
   pPosConv: ['trofeu', 'laranja'], pPosAtend: ['medalha', 'laranja'], pPosFin: ['carteira', 'verde'],
   pConversas: ['conversa', 'verde'], pAutomacoes: ['raio', 'laranja'], pDisparos: ['envio', 'laranja'],
-  pWhats: ['conversa', 'verde'], pConfigExtras: ['engrenagem', 'cinza'], pQuizEditor: ['lista', 'cinza'],
+  pQuizEditor: ['lista', 'cinza'], pConexoes: ['conversa', 'cinza'],
   pLinks: ['envio', 'cinza'], equipePanel: ['usuarios', 'lima'],
 };
 document.querySelectorAll('.panel h2').forEach((h) => {
@@ -2018,7 +2103,8 @@ async function qeCarregar() {
 }
 
 function qeRenderTudo() {
-  document.querySelectorAll('#qeTabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === QE_TAB));
+  // qual aba está ativa agora vem do menu lateral (3º nível, dentro de
+  // Configurações → Editor do Quiz), não mais de uma barra de abas aqui dentro
   $('#qeNova').style.display = QE_TAB === 'perguntas' ? '' : 'none';
   $('#qeFooter').style.display = QE_TAB === 'aparencia' ? 'none' : 'flex';
   const box = $('#qeLista'); clear(box);
@@ -2027,13 +2113,8 @@ function qeRenderTudo() {
   else if (QE_TAB === 'niveis') qeRenderLista(box, 'niveis', false);
   else if (QE_TAB === 'resultados') qeRenderResultados(box);
   else if (QE_TAB === 'roteamento') qeRenderRoteamento(box);
-  else if (QE_TAB === 'conexoes') qeRenderConexoes(box);
   else if (QE_TAB === 'aparencia') { if (!AP_CARREGADO) apCarregar(box); else qeRenderAparencia(box); }
 }
-$('#qeTabs').addEventListener('click', (e) => {
-  const b = e.target.closest('button[data-tab]'); if (!b) return;
-  QE_TAB = b.dataset.tab; qeRenderTudo();
-});
 
 function qeSelectQualificador(o) {
   const sel = el('select'); sel.title = 'Qualificador desta opção';
@@ -2237,29 +2318,6 @@ function qeRenderRoteamento(box) {
     }
     box.appendChild(card);
   });
-}
-
-function qeRenderConexoes(box) {
-  const cal = el('div');
-  cal.style.cssText = 'border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;background:var(--bg);';
-  cal.innerHTML = '<b>Cal.com</b>';
-  const sub = el('div', 'muted-cell'); sub.style.marginTop = '4px';
-  sub.textContent = 'Cada qualificador com roteamento "Cal.com" tem seu próprio link — configure na aba Roteamento.';
-  cal.appendChild(sub);
-  box.appendChild(cal);
-
-  const wa = el('div');
-  wa.style.cssText = 'border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--bg);';
-  wa.innerHTML = '<b>WhatsApp</b>';
-  const st = el('div', 'muted-cell'); st.style.marginTop = '4px';
-  st.textContent = QE_WA_CONECTADO
-    ? '✓ Conectado — qualificadores com roteamento "WhatsApp automático" podem disparar mensagem.'
-    : '○ Não conectado — conecte no painel "WhatsApp" (menu Configurações) antes de usar o roteamento automático.';
-  wa.appendChild(st);
-  const nota = el('div', 'muted-cell'); nota.style.marginTop = '8px';
-  nota.textContent = 'A mensagem enviada por qualificador é editada na aba Roteamento.';
-  wa.appendChild(nota);
-  box.appendChild(wa);
 }
 
 /* ===== APARÊNCIA — número/avatar/logo/site/cor/presente (só administradora) ===== */
@@ -3451,17 +3509,20 @@ function popularLeadsAtendente() {
 let ORIGEM_QUALIFICADORES = [];
 let ORIGEM_LINKS = [];
 let ROTEAMENTO_CACHE = {};
+let CALCOM_CONECTADO = false;
 async function carregarQualificadoresOrigem() {
   try {
     const d = await fetch('/api/quiz-config').then((x) => x.json());
     if (d && d.ok && Array.isArray(d.qualificadores)) ORIGEM_QUALIFICADORES = d.qualificadores;
     if (d && d.ok && d.roteamento) ROTEAMENTO_CACHE = d.roteamento;
+    CALCOM_CONECTADO = !!(d && d.ok && d.calcomConectado);
     // "Espelho do Cal" só aparece no menu quando o CALCOM_API_KEY está configurado
     const navCal = $('#navCalEspelho');
     if (navCal) {
-      navCal.hidden = !(d && d.ok && d.calcomConectado);
+      navCal.hidden = !CALCOM_CONECTADO;
       if (navCal.hidden && NAV_ATUAL === 'calEspelho') navGo('geral');
     }
+    renderConexoesInfo();
   } catch (e) { /* fica vazio */ }
   try {
     const r = await fetch('/api/links', {
@@ -3480,6 +3541,23 @@ function qualificadoresOuFallback() { return ORIGEM_QUALIFICADORES; }
 function primeiroCalLinkConfigurado() {
   const q = ORIGEM_QUALIFICADORES.find((x) => (ROTEAMENTO_CACHE[x.chave] || {}).tipo === 'calcom' && (ROTEAMENTO_CACHE[x.chave] || {}).calLink);
   return q ? ROTEAMENTO_CACHE[q.chave].calLink : '';
+}
+/* preenche os textos informativos do painel "Conexões" (webhook + Cal.com) —
+   chamado sempre que a config carrega e toda vez que a seção é aberta. */
+function renderConexoesInfo() {
+  const wh = $('#waWebhookUrl');
+  if (wh) wh.textContent = location.origin + '/api/wa-webhook?t=••••••••';
+  const cal = $('#calStatusBox');
+  if (cal) {
+    cal.innerHTML = '';
+    const st = el('span'); st.textContent = CALCOM_CONECTADO
+      ? '✓ Conectado — a aba "Espelho do Cal" e a integração oficial estão disponíveis.'
+      : '○ Não conectado (CALCOM_API_KEY não configurado) — o roteamento por link continua funcionando normalmente, isso só afeta o Espelho do Cal.';
+    cal.appendChild(st);
+    const nota = el('div', 'muted-cell'); nota.style.marginTop = '6px';
+    nota.textContent = 'O link de agendamento de cada qualificador é configurado em Editor do Quiz → Roteamento.';
+    cal.appendChild(nota);
+  }
 }
 
 /* dropdown "Origem": só os links de rastreio cadastrados (de onde veio o
