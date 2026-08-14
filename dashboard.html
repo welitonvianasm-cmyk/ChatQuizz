@@ -70,8 +70,10 @@
   .gate-card button:hover { background: var(--lime-hover); }
   .gate-err { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 16px; }
 
-  /* ===== APP SHELL ===== */
-  #app { display: none; max-width: 1180px; margin: 0 auto; padding: 22px 20px 60px; }
+  /* ===== APP SHELL =====
+     Sem teto de largura: em telas grandes o painel usa a tela toda (só um
+     teto bem alto pra não esticar demais em monitores ultrawide). */
+  #app { display: none; max-width: 1920px; margin: 0 auto; padding: 22px clamp(20px, 3vw, 48px) 60px; }
   .topbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
   .brand { display: flex; align-items: center; gap: 11px; margin-right: auto; }
   .brand .logo {
