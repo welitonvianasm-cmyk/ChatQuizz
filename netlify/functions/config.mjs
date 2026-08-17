@@ -9,7 +9,7 @@
  *   POST /api/config {value}    → grava closer_prioritario (eventTypeId ou '')
  */
 import { vendedoresDaTrilha } from './agenda.mjs';
-import { temConfig, autenticar } from '../_tokens.mjs';
+import { temConfig, autenticarToken } from '../_tokens.mjs';
 
 const SUPABASE_URL = (process.env.SUPABASE_DIAG_URL || 'https://aktktxizmpwckvxbdjzf.supabase.co').replace(/\/+$/, '');
 
@@ -23,8 +23,9 @@ export default async (req) => {
   let body = {};
   try { if (req.method === 'POST') body = await req.json(); } catch { /* sem body */ }
   const token = req.headers.get('x-dash-token') || body.token || '';
-  const acesso = await autenticar(token);
+  const acesso = await autenticarToken(token);
   if (!acesso.ok) return json({ error: 'unauthorized' }, 401);
+  const contaId = acesso.contaId;
 
   const vendedores = vendedoresDaTrilha('premium').map((v) => ({ nome: v.nome, eventTypeId: +v.eventTypeId }));
   const auth = { apikey: KEY, Authorization: `Bearer ${KEY}` };
@@ -32,16 +33,16 @@ export default async (req) => {
   try {
     if (req.method === 'POST') {
       const value = String(body.value ?? '').trim().slice(0, 20);
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/funnel_config?on_conflict=key`, {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/funnel_config?on_conflict=conta_id,key`, {
         method: 'POST',
         headers: { ...auth, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify({ key: 'closer_prioritario', value, updated_at: new Date().toISOString() }),
+        body: JSON.stringify({ conta_id: contaId, key: 'closer_prioritario', value, updated_at: new Date().toISOString() }),
       });
       if (!r.ok) { console.error('config set:', r.status, await r.text().catch(() => '')); return json({ ok: false, error: 'save failed' }, 500); }
       return json({ ok: true, forced: value, vendedores });
     }
     // GET → lê
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/funnel_config?key=eq.closer_prioritario&select=value&limit=1`, { headers: auth });
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/funnel_config?conta_id=eq.${contaId}&key=eq.closer_prioritario&select=value&limit=1`, { headers: auth });
     const rows = r.ok ? await r.json() : [];
     const forced = (rows && rows[0] && rows[0].value) ? String(rows[0].value) : '';
     return json({ ok: true, forced, vendedores });

@@ -7,7 +7,7 @@
  * Qualquer usuário autenticado lista; criação também é liberada pra equipe
  * (o atendente cadastra o produto na hora de fechar a venda).
  */
-import { temConfig, autenticar } from '../_tokens.mjs';
+import { temConfig, autenticarToken } from '../_tokens.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -22,12 +22,13 @@ export default async (req) => {
 
   let body = {};
   try { body = await req.json(); } catch { /* sem body */ }
-  const auth = await autenticar(req.headers.get('x-dash-token') || body.token || '');
+  const auth = await autenticarToken(req.headers.get('x-dash-token') || body.token || '');
   if (!auth.ok) return json({ error: 'unauthorized' }, 401);
+  const contaId = auth.contaId;
 
   try {
     if (body.action === 'listar') {
-      const r = await fetch(`${SB_URL}/rest/v1/produtos?select=id,nome,valor&order=nome.asc`, { headers: H });
+      const r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&select=id,nome,valor&order=nome.asc`, { headers: H });
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       return json({ ok: true, produtos: await r.json() });
     }
@@ -37,11 +38,11 @@ export default async (req) => {
       const valor = Math.max(0, Number(body.valor) || 0);
       if (!nome) return json({ ok: false, error: 'Dê um nome ao produto.' });
       // evita duplicar pelo nome (ignorando maiúsculas)
-      const dup = await fetch(`${SB_URL}/rest/v1/produtos?nome=ilike.${encodeURIComponent(nome)}&select=id,nome,valor&limit=1`, { headers: H });
+      const dup = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&nome=ilike.${encodeURIComponent(nome)}&select=id,nome,valor&limit=1`, { headers: H });
       if (dup.ok) { const d = await dup.json(); if (d.length) return json({ ok: true, produto: d[0], jaExistia: true }); }
       const r = await fetch(`${SB_URL}/rest/v1/produtos`, {
         method: 'POST', headers: { ...H, Prefer: 'return=representation' },
-        body: JSON.stringify({ nome, valor }),
+        body: JSON.stringify({ conta_id: contaId, nome, valor }),
       });
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       return json({ ok: true, produto: (await r.json())[0] });

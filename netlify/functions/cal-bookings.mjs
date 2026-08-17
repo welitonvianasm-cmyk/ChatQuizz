@@ -7,7 +7,7 @@
  *
  *   GET /api/cal-bookings → { ok, count, bookings:[{uid,eventTypeId,evento,start,end,created,status,attendee,attendeesCount}] }
  */
-import { temConfig, autenticar } from '../_tokens.mjs';
+import { temConfig, autenticarToken } from '../_tokens.mjs';
 import { obterCalcomApiKey } from '../_conexoes.mjs';
 const CAL_API = 'https://api.cal.com/v2';
 const CAL_VERSAO = '2024-08-13';
@@ -16,14 +16,16 @@ export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
 
   if (!temConfig()) return json({ error: 'DASHBOARD_TOKEN not configured' }, 503);
-  const apiKey = await obterCalcomApiKey();
-  if (!apiKey) return json({ error: 'CALCOM_API_KEY not configured' }, 500);
 
   let body = {};
   try { if (req.method === 'POST') body = await req.json(); } catch { /* sem body */ }
   const token = req.headers.get('x-dash-token') || body.token || '';
-  const auth = await autenticar(token);
+  const auth = await autenticarToken(token);
   if (!auth.ok) return json({ error: 'unauthorized' }, 401);
+  const contaId = auth.contaId;
+
+  const apiKey = await obterCalcomApiKey(contaId);
+  if (!apiKey) return json({ error: 'CALCOM_API_KEY not configured' }, 500);
 
   try {
     // pagina a lista oficial (até 1000 bookings)

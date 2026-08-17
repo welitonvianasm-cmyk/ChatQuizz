@@ -1,69 +1,110 @@
 /* ====================================================================
-   Autenticação do painel administrativo — ADMIN + EQUIPE + LOG.
-   - DASHBOARD_TOKEN (env): senha da administradora.
-   - dash_users (Supabase): usuários da equipe. A senha fica guardada
-     como HASH (criptografada) — nem a administradora consegue ler.
-     `trocar_senha = true` força o usuário a definir a própria senha
+   Autenticação do painel — multi-tenant (QuizzHub).
+   - `usuarios` (Supabase, ex-`dash_users`): cada linha pertence a uma
+     `conta` (conta_id). Login por E-MAIL + SENHA (a senha nunca é
+     comparada em texto puro — fica guardada como hash+salt PRÓPRIO de
+     cada usuário via scrypt nativo do Node, sem dependência nova).
+   - `eh_dono`: quem se cadastrou/é responsável pela conta (só ele ou
+     quem tem funcao_adm pode trocar plano/gerenciar a equipe).
+   - `trocar_senha = true` força o usuário a definir a própria senha
      no primeiro acesso (senha temporária gerada pelo sistema).
    - dash_logs: registra acessos, extrações de relatório e trocas de senha.
+
+   IMPORTANTE: `DASHBOARD_TOKEN` (senha única de administradora) deixou
+   de existir como conceito — cada conta tem seu(s) próprio(s)
+   usuário(s) admin (funcao_adm/eh_dono). `temConfig()` agora verifica
+   se o Supabase está configurado, não uma senha de deploy.
    ==================================================================== */
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { scryptSync, randomBytes, timingSafeEqual } from 'node:crypto';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const SB_HEADERS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 
-export function hashSenha(s) {
-  return createHash('sha256').update('chatquizz::' + String(s || '')).digest('hex');
+/* hash com salt PRÓPRIO por senha — formato armazenado: "salt:hash" (hex) */
+export function hashSenha(senhaPlana) {
+  const salt = randomBytes(16).toString('hex');
+  const hash = scryptSync(String(senhaPlana || ''), salt, 64).toString('hex');
+  return `${salt}:${hash}`;
 }
 
-/* o painel só liga se a senha da administradora existir no ambiente */
-export function temConfig() {
-  return !!String(process.env.DASHBOARD_TOKEN || '').trim();
-}
-
-/* valida a senha → { ok, admin, expirado?, trocarSenha?, user:{id,nome,email,celular,validade} } */
-export async function autenticar(sent) {
-  const s = String(sent || '').trim();
-  if (!s) return { ok: false };
-
-  // 1) administradora (senha do Netlify)
-  const admin = String(process.env.DASHBOARD_TOKEN || '').trim();
-  if (admin && safeEqual(s, admin)) {
-    return { ok: true, admin: true, user: { nome: 'Administradora', email: '', celular: '', validade: null } };
-  }
-
-  // 2) usuários da equipe (busca pelo hash da senha)
-  if (!SB_URL || !SB_KEY) return { ok: false };
+function verificarSenha(senhaPlana, senhaHashSalva) {
+  const partes = String(senhaHashSalva || '').split(':');
+  if (partes.length !== 2) return false; // formato antigo/inválido — força reset
+  const [salt, hashSalvo] = partes;
   try {
-    const h = hashSenha(s);
-    // funcao_adm/funcao_cs podem não existir ainda (setup-posvenda.sql) — cai sem elas
-    let r = await fetch(
-      `${SB_URL}/rest/v1/dash_users?senha_hash=eq.${encodeURIComponent(h)}&select=id,nome,email,celular,validade,trocar_senha,funcao_adm,funcao_cs&limit=1`,
+    const hashTentativa = scryptSync(String(senhaPlana || ''), salt, 64).toString('hex');
+    const a = Buffer.from(hashTentativa, 'hex');
+    const b = Buffer.from(hashSalvo, 'hex');
+    return a.length === b.length && timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+/* o painel só liga se o Supabase estiver configurado */
+export function temConfig() {
+  return !!(SB_URL && SB_KEY);
+}
+
+/* valida e-mail+senha → { ok, admin, cs, expirado?, trocarSenha?, contaId, contaPlano, contaStatus, user:{id,nome,email,celular,validade,ehDono} } */
+export async function autenticar(email, senhaPlana) {
+  const emailNorm = String(email || '').trim().toLowerCase();
+  const senha = String(senhaPlana || '');
+  if (!emailNorm || !senha) return { ok: false };
+  if (!SB_URL || !SB_KEY) return { ok: false };
+
+  try {
+    const r = await fetch(
+      `${SB_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(emailNorm)}&select=id,nome,email,celular,validade,senha_hash,trocar_senha,funcao_adm,funcao_cs,eh_dono,conta_id&limit=1`,
       { headers: SB_HEADERS }
     );
-    if (!r.ok) {
-      r = await fetch(
-        `${SB_URL}/rest/v1/dash_users?senha_hash=eq.${encodeURIComponent(h)}&select=id,nome,email,celular,validade,trocar_senha&limit=1`,
-        { headers: SB_HEADERS }
-      );
-    }
     if (!r.ok) return { ok: false };
     const rows = await r.json();
     const u = Array.isArray(rows) ? rows[0] : null;
     if (!u) return { ok: false };
+    if (!verificarSenha(senha, u.senha_hash)) return { ok: false };
     if (u.validade && new Date(u.validade + 'T23:59:59-03:00') < new Date()) {
       return { ok: false, expirado: true };
     }
-    // Funções de ADM = mesmos privilégios da administradora (item 5 do pós-venda)
-    return { ok: true, admin: !!u.funcao_adm, cs: !!u.funcao_cs, trocarSenha: !!u.trocar_senha, user: u };
+
+    // conta precisa estar ativa
+    const rc = await fetch(
+      `${SB_URL}/rest/v1/contas?id=eq.${u.conta_id}&select=id,plano,status&limit=1`,
+      { headers: SB_HEADERS }
+    );
+    const conta = rc.ok ? (await rc.json())[0] : null;
+    if (!conta) return { ok: false };
+    if (conta.status !== 'ativa') return { ok: false, contaSuspensa: true };
+
+    return {
+      ok: true,
+      admin: !!u.funcao_adm || !!u.eh_dono,
+      cs: !!u.funcao_cs,
+      trocarSenha: !!u.trocar_senha,
+      contaId: u.conta_id,
+      contaPlano: conta.plano,
+      contaStatus: conta.status,
+      user: { ...u, ehDono: !!u.eh_dono },
+    };
   } catch {
     return { ok: false };
   }
 }
 
+/* Resolve a sessão a partir de um token simples "email::senha" (mesmo
+   princípio já usado no painel: reautentica a cada chamada, sem estado
+   de sessão no servidor). Usado por TODAS as functions autenticadas —
+   nunca aceitar conta_id vindo do corpo da requisição do cliente. */
+export async function autenticarToken(token) {
+  const s = String(token || '');
+  const i = s.indexOf('::');
+  if (i < 0) return { ok: false };
+  return autenticar(s.slice(0, i), s.slice(i + 2));
+}
+
 /* grava no livro de registros (nunca derruba a requisição se falhar) */
-export async function registrarLog(tipo, user) {
+export async function registrarLog(tipo, user, contaId) {
   if (!SB_URL || !SB_KEY || !user) return;
   try {
     await fetch(`${SB_URL}/rest/v1/dash_logs`, {
@@ -75,13 +116,8 @@ export async function registrarLog(tipo, user) {
         email: user.email || '',
         celular: user.celular || '',
         validade: user.validade || null,
+        conta_id: contaId,
       }),
     });
   } catch { /* log é melhor-esforço */ }
-}
-
-function safeEqual(a, b) {
-  const ba = Buffer.from(String(a)), bb = Buffer.from(String(b));
-  if (ba.length !== bb.length) return false;
-  return timingSafeEqual(ba, bb);
 }

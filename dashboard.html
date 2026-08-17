@@ -370,6 +370,7 @@
       <div class="gate-logo" style="background:var(--sidebar);">Q</div>
       <h1>Painel de Leads</h1>
       <p>ChatQuizz</p>
+      <input id="gate-email" type="email" placeholder="Seu e-mail" autocomplete="username" style="margin-bottom:8px;" />
       <input id="gate-pass" type="password" placeholder="Senha de acesso" autocomplete="current-password" />
       <button id="gate-btn">Entrar</button>
       <div class="gate-err" id="gate-err"></div>
@@ -1196,6 +1197,7 @@
 'use strict';
 const API = '/api/metrics';
 const TKEY = 'core_dash_token';
+let EMAIL_LOGIN = '';   // e-mail usado no login (pra reconstruir o token depois de trocar a senha)
 
 // ---- helpers ----
 const $ = (s) => document.querySelector(s);
@@ -1289,7 +1291,7 @@ $('#gate2-btn').onclick = async () => {
   if (!r.ok) { $('#gate2-err').textContent = r.error || 'Erro ao salvar.'; return; }
   $('#gate2').style.display = 'none';
   $('#gate2-s1').value = ''; $('#gate2-s2').value = ''; $('#gate2-err').textContent = '';
-  doLogin(s1);   // entra já com a senha nova
+  doLogin(EMAIL_LOGIN + '::' + s1);   // entra já com a senha nova
 };
 
 // ===== Priorizar closer =====
@@ -1323,10 +1325,14 @@ $('#priorSelect').addEventListener('change', async (e) => {
   } catch { $('#priorStatus').textContent = 'erro ao salvar'; }
 });
 $('#gate-btn').onclick = () => {
+  const email = $('#gate-email').value.trim();
   const p = $('#gate-pass').value.trim();
-  if (p) doLogin(p);
+  if (!email || !p) { showGate('Preencha e-mail e senha.'); return; }
+  EMAIL_LOGIN = email;
+  doLogin(email + '::' + p);
 };
 $('#gate-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#gate-btn').click(); });
+$('#gate-email').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#gate-pass').focus(); });
 
 async function refresh() {
   const token = localStorage.getItem(TKEY);
@@ -2243,7 +2249,7 @@ let QE_WA_CONECTADO = false;
 
 async function qeCarregar() {
   QE_CARREGADO = true;
-  const r = await fetch('/api/quiz-config').then((x) => x.json()).catch(() => null);
+  const r = await fetch('/api/quiz-config', { headers: { 'x-dash-token': localStorage.getItem(TKEY) || '' } }).then((x) => x.json()).catch(() => null);
   if (!r || !r.ok) { $('#qeStatus').textContent = 'Erro ao carregar a configuração.'; return; }
   QE = {
     perguntas: JSON.parse(JSON.stringify(r.perguntas || [])),
@@ -2487,7 +2493,7 @@ let AP = null;
 let AP_CARREGADO = false;
 async function apCarregar(box) {
   AP_CARREGADO = true;
-  const r = await fetch('/api/aparencia').then((x) => x.json()).catch(() => null);
+  const r = await fetch('/api/aparencia', { headers: { 'x-dash-token': localStorage.getItem(TKEY) || '' } }).then((x) => x.json()).catch(() => null);
   AP = (r && r.ok) ? {
     whatsapp_numero: r.whatsapp_numero || '', avatar_url: r.avatar_url || '',
     avatar_fallback: r.avatar_fallback || '', site_url: r.site_url || '',
@@ -3308,7 +3314,7 @@ const RENDA_ABERTAS = new Set();
 let RENDA_CFG = null;   // opções atuais da pergunta-chave publicada
 async function carregarRendaCfg() {
   try {
-    const d = await fetch('/api/quiz-config').then((x) => x.json());
+    const d = await fetch('/api/quiz-config', { headers: { 'x-dash-token': localStorage.getItem(TKEY) || '' } }).then((x) => x.json());
     // a faixa de renda é sempre a pergunta marcada como critério de desempate
     // (é o mesmo campo que o quiz usa pra preencher `faturamento` no lead)
     const chave = (d.perguntas || []).find((p) => p.desempate);
@@ -3709,7 +3715,7 @@ let ROTEAMENTO_CACHE = {};
 let CALCOM_CONECTADO = false;
 async function carregarQualificadoresOrigem() {
   try {
-    const d = await fetch('/api/quiz-config').then((x) => x.json());
+    const d = await fetch('/api/quiz-config', { headers: { 'x-dash-token': localStorage.getItem(TKEY) || '' } }).then((x) => x.json());
     if (d && d.ok && Array.isArray(d.qualificadores)) ORIGEM_QUALIFICADORES = d.qualificadores;
     if (d && d.ok && d.roteamento) ROTEAMENTO_CACHE = d.roteamento;
     CALCOM_CONECTADO = !!(d && d.ok && d.calcomConectado);

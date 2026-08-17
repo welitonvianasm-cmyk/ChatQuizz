@@ -1,5 +1,7 @@
 /**
- * QUADROS KANBAN v3 — funil inteligente por atendente.
+ * QUADROS KANBAN v3 — funil inteligente por atendente. Multi-tenant:
+ * toda tabela (boards/cols/cards/leads) é filtrada por conta_id, sempre
+ * resolvido do login (nunca aceito do corpo da requisição).
  *
  * Regras:
  *   - Todo quadro é vinculado a UM atendente (obrigatório). Admin vê todos;
@@ -25,7 +27,7 @@
  *   { token, action:'card_mover',   id, col_id, motivo? }
  *   { token, action:'card_excluir', id }
  */
-import { temConfig, autenticar } from '../_tokens.mjs';
+import { temConfig, autenticarToken } from '../_tokens.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -54,14 +56,15 @@ export default async (req) => {
 
   let body = {};
   try { body = await req.json(); } catch { /* sem body */ }
-  const auth = await autenticar(req.headers.get('x-dash-token') || body.token || '');
+  const auth = await autenticarToken(req.headers.get('x-dash-token') || body.token || '');
   if (!auth.ok) return json({ error: 'unauthorized' }, 401);
   const quem = String(auth.user.nome || '').trim() || 'Equipe';
+  const contaId = auth.contaId;
 
   /* permissões: lead com atendente só é movimentado por ele (ou pela admin) */
   async function bloqueioLead(lead_ref) {
     if (auth.admin || !lead_ref) return null;
-    const r = await sb(`${LEADS}?lead_ref=eq.${encodeURIComponent(lead_ref)}&select=atendente&limit=1`);
+    const r = await sb(`${LEADS}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(lead_ref)}&select=atendente&limit=1`);
     if (!r.ok) return null;
     const resp = String(((await r.json())[0] || {}).atendente || '').trim();
     if (resp && resp !== quem) {
@@ -70,18 +73,18 @@ export default async (req) => {
     return null;
   }
   async function pegarCard(cardId) {
-    const r = await sb(`kanban_cards?id=eq.${cardId}&select=id,board_id,col_id,lead_ref&limit=1`);
+    const r = await sb(`kanban_cards?id=eq.${cardId}&conta_id=eq.${contaId}&select=id,board_id,col_id,lead_ref&limit=1`);
     return r.ok ? ((await r.json())[0] || null) : null;
   }
   async function pegarCol(colId) {
-    let r = await sb(`kanban_cols?id=eq.${colId}&select=id,board_id,nome,tipo&limit=1`);
-    if (!r.ok) r = await sb(`kanban_cols?id=eq.${colId}&select=id,board_id,nome&limit=1`);
+    let r = await sb(`kanban_cols?id=eq.${colId}&conta_id=eq.${contaId}&select=id,board_id,nome,tipo&limit=1`);
+    if (!r.ok) r = await sb(`kanban_cols?id=eq.${colId}&conta_id=eq.${contaId}&select=id,board_id,nome&limit=1`);
     return r.ok ? ((await r.json())[0] || null) : null;
   }
 
   /* cria as colunas oficiais que faltarem num quadro; devolve mapa tipo→col */
   async function garantirFunil(board_id) {
-    let r = await sb(`kanban_cols?board_id=eq.${board_id}&select=id,nome,tipo,ordem`);
+    let r = await sb(`kanban_cols?board_id=eq.${board_id}&conta_id=eq.${contaId}&select=id,nome,tipo,ordem`);
     if (!r.ok) return null;   // sem coluna tipo ainda (setup-kanban3 não rodou)
     const atuais = await r.json();
     const porTipo = new Map(atuais.filter((c) => c.tipo).map((c) => [c.tipo, c]));
@@ -89,7 +92,7 @@ export default async (req) => {
     if (faltam.length) {
       const rc = await sb('kanban_cols', {
         method: 'POST', headers: { Prefer: 'return=representation' },
-        body: JSON.stringify(faltam.map((f) => ({ board_id, nome: f.nome, tipo: f.tipo, ordem: FUNIL.findIndex((x) => x.tipo === f.tipo) }))),
+        body: JSON.stringify(faltam.map((f) => ({ conta_id: contaId, board_id, nome: f.nome, tipo: f.tipo, ordem: FUNIL.findIndex((x) => x.tipo === f.tipo) }))),
       });
       if (rc.ok) (await rc.json()).forEach((c) => porTipo.set(c.tipo, c));
     }
@@ -101,8 +104,8 @@ export default async (req) => {
     if (!tipo || tipo === 'followup') return { ok: true };   // organizacional: não mexe no status
     const refUrl = encodeURIComponent(lead_ref);
     let temResultado = true;
-    let rl = await sb(`${LEADS}?lead_ref=eq.${refUrl}&select=resultado,equipe_json&limit=1`);
-    if (!rl.ok) { temResultado = false; rl = await sb(`${LEADS}?lead_ref=eq.${refUrl}&select=equipe_json&limit=1`); }
+    let rl = await sb(`${LEADS}?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=resultado,equipe_json&limit=1`);
+    if (!rl.ok) { temResultado = false; rl = await sb(`${LEADS}?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=equipe_json&limit=1`); }
     if (!rl.ok) return { ok: true };
     const lead = (await rl.json())[0] || {};
 
@@ -133,8 +136,8 @@ export default async (req) => {
     }
     eq.historico = eq.historico.slice(0, 60);
     patch.equipe_json = JSON.stringify(eq);
-    let rp = await sb(`${LEADS}?lead_ref=eq.${refUrl}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
-    if (!rp.ok) { delete patch.equipe_json; delete patch.etapa; rp = await sb(`${LEADS}?lead_ref=eq.${refUrl}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) }); }
+    let rp = await sb(`${LEADS}?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
+    if (!rp.ok) { delete patch.equipe_json; delete patch.etapa; rp = await sb(`${LEADS}?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) }); }
     return { ok: true };
   }
 
@@ -143,15 +146,15 @@ export default async (req) => {
     const id = Number(body.id) || 0;
 
     if (a === 'estado') {
-      let rb = await sb('kanban_boards?select=id,nome,atendente,descricao&order=criado_em.asc');
+      let rb = await sb(`kanban_boards?conta_id=eq.${contaId}&select=id,nome,atendente,descricao&order=criado_em.asc`);
       let semVinculo = false;
-      if (!rb.ok) { semVinculo = true; rb = await sb('kanban_boards?select=id,nome&order=criado_em.asc'); }
+      if (!rb.ok) { semVinculo = true; rb = await sb(`kanban_boards?conta_id=eq.${contaId}&select=id,nome&order=criado_em.asc`); }
       if (!rb.ok) return json({ ok: false, error: AVISO_SQL });
       const boards = await rb.json();
-      let cols = await sb('kanban_cols?select=id,board_id,nome,ordem,cor,tipo&order=ordem.asc,id.asc').then((r) => r.ok ? r.json() : null);
-      if (!cols) cols = await sb('kanban_cols?select=id,board_id,nome,ordem,cor&order=ordem.asc,id.asc').then((r) => r.ok ? r.json() : null);
-      if (!cols) cols = await sb('kanban_cols?select=id,board_id,nome,ordem&order=ordem.asc,id.asc').then((r) => r.ok ? r.json() : []);
-      const cards = await sb('kanban_cards?select=id,board_id,col_id,lead_ref,ordem&order=ordem.asc,id.asc').then((r) => r.ok ? r.json() : []);
+      let cols = await sb(`kanban_cols?conta_id=eq.${contaId}&select=id,board_id,nome,ordem,cor,tipo&order=ordem.asc,id.asc`).then((r) => r.ok ? r.json() : null);
+      if (!cols) cols = await sb(`kanban_cols?conta_id=eq.${contaId}&select=id,board_id,nome,ordem,cor&order=ordem.asc,id.asc`).then((r) => r.ok ? r.json() : null);
+      if (!cols) cols = await sb(`kanban_cols?conta_id=eq.${contaId}&select=id,board_id,nome,ordem&order=ordem.asc,id.asc`).then((r) => r.ok ? r.json() : []);
+      const cards = await sb(`kanban_cards?conta_id=eq.${contaId}&select=id,board_id,col_id,lead_ref,ordem&order=ordem.asc,id.asc`).then((r) => r.ok ? r.json() : []);
       return json({ ok: true, boards, cols, cards, semVinculo });
     }
 
@@ -163,10 +166,10 @@ export default async (req) => {
       if (!auth.admin) atendente = quem;
       if (!atendente) return json({ ok: false, error: 'Todo quadro precisa de um atendente responsável.' });
       const descricao = String(body.descricao || '').trim().slice(0, 300);
-      let r = await sb('kanban_boards', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ nome, atendente, descricao }) });
+      let r = await sb('kanban_boards', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ conta_id: contaId, nome, atendente, descricao }) });
       if (!r.ok) {
         // sem as colunas novas ainda? cria simples e avisa
-        r = await sb('kanban_boards', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ nome }) });
+        r = await sb('kanban_boards', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ conta_id: contaId, nome }) });
         if (!r.ok) return json({ ok: false, error: AVISO_SQL });
         const b0 = (await r.json())[0];
         return json({ ok: true, board_id: b0.id, aviso: AVISO_SQL3 });
@@ -191,16 +194,16 @@ export default async (req) => {
       }
       if ('descricao' in body) patch.descricao = String(body.descricao || '').trim().slice(0, 300);
       if (!Object.keys(patch).length) return json({ ok: false, error: 'nada para alterar' });
-      const r = await sb(`kanban_boards?id=eq.${id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
+      const r = await sb(`kanban_boards?id=eq.${id}&conta_id=eq.${contaId}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
       if (!r.ok && ('atendente' in patch || 'descricao' in patch)) return json({ ok: false, error: AVISO_SQL3 });
       return json({ ok: r.ok });
     }
 
     if (a === 'board_excluir') {
       if (!auth.admin) return json({ ok: false, error: 'Somente a administradora pode excluir um quadro.' });
-      await sb(`kanban_cards?board_id=eq.${id}`, { method: 'DELETE' });
-      await sb(`kanban_cols?board_id=eq.${id}`, { method: 'DELETE' });
-      const r = await sb(`kanban_boards?id=eq.${id}`, { method: 'DELETE' });
+      await sb(`kanban_cards?board_id=eq.${id}&conta_id=eq.${contaId}`, { method: 'DELETE' });
+      await sb(`kanban_cols?board_id=eq.${id}&conta_id=eq.${contaId}`, { method: 'DELETE' });
+      const r = await sb(`kanban_boards?id=eq.${id}&conta_id=eq.${contaId}`, { method: 'DELETE' });
       return json({ ok: r.ok });
     }
 
@@ -209,8 +212,8 @@ export default async (req) => {
       const board_id = Number(body.board_id) || 0;
       if (!nome || !board_id) return json({ ok: false, error: 'Dê um nome à coluna.' });
       // personalizada: tipo vazio, entra depois das oficiais
-      let r = await sb('kanban_cols', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ board_id, nome, tipo: '', ordem: 100 + (Date.now() % 100000) }) });
-      if (!r.ok) r = await sb('kanban_cols', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ board_id, nome, ordem: 100 + (Date.now() % 100000) }) });
+      let r = await sb('kanban_cols', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ conta_id: contaId, board_id, nome, tipo: '', ordem: 100 + (Date.now() % 100000) }) });
+      if (!r.ok) r = await sb('kanban_cols', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ conta_id: contaId, board_id, nome, ordem: 100 + (Date.now() % 100000) }) });
       return json({ ok: r.ok });
     }
 
@@ -231,7 +234,7 @@ export default async (req) => {
         patch.cor = cor;
       }
       if (!Object.keys(patch).length) return json({ ok: false, error: 'nada para alterar' });
-      const r = await sb(`kanban_cols?id=eq.${id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
+      const r = await sb(`kanban_cols?id=eq.${id}&conta_id=eq.${contaId}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
       if (!r.ok && 'cor' in patch) return json({ ok: false, error: 'Falta rodar o setup-kanban2.sql no Supabase (cores das colunas).' });
       return json({ ok: r.ok });
     }
@@ -239,8 +242,8 @@ export default async (req) => {
     if (a === 'col_excluir') {
       const col = await pegarCol(id);
       if (col && col.tipo) return json({ ok: false, error: 'As colunas oficiais do funil não podem ser excluídas.' });
-      await sb(`kanban_cards?col_id=eq.${id}`, { method: 'DELETE' });
-      const r = await sb(`kanban_cols?id=eq.${id}`, { method: 'DELETE' });
+      await sb(`kanban_cards?col_id=eq.${id}&conta_id=eq.${contaId}`, { method: 'DELETE' });
+      const r = await sb(`kanban_cols?id=eq.${id}&conta_id=eq.${contaId}`, { method: 'DELETE' });
       return json({ ok: r.ok });
     }
 
@@ -249,30 +252,30 @@ export default async (req) => {
       let col_id = Number(body.col_id) || 0;
       const lead_ref = String(body.lead_ref || '').trim();
       if (!board_id || !col_id || !lead_ref) return json({ ok: false, error: 'Dados incompletos.' });
-      const dup = await sb(`kanban_cards?board_id=eq.${board_id}&lead_ref=eq.${encodeURIComponent(lead_ref)}&select=id&limit=1`);
+      const dup = await sb(`kanban_cards?board_id=eq.${board_id}&conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(lead_ref)}&select=id&limit=1`);
       if (dup.ok && (await dup.json()).length) return json({ ok: false, error: 'Esse lead já está neste quadro.' });
       const bloq = await bloqueioLead(lead_ref); if (bloq) return bloq;
 
       // adicionar ao quadro = atribuir ao atendente do quadro (se ainda não for dele)
-      const rb = await sb(`kanban_boards?id=eq.${board_id}&select=atendente&limit=1`);
+      const rb = await sb(`kanban_boards?id=eq.${board_id}&conta_id=eq.${contaId}&select=atendente&limit=1`);
       const donoQuadro = rb.ok ? String(((await rb.json())[0] || {}).atendente || '').trim() : '';
       if (donoQuadro) {
-        const rl = await sb(`${LEADS}?lead_ref=eq.${encodeURIComponent(lead_ref)}&select=atendente,equipe_json&limit=1`);
+        const rl = await sb(`${LEADS}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(lead_ref)}&select=atendente,equipe_json&limit=1`);
         const lead = rl.ok ? ((await rl.json())[0] || {}) : {};
         if (String(lead.atendente || '').trim() !== donoQuadro) {
           let eq = { obs: '', campos: [], historico: [] };
           try { const p = JSON.parse(lead.equipe_json || ''); if (p && typeof p === 'object') eq = { obs: p.obs || '', campos: Array.isArray(p.campos) ? p.campos : [], historico: Array.isArray(p.historico) ? p.historico : [] }; } catch { /* vazio */ }
           eq.historico.unshift({ t: new Date().toISOString(), quem, txt: 'Atendente responsável: ' + donoQuadro + ' (adicionado ao quadro)' });
           eq.historico = eq.historico.slice(0, 60);
-          let rp = await sb(`${LEADS}?lead_ref=eq.${encodeURIComponent(lead_ref)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ atendente: donoQuadro, etapa: 'atribuido', equipe_json: JSON.stringify(eq), updated_at: new Date().toISOString() }) });
-          if (!rp.ok) await sb(`${LEADS}?lead_ref=eq.${encodeURIComponent(lead_ref)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ atendente: donoQuadro, updated_at: new Date().toISOString() }) });
+          let rp = await sb(`${LEADS}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(lead_ref)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ atendente: donoQuadro, etapa: 'atribuido', equipe_json: JSON.stringify(eq), updated_at: new Date().toISOString() }) });
+          if (!rp.ok) await sb(`${LEADS}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(lead_ref)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ atendente: donoQuadro, updated_at: new Date().toISOString() }) });
           // sai dos quadros de outros atendentes e entra na coluna Atribuído deste
-          await sb(`kanban_cards?lead_ref=eq.${encodeURIComponent(lead_ref)}&board_id=neq.${board_id}`, { method: 'DELETE' });
+          await sb(`kanban_cards?lead_ref=eq.${encodeURIComponent(lead_ref)}&conta_id=eq.${contaId}&board_id=neq.${board_id}`, { method: 'DELETE' });
           const funil = await garantirFunil(board_id);
           if (funil && funil.get('atribuido')) col_id = funil.get('atribuido').id;
         }
       }
-      const r = await sb('kanban_cards', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ board_id, col_id, lead_ref, ordem: Date.now() }) });
+      const r = await sb('kanban_cards', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ conta_id: contaId, board_id, col_id, lead_ref, ordem: Date.now() }) });
       return json({ ok: r.ok });
     }
 
@@ -288,14 +291,14 @@ export default async (req) => {
         const sync = await sincronizarLeadComColuna(card.lead_ref, col.tipo, body.motivo);
         if (!sync.ok) return json(sync);
       }
-      const r = await sb(`kanban_cards?id=eq.${id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ col_id, ordem: Date.now() }) });
+      const r = await sb(`kanban_cards?id=eq.${id}&conta_id=eq.${contaId}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ col_id, ordem: Date.now() }) });
       return json({ ok: r.ok });
     }
 
     if (a === 'card_excluir') {
       const card = await pegarCard(id);
       if (card) { const bloq = await bloqueioLead(card.lead_ref); if (bloq) return bloq; }
-      const r = await sb(`kanban_cards?id=eq.${id}`, { method: 'DELETE' });
+      const r = await sb(`kanban_cards?id=eq.${id}&conta_id=eq.${contaId}`, { method: 'DELETE' });
       return json({ ok: r.ok });
     }
 

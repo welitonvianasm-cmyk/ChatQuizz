@@ -12,7 +12,7 @@
  *   { token, action:'editar', slug, nome?, utm_source?, utm_medium?, utm_campaign?, ativo? }  (admin)
  *   { token, action:'excluir', slug }  (admin — soft delete: ativo=false, nunca some de vez)
  */
-import { temConfig, autenticar } from '../_tokens.mjs';
+import { temConfig, autenticarToken } from '../_tokens.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -24,18 +24,18 @@ function slugificar(v) {
   return semAcento.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 }
 
-async function carregarLista() {
+async function carregarLista(contaId) {
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/funnel_config?key=eq.${CHAVE}&select=value&limit=1`, { headers: H });
+    const r = await fetch(`${SB_URL}/rest/v1/funnel_config?conta_id=eq.${contaId}&key=eq.${CHAVE}&select=value&limit=1`, { headers: H });
     if (r.ok) { const rows = await r.json(); const v = rows[0] && JSON.parse(rows[0].value || '[]'); if (Array.isArray(v)) return v; }
   } catch { /* lista vazia */ }
   return [];
 }
-async function salvarLista(lista) {
-  await fetch(`${SB_URL}/rest/v1/funnel_config?on_conflict=key`, {
+async function salvarLista(contaId, lista) {
+  await fetch(`${SB_URL}/rest/v1/funnel_config?on_conflict=conta_id,key`, {
     method: 'POST',
     headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify({ key: CHAVE, value: JSON.stringify(lista), updated_at: new Date().toISOString() }),
+    body: JSON.stringify({ conta_id: contaId, key: CHAVE, value: JSON.stringify(lista), updated_at: new Date().toISOString() }),
   });
 }
 
@@ -47,14 +47,15 @@ export default async (req) => {
 
   let body = {};
   try { body = await req.json(); } catch { /* sem body */ }
-  const auth = await autenticar(req.headers.get('x-dash-token') || body.token || '');
+  const auth = await autenticarToken(req.headers.get('x-dash-token') || body.token || '');
   if (!auth.ok) return json({ error: 'unauthorized' }, 401);
+  const contaId = auth.contaId;
 
   try {
     const a = body.action;
 
     if (a === 'listar') {
-      return json({ ok: true, links: await carregarLista() });
+      return json({ ok: true, links: await carregarLista(contaId) });
     }
 
     if (!auth.admin) return json({ ok: false, error: 'Somente a administradora gerencia os links de rastreio.' });
@@ -62,7 +63,7 @@ export default async (req) => {
     if (a === 'criar') {
       const nome = String(body.nome || '').trim().slice(0, 80);
       if (!nome) return json({ ok: false, error: 'Dê um nome ao link (ex: Instagram Bio).' });
-      const lista = await carregarLista();
+      const lista = await carregarLista(contaId);
       let slug = slugificar(body.slug || nome);
       if (!slug) return json({ ok: false, error: 'Não consegui gerar um slug válido pra esse nome.' });
       let base = slug, i = 2;
@@ -74,13 +75,13 @@ export default async (req) => {
         utm_campaign: String(body.utm_campaign || '').trim().slice(0, 100),
         ativo: true, criado_em: new Date().toISOString(),
       });
-      await salvarLista(lista);
+      await salvarLista(contaId, lista);
       return json({ ok: true, slug });
     }
 
     if (a === 'editar') {
       const slug = String(body.slug || '').trim();
-      const lista = await carregarLista();
+      const lista = await carregarLista(contaId);
       const item = lista.find((l) => l.slug === slug);
       if (!item) return json({ ok: false, error: 'Link não encontrado.' });
       if ('nome' in body) item.nome = String(body.nome || '').trim().slice(0, 80) || item.nome;
@@ -88,17 +89,17 @@ export default async (req) => {
       if ('utm_medium' in body) item.utm_medium = String(body.utm_medium || '').trim().slice(0, 100);
       if ('utm_campaign' in body) item.utm_campaign = String(body.utm_campaign || '').trim().slice(0, 100);
       if ('ativo' in body) item.ativo = !!body.ativo;
-      await salvarLista(lista);
+      await salvarLista(contaId, lista);
       return json({ ok: true });
     }
 
     if (a === 'excluir') {
       const slug = String(body.slug || '').trim();
-      const lista = await carregarLista();
+      const lista = await carregarLista(contaId);
       const item = lista.find((l) => l.slug === slug);
       if (!item) return json({ ok: false, error: 'Link não encontrado.' });
       item.ativo = false;   // soft delete — leads antigos continuam mostrando a origem certa
-      await salvarLista(lista);
+      await salvarLista(contaId, lista);
       return json({ ok: true });
     }
 

@@ -6,11 +6,27 @@
  *
  * Grava cada mensagem em wa_mensagens e tenta casar o telefone com um lead.
  * Env: WA_WEBHOOK_SECRET (segredo do webhook — recusa chamadas sem ele).
+ *
+ * MULTI-TENANT: a instância Evolution ainda é global (uma só pra todas as
+ * contas — ver nota em whatsapp.mjs/wa-cron.mjs), então a mensagem em si
+ * não vem marcada com conta nenhuma. Resolve pelo lead já cadastrado com
+ * esse telefone (o lead JÁ tem conta_id); sem lead conhecido, cai na
+ * primeira conta ativa (mesmo fallback usado nos endpoints públicos).
  */
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const SECRET = process.env.WA_WEBHOOK_SECRET || '';
+
+let CONTA_PADRAO_CACHE = null;
+async function contaPadrao() {
+  if (CONTA_PADRAO_CACHE) return CONTA_PADRAO_CACHE;
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/contas?status=eq.ativa&select=id&order=id.asc&limit=1`, { headers: H });
+    if (r.ok) { const rows = await r.json(); if (rows[0]) { CONTA_PADRAO_CACHE = rows[0].id; return rows[0].id; } }
+  } catch { /* sem conta nenhuma cadastrada ainda */ }
+  return null;
+}
 
 export default async (req) => {
   if (req.method !== 'POST') return new Response('ok');
@@ -35,16 +51,20 @@ export default async (req) => {
       const wa_id = String(d.key.id || '');
 
       // casa o telefone com um lead (sufixo de 10-11 dígitos cobre DDI/9º dígito)
+      // — o lead já vem com a conta_id certa, é o que resolve o tenant da mensagem
       let lead_ref = '';
+      let contaId = null;
       try {
         const fim = telefone.slice(-10);
-        const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?whatsapp=ilike.*${fim}&select=lead_ref&limit=1`, { headers: H });
-        if (rl.ok) { const rows = await rl.json(); lead_ref = (rows[0] && rows[0].lead_ref) || ''; }
+        const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?whatsapp=ilike.*${fim}&select=lead_ref,conta_id&limit=1`, { headers: H });
+        if (rl.ok) { const rows = await rl.json(); if (rows[0]) { lead_ref = rows[0].lead_ref || ''; contaId = rows[0].conta_id; } }
       } catch { /* sem vínculo */ }
+      if (!contaId) contaId = await contaPadrao();
+      if (!contaId) continue;   // nenhuma conta cadastrada ainda — nada a fazer
 
       await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
         method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
-        body: JSON.stringify({ telefone, lead_ref, direcao, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out' }),
+        body: JSON.stringify({ conta_id: contaId, telefone, lead_ref, direcao, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out' }),
       });
     }
     return new Response('ok');

@@ -8,7 +8,7 @@
  * A criação dos alertas é automática (feita pelo lead-admin quando a
  * presença de um lead é registrada) — nada é cadastrado manualmente aqui.
  */
-import { temConfig, autenticar } from '../_tokens.mjs';
+import { temConfig, autenticarToken } from '../_tokens.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -23,8 +23,9 @@ export default async (req) => {
 
   let body = {};
   try { body = await req.json(); } catch { /* sem body */ }
-  const auth = await autenticar(req.headers.get('x-dash-token') || body.token || '');
+  const auth = await autenticarToken(req.headers.get('x-dash-token') || body.token || '');
   if (!auth.ok) return json({ error: 'unauthorized' }, 401);
+  const contaId = auth.contaId;
 
   const meuNome = auth.user.nome || '';
 
@@ -32,7 +33,7 @@ export default async (req) => {
     if (body.action === 'listar') {
       // atendente vê os alertas DELE + os "de todos" (lead sem responsável → atendente vazio)
       const filtro = auth.admin ? '' : `&or=(atendente.eq.${encodeURIComponent(meuNome)},atendente.eq.)`;
-      const r = await fetch(`${SB_URL}/rest/v1/alertas?select=id,lead_ref,lead_nome,atendente,tipo,descricao,data_hora,status,criado_em&order=criado_em.desc&limit=150${filtro}`, { headers: H });
+      const r = await fetch(`${SB_URL}/rest/v1/alertas?conta_id=eq.${contaId}&select=id,lead_ref,lead_nome,atendente,tipo,descricao,data_hora,status,criado_em&order=criado_em.desc&limit=150${filtro}`, { headers: H });
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       return json({ ok: true, alertas: await r.json() });
     }
@@ -41,7 +42,7 @@ export default async (req) => {
       const id = Number(body.id) || 0;
       if (!id) return json({ ok: false, error: 'id obrigatório' });
       const filtro = auth.admin ? '' : `&or=(atendente.eq.${encodeURIComponent(meuNome)},atendente.eq.)`;
-      const r = await fetch(`${SB_URL}/rest/v1/alertas?id=eq.${id}${filtro}`, {
+      const r = await fetch(`${SB_URL}/rest/v1/alertas?id=eq.${id}&conta_id=eq.${contaId}${filtro}`, {
         method: 'PATCH',
         headers: { ...H, Prefer: 'return=minimal' },
         body: JSON.stringify({ status: 'lido' }),
@@ -54,7 +55,7 @@ export default async (req) => {
       const id = Number(body.id) || 0;
       const atendente = String(body.atendente || '').trim().slice(0, 120);
       if (!id || !atendente) return json({ ok: false, error: 'dados incompletos' });
-      const r = await fetch(`${SB_URL}/rest/v1/alertas?id=eq.${id}`, {
+      const r = await fetch(`${SB_URL}/rest/v1/alertas?id=eq.${id}&conta_id=eq.${contaId}`, {
         method: 'PATCH',
         headers: { ...H, Prefer: 'return=minimal' },
         body: JSON.stringify({ atendente }),

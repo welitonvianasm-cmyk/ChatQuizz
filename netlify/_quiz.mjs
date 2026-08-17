@@ -288,10 +288,11 @@ export function interpolar(texto, vars) {
 }
 
 /* Busca e valida a config publicada (usado tanto pelo GET público de
-   quiz-config.mjs quanto pelo recálculo server-side em save-lead.mjs). */
-export async function carregarConfigPublicada(SB_URL, H) {
+   quiz-config.mjs quanto pelo recálculo server-side em save-lead.mjs).
+   Escopada por conta — cada assinante tem seu próprio quiz configurado. */
+export async function carregarConfigPublicada(SB_URL, H, contaId) {
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/funnel_config?key=eq.quiz_perguntas&select=value&limit=1`, { headers: H });
+    const r = await fetch(`${SB_URL}/rest/v1/funnel_config?conta_id=eq.${contaId}&key=eq.quiz_perguntas&select=value&limit=1`, { headers: H });
     if (!r.ok) return { doc: PADRAO, personalizado: false };
     const rows = await r.json();
     if (!rows[0] || !rows[0].value) return { doc: PADRAO, personalizado: false };

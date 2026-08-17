@@ -12,7 +12,7 @@
  *   POST /api/conexoes { token, action:'salvar_mentoriahub', url, secret, ativo }   (admin)
  *   POST /api/conexoes { token, action:'remover_mentoriahub' }                      (admin)
  */
-import { temConfig, autenticar } from '../_tokens.mjs';
+import { temConfig, autenticarToken } from '../_tokens.mjs';
 import { lerConexaoCalcom, salvarConexaoCalcom, obterConexaoMentoriaHub, salvarConexaoMentoriaHub } from '../_conexoes.mjs';
 
 export default async (req) => {
@@ -22,17 +22,18 @@ export default async (req) => {
 
   let body = {};
   try { body = await req.json(); } catch { /* sem body */ }
-  const auth = await autenticar(req.headers.get('x-dash-token') || body.token || '');
+  const auth = await autenticarToken(req.headers.get('x-dash-token') || body.token || '');
   if (!auth.ok) return json({ error: 'unauthorized' }, 401);
+  const contaId = auth.contaId;
 
   try {
     const a = body.action;
 
     if (a === 'status') {
-      const salvo = await lerConexaoCalcom();
+      const salvo = await lerConexaoCalcom(contaId);
       const temEnv = !!process.env.CALCOM_API_KEY;
       const temSalva = !!salvo.api_key;
-      const mentoriahub = await obterConexaoMentoriaHub();
+      const mentoriahub = await obterConexaoMentoriaHub(contaId);
       return json({
         ok: true,
         calcom: { temEnv, temSalva, conectado: temEnv || temSalva },
@@ -45,12 +46,12 @@ export default async (req) => {
     if (a === 'salvar_calcom') {
       const api_key = String(body.api_key || '').trim().slice(0, 300);
       if (!api_key) return json({ ok: false, error: 'Cole a chave da API do Cal.com.' });
-      await salvarConexaoCalcom({ api_key });
+      await salvarConexaoCalcom(contaId, { api_key });
       return json({ ok: true });
     }
 
     if (a === 'remover_calcom') {
-      await salvarConexaoCalcom({});
+      await salvarConexaoCalcom(contaId, {});
       return json({ ok: true });
     }
 
@@ -58,12 +59,12 @@ export default async (req) => {
       const url = String(body.url || '').trim().slice(0, 500);
       const secret = String(body.secret || '').trim().slice(0, 300);
       if (!url) return json({ ok: false, error: 'Cole a URL do webhook do MentoriaHub.' });
-      await salvarConexaoMentoriaHub({ url, secret, ativo: body.ativo !== false });
+      await salvarConexaoMentoriaHub(contaId, { url, secret, ativo: body.ativo !== false });
       return json({ ok: true });
     }
 
     if (a === 'remover_mentoriahub') {
-      await salvarConexaoMentoriaHub({});
+      await salvarConexaoMentoriaHub(contaId, {});
       return json({ ok: true });
     }
 

@@ -25,6 +25,7 @@
  */
 import { votar, interpolar, carregarConfigPublicada } from '../_quiz.mjs';
 import { dispararMentoriaHub } from '../_conexoes.mjs';
+import { resolverContaPorHost } from '../_tenant.mjs';
 
 const SUPABASE_URL = (process.env.SUPABASE_DIAG_URL || 'https://aktktxizmpwckvxbdjzf.supabase.co').replace(/\/+$/, '');
 const TABLE = 'diag_instagram_leads';
@@ -52,6 +53,9 @@ export default async (req) => {
     if (!KEY) return json({ error: 'SUPABASE_DIAG_SERVICE not configured' }, 500);
     const H = { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' };
 
+    const contaId = await resolverContaPorHost(req);
+    if (!contaId) return json({ error: 'Conta não encontrada para este domínio' }, 404);
+
     const b = await req.json();
     if (!b.lead_ref || !b.nome) return json({ error: 'Missing lead_ref/nome' }, 400);
 
@@ -64,6 +68,7 @@ export default async (req) => {
     const respostas = (b.respostas && typeof b.respostas === 'object') ? b.respostas : null;
 
     const row = {
+      conta_id: contaId,
       lead_ref: txt(b.lead_ref, 60),
       status: txt(b.status || 'parcial', 20),
       nome: txt(b.nome, 120),
@@ -98,7 +103,7 @@ export default async (req) => {
     let disparoWhats = null;
     let docQuiz = null;
     if (row.status === 'completo' && respostas) {
-      const { doc } = await carregarConfigPublicada(SUPABASE_URL, H);
+      const { doc } = await carregarConfigPublicada(SUPABASE_URL, H, contaId);
       docQuiz = doc;
       const qualificador = votar(doc.perguntas, respostas, 'qualificador');
       const nivel = votar(doc.perguntas, respostas, 'nivel');
@@ -117,7 +122,7 @@ export default async (req) => {
       }
     }
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=lead_ref`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=conta_id,lead_ref`, {
       method: 'POST',
       headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify(row),
@@ -136,7 +141,7 @@ export default async (req) => {
         method: 'POST',
         headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
         body: JSON.stringify({
-          telefone: disparoWhats.telefone, lead_ref: row.lead_ref, nome: row.nome,
+          conta_id: contaId, telefone: disparoWhats.telefone, lead_ref: row.lead_ref, nome: row.nome,
           mensagem: disparoWhats.mensagem,
           enviar_em: new Date().toISOString(), status: 'pendente', origem: 'roteamento_quiz',
           chave_unica: 'roteamento|' + row.lead_ref,
@@ -147,7 +152,7 @@ export default async (req) => {
     /* Espelho global no MentoriaHub (se conectado) — independe de
        qualificador/roteamento, dispara pra TODO lead completo. */
     if (row.status === 'completo' && respostas) {
-      dispararMentoriaHub('lead_qualificado', {
+      dispararMentoriaHub(contaId, 'lead_qualificado', {
         nome: row.nome, email: row.email, telefone: row.whatsapp, estado: row.uf,
         canalCaptacao: row.utm_source ? `chatquizz-${row.utm_source}` : 'chatquizz',
         campanha: row.utm_campaign, conteudoEspecifico: row.utm_content, tags: ['chatquizz'],
@@ -164,7 +169,7 @@ export default async (req) => {
        reflete na Agenda/Reuniões do MentoriaHub (mesmo chatquizzLeadRef do
        evento acima, pra correlacionar sem duplicar). */
     if (row.status === 'agendado' && row.agendamento_em) {
-      dispararMentoriaHub('agendamento_confirmado', {
+      dispararMentoriaHub(contaId, 'agendamento_confirmado', {
         chatquizzLeadRef: row.lead_ref, agendamentoEm: row.agendamento_em,
         linkReuniao: row.video_url, bookingUid: row.booking_uid,
       });

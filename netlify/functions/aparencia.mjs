@@ -1,14 +1,17 @@
 /**
  * APARÊNCIA / IDENTIDADE DO QUIZ — número de WhatsApp, avatar, logo,
  * presente (com opção de não ter), site e cor primária. Tudo editável
- * pelo painel, sem precisar mexer em código.
+ * pelo painel, sem precisar mexer em código. Multi-tenant: cada conta
+ * tem a própria (funnel_config escopado por conta_id).
  *
  *   GET  /api/aparencia                 → { ok, ...aparencia, personalizado }
- *        (público: o quiz carrega daqui; sem config salva, devolve o PADRÃO)
+ *        (quiz público resolve a conta pelo subdomínio; painel autenticado
+ *        manda x-dash-token e resolve pelo login — os dois usam o mesmo GET)
  *   POST /api/aparencia { token, ... }  → salva (SÓ administradora)
  *   POST /api/aparencia { token, action:'restaurar' } → volta ao padrão
  */
-import { temConfig, autenticar } from '../_tokens.mjs';
+import { temConfig, autenticarToken } from '../_tokens.mjs';
+import { resolverContaPorHost } from '../_tenant.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -52,13 +55,24 @@ function sanitizar(body) {
   };
 }
 
+async function resolverContaGet(req) {
+  const token = req.headers.get('x-dash-token') || '';
+  if (token) {
+    const auth = await autenticarToken(token);
+    if (auth.ok) return auth.contaId;
+  }
+  return resolverContaPorHost(req);
+}
+
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
 
   if (req.method === 'GET') {
+    const contaId = await resolverContaGet(req);
+    if (!contaId) return json({ error: 'Conta não encontrada' }, 404);
     let salva = null;
     try {
-      const r = await fetch(`${SB_URL}/rest/v1/funnel_config?key=eq.${CHAVE}&select=value&limit=1`, { headers: H });
+      const r = await fetch(`${SB_URL}/rest/v1/funnel_config?conta_id=eq.${contaId}&key=eq.${CHAVE}&select=value&limit=1`, { headers: H });
       if (r.ok) { const rows = await r.json(); if (rows[0] && rows[0].value) salva = JSON.parse(rows[0].value); }
     } catch { /* usa padrão */ }
     if (salva) return json({ ok: true, ...PADRAO, ...salva, personalizado: true });
@@ -71,20 +85,21 @@ export default async (req) => {
 
   let body = {};
   try { body = await req.json(); } catch { /* sem body */ }
-  const auth = await autenticar(req.headers.get('x-dash-token') || body.token || '');
+  const auth = await autenticarToken(req.headers.get('x-dash-token') || body.token || '');
   if (!auth.ok || !auth.admin) return json({ error: 'admin_only' }, 401);
+  const contaId = auth.contaId;
 
   try {
     if (body.action === 'restaurar') {
-      await fetch(`${SB_URL}/rest/v1/funnel_config?key=eq.${CHAVE}`, { method: 'DELETE', headers: H });
+      await fetch(`${SB_URL}/rest/v1/funnel_config?conta_id=eq.${contaId}&key=eq.${CHAVE}`, { method: 'DELETE', headers: H });
       return json({ ok: true, ...PADRAO });
     }
     const v = sanitizar(body);
     if (v.erro) return json({ ok: false, error: v.erro });
-    const r = await fetch(`${SB_URL}/rest/v1/funnel_config?on_conflict=key`, {
+    const r = await fetch(`${SB_URL}/rest/v1/funnel_config?on_conflict=conta_id,key`, {
       method: 'POST',
       headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ key: CHAVE, value: JSON.stringify(v.limpo), updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ conta_id: contaId, key: CHAVE, value: JSON.stringify(v.limpo), updated_at: new Date().toISOString() }),
     });
     if (!r.ok) return json({ ok: false, error: 'Erro ao salvar no banco.' });
     return json({ ok: true, ...v.limpo });

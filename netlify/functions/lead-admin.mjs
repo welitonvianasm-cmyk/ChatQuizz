@@ -13,7 +13,7 @@
  *
  * PREPARADO PARA O FUTURO: integração real com o cal.com usa o booking_uid já salvo.
  */
-import { temConfig, autenticar } from '../_tokens.mjs';
+import { temConfig, autenticarToken } from '../_tokens.mjs';
 import { dispararMentoriaHub } from '../_conexoes.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
@@ -36,15 +36,15 @@ const FUNIL = [
 /* Posiciona o lead no quadro Kanban do atendente dele, na coluna oficial
    `tipoCol` — criando o card (e as colunas do funil) se precisar, e tirando
    o lead dos quadros de outros atendentes. Melhor-esforço: falha em silêncio. */
-async function moverNoKanban(lead_ref, atendente, tipoCol) {
+async function moverNoKanban(contaId, lead_ref, atendente, tipoCol) {
   try {
     const refUrl = encodeURIComponent(lead_ref);
     const resp = String(atendente || '').trim();
     if (!resp) {   // sem responsável: o lead sai dos quadros por atendente
-      await fetch(`${SB_URL}/rest/v1/kanban_cards?lead_ref=eq.${refUrl}`, { method: 'DELETE', headers: H });
+      await fetch(`${SB_URL}/rest/v1/kanban_cards?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, { method: 'DELETE', headers: H });
       return;
     }
-    const rb = await fetch(`${SB_URL}/rest/v1/kanban_boards?atendente=eq.${encodeURIComponent(resp)}&select=id&limit=1`, { headers: H });
+    const rb = await fetch(`${SB_URL}/rest/v1/kanban_boards?conta_id=eq.${contaId}&atendente=eq.${encodeURIComponent(resp)}&select=id&limit=1`, { headers: H });
     if (!rb.ok) return;   // coluna atendente ainda não existe (setup-kanban3)
     const board = (await rb.json())[0];
     if (!board) return;   // atendente sem quadro: nada a fazer
@@ -57,19 +57,19 @@ async function moverNoKanban(lead_ref, atendente, tipoCol) {
       if (faltam.length) {
         const rn = await fetch(`${SB_URL}/rest/v1/kanban_cols`, {
           method: 'POST', headers: { ...H, Prefer: 'return=representation' },
-          body: JSON.stringify(faltam.map((f) => ({ board_id: board.id, nome: f.nome, tipo: f.tipo, ordem: FUNIL.findIndex((x) => x.tipo === f.tipo) }))),
+          body: JSON.stringify(faltam.map((f) => ({ conta_id: contaId, board_id: board.id, nome: f.nome, tipo: f.tipo, ordem: FUNIL.findIndex((x) => x.tipo === f.tipo) }))),
         });
         if (rn.ok) alvo = (await rn.json()).find((c) => c.tipo === tipoCol);
       }
     }
     if (!alvo) return;
     // sai dos quadros de outros atendentes
-    await fetch(`${SB_URL}/rest/v1/kanban_cards?lead_ref=eq.${refUrl}&board_id=neq.${board.id}`, { method: 'DELETE', headers: H });
+    await fetch(`${SB_URL}/rest/v1/kanban_cards?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&board_id=neq.${board.id}`, { method: 'DELETE', headers: H });
     // move (ou cria) o card no quadro do responsável
-    const rcard = await fetch(`${SB_URL}/rest/v1/kanban_cards?lead_ref=eq.${refUrl}&board_id=eq.${board.id}&select=id&limit=1`, { headers: H });
+    const rcard = await fetch(`${SB_URL}/rest/v1/kanban_cards?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&board_id=eq.${board.id}&select=id&limit=1`, { headers: H });
     const card = rcard.ok ? (await rcard.json())[0] : null;
     if (card) await fetch(`${SB_URL}/rest/v1/kanban_cards?id=eq.${card.id}`, { method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify({ col_id: alvo.id, ordem: Date.now() }) });
-    else await fetch(`${SB_URL}/rest/v1/kanban_cards`, { method: 'POST', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify({ board_id: board.id, col_id: alvo.id, lead_ref, ordem: Date.now() }) });
+    else await fetch(`${SB_URL}/rest/v1/kanban_cards`, { method: 'POST', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify({ conta_id: contaId, board_id: board.id, col_id: alvo.id, lead_ref, ordem: Date.now() }) });
   } catch { /* kanban é acompanhamento; o dado principal já foi salvo */ }
 }
 
@@ -81,8 +81,9 @@ export default async (req) => {
 
   let body = {};
   try { body = await req.json(); } catch { /* sem body */ }
-  const auth = await autenticar(req.headers.get('x-dash-token') || body.token || '');
+  const auth = await autenticarToken(req.headers.get('x-dash-token') || body.token || '');
   if (!auth.ok) return json({ error: 'unauthorized' }, 401);
+  const contaId = auth.contaId;
 
   /* ---------- CRIAR lead manualmente pelo painel (Kanban → "+ Novo Lead") ---------- */
   if (body.action === 'criar') {
@@ -99,7 +100,7 @@ export default async (req) => {
         historico: [{ t: agora, quem: quem0, txt: 'Lead cadastrado manualmente pelo painel' + (atendente ? ' — atribuído a ' + atendente : '') }],
       };
       const novo = {
-        lead_ref, nome,
+        conta_id: contaId, lead_ref, nome,
         whatsapp: String(d.whatsapp || '').trim().slice(0, 40),
         email: String(d.email || '').trim().slice(0, 160),
         uf: String(d.uf || '').trim().slice(0, 2).toUpperCase(),
@@ -126,7 +127,7 @@ export default async (req) => {
         return json({ ok: false, error: 'Erro ao criar o lead.' });
       }
       const linha = (await r.json())[0] || novo;
-      if (atendente) await moverNoKanban(lead_ref, atendente, 'atribuido');
+      if (atendente) await moverNoKanban(contaId, lead_ref, atendente, 'atribuido');
       return json({ ok: true, lead: linha });
     } catch (e) {
       console.error('lead-admin criar:', e?.message || e);
@@ -152,14 +153,14 @@ export default async (req) => {
   try {
     /* ---------- EXCLUIR lead (com confirmação já feita no painel) ---------- */
     if (body.action === 'excluir') {
-      const rp = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?lead_ref=eq.${refUrl}&select=atendente&limit=1`, { headers: H });
+      const rp = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=atendente&limit=1`, { headers: H });
       if (rp.ok) {
         const row = (await rp.json())[0] || {};
         if (semPermissao(row.atendente)) return erroBloqueio(row.atendente);
       }
-      try { await fetch(`${SB_URL}/rest/v1/kanban_cards?lead_ref=eq.${refUrl}`, { method: 'DELETE', headers: H }); } catch { /* melhor-esforço */ }
-      try { await fetch(`${SB_URL}/rest/v1/alertas?lead_ref=eq.${refUrl}`, { method: 'DELETE', headers: H }); } catch { /* melhor-esforço */ }
-      const r = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?lead_ref=eq.${refUrl}`, { method: 'DELETE', headers: H });
+      try { await fetch(`${SB_URL}/rest/v1/kanban_cards?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, { method: 'DELETE', headers: H }); } catch { /* melhor-esforço */ }
+      try { await fetch(`${SB_URL}/rest/v1/alertas?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, { method: 'DELETE', headers: H }); } catch { /* melhor-esforço */ }
+      const r = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, { method: 'DELETE', headers: H });
       return json({ ok: r.ok });
     }
 
@@ -177,7 +178,7 @@ export default async (req) => {
       let eq = { obs: '', campos: [], historico: [] };
       let temColunaEquipe = true;
       let atendenteLead = '';
-      const rc2 = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?lead_ref=eq.${refUrl}&select=equipe_json,atendente&limit=1`, { headers: H });
+      const rc2 = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=equipe_json,atendente&limit=1`, { headers: H });
       if (rc2.ok) {
         const row = (await rc2.json())[0] || {};
         if (semPermissao(row.atendente)) return erroBloqueio(row.atendente);
@@ -194,14 +195,14 @@ export default async (req) => {
       const patch = { agendado: true, status: 'agendado', agendamento_em: emISO, agendamento_status: '', etapa: 'agendado', updated_at: new Date().toISOString() };
       if (uid) patch.booking_uid = uid;
       if (temColunaEquipe) patch.equipe_json = JSON.stringify(eq);
-      const gravar = () => fetch(`${SB_URL}/rest/v1/diag_instagram_leads?lead_ref=eq.${refUrl}`, {
+      const gravar = () => fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, {
         method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch),
       });
       let rg = await gravar();
       // colunas do CRM podem não existir → grava o essencial mesmo assim
       if (!rg.ok) { delete patch.equipe_json; delete patch.agendamento_status; delete patch.etapa; temColunaEquipe = false; rg = await gravar(); }
-      if (rg.ok) await moverNoKanban(ref, atendenteLead, 'agendado');   // o funil acompanha
-      if (rg.ok) dispararMentoriaHub('agendamento_confirmado', {
+      if (rg.ok) await moverNoKanban(contaId, ref, atendenteLead, 'agendado');   // o funil acompanha
+      if (rg.ok) dispararMentoriaHub(contaId, 'agendamento_confirmado', {
         chatquizzLeadRef: ref, agendamentoEm: emISO, linkReuniao: '', bookingUid: uid,
       });
       return json({ ok: rg.ok, equipe_json: temColunaEquipe ? JSON.stringify(eq) : '' });
@@ -210,7 +211,7 @@ export default async (req) => {
     /* ---------- PÓS-VENDA: dados da conversão + recebimento pelo CS ---------- */
     if (body.action === 'venda' || body.action === 'recebido') {
       const quemV = auth.user.nome || 'Equipe';
-      const rv = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?lead_ref=eq.${refUrl}&select=atendente,resultado,venda_json,equipe_json&limit=1`, { headers: H });
+      const rv = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=atendente,resultado,venda_json,equipe_json&limit=1`, { headers: H });
       if (!rv.ok) return json({ ok: false, error: 'Falta rodar o setup-posvenda.sql no Supabase (módulo Pós-Venda).' });
       const lead = (await rv.json())[0] || {};
       // podem mexer: administradora, o atendente responsável ou a equipe de CS
@@ -256,7 +257,7 @@ export default async (req) => {
         hist2('Pós-venda: RECEBIDO pelo CS (' + quemV + ')');
       }
 
-      const rp = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?lead_ref=eq.${refUrl}`, {
+      const rp = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, {
         method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' },
         body: JSON.stringify({ venda_json: JSON.stringify(venda), equipe_json: JSON.stringify(eq), updated_at: new Date().toISOString() }),
       });
@@ -271,14 +272,14 @@ export default async (req) => {
     // estado atual (pra mesclar anotações e montar o histórico)
     let temColunaResultado = true;
     let temColunaEtapa = true;
-    let rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?lead_ref=eq.${refUrl}&select=nome,atendente,agendamento_status,agendamento_em,resultado,etapa,equipe_json&limit=1`, { headers: H });
+    let rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,atendente,agendamento_status,agendamento_em,resultado,etapa,equipe_json&limit=1`, { headers: H });
     if (!rc.ok) {
       temColunaEtapa = false;       // coluna etapa pode não existir ainda (setup-kanban3)
-      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?lead_ref=eq.${refUrl}&select=nome,atendente,agendamento_status,agendamento_em,resultado,equipe_json&limit=1`, { headers: H });
+      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,atendente,agendamento_status,agendamento_em,resultado,equipe_json&limit=1`, { headers: H });
     }
     if (!rc.ok) {
       temColunaResultado = false;   // coluna resultado pode não existir ainda
-      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?lead_ref=eq.${refUrl}&select=nome,atendente,agendamento_status,agendamento_em,equipe_json&limit=1`, { headers: H });
+      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,atendente,agendamento_status,agendamento_em,equipe_json&limit=1`, { headers: H });
     }
     let atual = {};
     let temColunaEquipe = true;
@@ -341,6 +342,7 @@ export default async (req) => {
             ? new Date(atual.agendamento_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
             : 'data não registrada';
           alertaPresenca = {
+            conta_id: contaId,
             lead_ref: ref,
             lead_nome: atual.nome || '',
             atendente: destinatario,
@@ -394,7 +396,7 @@ export default async (req) => {
     eq.historico = eq.historico.slice(0, 60);
     if (mexeuEquipe && temColunaEquipe) patch.equipe_json = JSON.stringify(eq);
 
-    const r = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?lead_ref=eq.${refUrl}`, {
+    const r = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, {
       method: 'PATCH',
       headers: { ...H, Prefer: 'return=minimal' },
       body: JSON.stringify(patch),
@@ -416,13 +418,13 @@ export default async (req) => {
     // o quadro Kanban do responsável acompanha a mudança (melhor-esforço)
     const atendenteFinal = 'atendente' in c ? patch.atendente : (atual.atendente || '');
     if (mudouAtendente) {
-      await moverNoKanban(ref, atendenteFinal, (atual.resultado || '') ? atual.resultado : 'atribuido');
+      await moverNoKanban(contaId, ref, atendenteFinal, (atual.resultado || '') ? atual.resultado : 'atribuido');
     } else if (patch.resultado) {
-      await moverNoKanban(ref, atendenteFinal, patch.resultado);
+      await moverNoKanban(contaId, ref, atendenteFinal, patch.resultado);
     } else if (mudouEtapa !== null) {
-      await moverNoKanban(ref, atendenteFinal, mudouEtapa === '' ? 'atribuido' : mudouEtapa);
+      await moverNoKanban(contaId, ref, atendenteFinal, mudouEtapa === '' ? 'atribuido' : mudouEtapa);
     } else if (patch.resultado !== undefined) {
-      await moverNoKanban(ref, atendenteFinal, 'atribuido');   // reativado sem etapa definida
+      await moverNoKanban(contaId, ref, atendenteFinal, 'atribuido');   // reativado sem etapa definida
     }
     return json({
       ok: true,

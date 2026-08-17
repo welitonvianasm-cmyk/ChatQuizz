@@ -9,7 +9,7 @@
  * toggle Disparos ativado. Lembretes de reunião também caem nesta tabela,
  * criados automaticamente pelo cron a partir do módulo Reuniões.
  */
-import { temConfig, autenticar } from '../_tokens.mjs';
+import { temConfig, autenticarToken } from '../_tokens.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -23,15 +23,16 @@ export default async (req) => {
 
   let body = {};
   try { body = await req.json(); } catch { /* sem body */ }
-  const auth = await autenticar(req.headers.get('x-dash-token') || body.token || '');
+  const auth = await autenticarToken(req.headers.get('x-dash-token') || body.token || '');
   if (!auth.ok) return json({ error: 'unauthorized' }, 401);
+  const contaId = auth.contaId;
 
   try {
     const a = body.action;
 
     if (a === 'listar') {
       const st = ['pendente', 'enviado', 'falhou'].includes(body.status) ? `&status=eq.${body.status}` : '';
-      const r = await fetch(`${SB_URL}/rest/v1/disparos?select=id,telefone,nome,lead_ref,mensagem,enviar_em,status,erro,origem,enviado_em&order=enviar_em.desc&limit=400${st}`, { headers: H });
+      const r = await fetch(`${SB_URL}/rest/v1/disparos?conta_id=eq.${contaId}&select=id,telefone,nome,lead_ref,mensagem,enviar_em,status,erro,origem,enviado_em&order=enviar_em.desc&limit=400${st}`, { headers: H });
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       return json({ ok: true, disparos: await r.json() });
     }
@@ -48,6 +49,7 @@ export default async (req) => {
       // {{nome}} vira o primeiro nome de cada contato já na criação
       const linhas = contatos.map((c) => ({
         ...c,
+        conta_id: contaId,
         mensagem: mensagem.replaceAll('{{nome}}', String(c.nome || '').trim().split(/\s+/)[0] || 'tudo bem'),
         enviar_em: quando.toISOString(), status: 'pendente', origem: 'manual',
       }));
@@ -61,7 +63,7 @@ export default async (req) => {
 
     if (a === 'cancelar') {
       const id = Number(body.id) || 0;
-      const r = await fetch(`${SB_URL}/rest/v1/disparos?id=eq.${id}&status=eq.pendente`, { method: 'DELETE', headers: H });
+      const r = await fetch(`${SB_URL}/rest/v1/disparos?id=eq.${id}&conta_id=eq.${contaId}&status=eq.pendente`, { method: 'DELETE', headers: H });
       return json({ ok: r.ok });
     }
 

@@ -16,7 +16,7 @@
  *   SUPABASE_DIAG_SERVICE — service_role do projeto dedicado.
  *   SUPABASE_DIAG_URL     — URL do projeto dedicado.
  */
-import { temConfig, autenticar, registrarLog } from '../_tokens.mjs';
+import { temConfig, autenticarToken, registrarLog } from '../_tokens.mjs';
 const SUPABASE_URL = (process.env.SUPABASE_DIAG_URL || 'https://aktktxizmpwckvxbdjzf.supabase.co').replace(/\/+$/, '');
 const TABLE = 'diag_instagram_leads';
 
@@ -47,19 +47,20 @@ export default async (req) => {
     let body = {};
     try { body = await req.json(); } catch { /* sem body */ }
     const sent = req.headers.get('x-dash-token') || body.token || '';
-    const auth = await autenticar(sent);
+    const auth = await autenticarToken(sent);
     if (!auth.ok) {
-      return json({ error: auth.expirado ? 'expired' : 'unauthorized' }, auth.expirado ? 403 : 401);
+      return json({ error: auth.expirado ? 'expired' : (auth.contaSuspensa ? 'suspended' : 'unauthorized') }, auth.expirado ? 403 : 401);
     }
+    const contaId = auth.contaId;
 
     // registro de extração de relatório (chamado pelo botão CSV do painel)
     if (body.log === 'exportou_relatorio') {
-      await registrarLog('exportou_relatorio', auth.user);
+      await registrarLog('exportou_relatorio', auth.user, contaId);
       return json({ ok: true });
     }
     // registro de acesso ao painel (a sincronização automática passa
     // silencioso:true pra não inflar o livro de registros a cada minuto)
-    if (!body.silencioso) await registrarLog('acesso', auth.user);
+    if (!body.silencioso) await registrarLog('acesso', auth.user, contaId);
 
     // paginação: PostgREST devolve no máx. ~1000 linhas por página (Range)
     let colsAtivas = COLS;
@@ -78,7 +79,7 @@ export default async (req) => {
         Prefer: 'count=exact',
       };
       const buscar = () => fetch(
-        `${SUPABASE_URL}/rest/v1/${TABLE}?select=${colsAtivas}&order=created_at.desc`,
+        `${SUPABASE_URL}/rest/v1/${TABLE}?conta_id=eq.${contaId}&select=${colsAtivas}&order=created_at.desc`,
         { headers: hdrs }
       );
       let res = await buscar();
@@ -107,10 +108,10 @@ export default async (req) => {
     let atendentes = [];
     let equipeCS = [];
     try {
-      let ra = await fetch(`${SUPABASE_URL}/rest/v1/dash_users?select=nome,funcao_cs&order=nome.asc`, {
+      let ra = await fetch(`${SUPABASE_URL}/rest/v1/usuarios?conta_id=eq.${contaId}&select=nome,funcao_cs&order=nome.asc`, {
         headers: { apikey: KEY, Authorization: `Bearer ${KEY}` },
       });
-      if (!ra.ok) ra = await fetch(`${SUPABASE_URL}/rest/v1/dash_users?select=nome&order=nome.asc`, {
+      if (!ra.ok) ra = await fetch(`${SUPABASE_URL}/rest/v1/usuarios?conta_id=eq.${contaId}&select=nome&order=nome.asc`, {
         headers: { apikey: KEY, Authorization: `Bearer ${KEY}` },
       });
       if (ra.ok) {
@@ -120,7 +121,7 @@ export default async (req) => {
       }
     } catch { /* melhor-esforço */ }
 
-    return json({ ok: true, admin: !!auth.admin, cs: !!auth.cs, trocar_senha: !!auth.trocarSenha, usuario: auth.user.nome || '', atendentes, equipeCS, total: total ?? rows.length, count: rows.length, leads: rows });
+    return json({ ok: true, admin: !!auth.admin, cs: !!auth.cs, trocar_senha: !!auth.trocarSenha, usuario: auth.user.nome || '', contaId, contaPlano: auth.contaPlano, atendentes, equipeCS, total: total ?? rows.length, count: rows.length, leads: rows });
   } catch (err) {
     console.error('metrics error:', err);
     return json({ error: err.message }, 500);

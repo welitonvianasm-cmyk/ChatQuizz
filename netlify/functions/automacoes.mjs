@@ -8,7 +8,7 @@
  *
  * Gatilhos: 'reuniao_1h' (lembrete 1h antes da reunião) | 'manual'.
  */
-import { temConfig, autenticar } from '../_tokens.mjs';
+import { temConfig, autenticarToken } from '../_tokens.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -23,15 +23,16 @@ export default async (req) => {
 
   let body = {};
   try { body = await req.json(); } catch { /* sem body */ }
-  const auth = await autenticar(req.headers.get('x-dash-token') || body.token || '');
+  const auth = await autenticarToken(req.headers.get('x-dash-token') || body.token || '');
   if (!auth.ok) return json({ error: 'unauthorized' }, 401);
+  const contaId = auth.contaId;
 
   try {
     const a = body.action;
     const id = Number(body.id) || 0;
 
     if (a === 'listar') {
-      const r = await fetch(`${SB_URL}/rest/v1/automacoes?select=id,nome,gatilho,mensagem,ativa,criado_em&order=criado_em.asc`, { headers: H });
+      const r = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&select=id,nome,gatilho,mensagem,ativa,criado_em&order=criado_em.asc`, { headers: H });
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       return json({ ok: true, automacoes: await r.json() });
     }
@@ -50,15 +51,16 @@ export default async (req) => {
       }
       if ('mensagem' in body || a === 'criar') patch.mensagem = String(body.mensagem || '').slice(0, 3000);
       if ('ativa' in body) patch.ativa = !!body.ativa;
+      if (a === 'criar') patch.conta_id = contaId;
       const r = a === 'criar'
         ? await fetch(`${SB_URL}/rest/v1/automacoes`, { method: 'POST', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch) })
-        : await fetch(`${SB_URL}/rest/v1/automacoes?id=eq.${id}`, { method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
+        : await fetch(`${SB_URL}/rest/v1/automacoes?id=eq.${id}&conta_id=eq.${contaId}`, { method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       return json({ ok: true });
     }
 
     if (a === 'excluir') {
-      const r = await fetch(`${SB_URL}/rest/v1/automacoes?id=eq.${id}`, { method: 'DELETE', headers: H });
+      const r = await fetch(`${SB_URL}/rest/v1/automacoes?id=eq.${id}&conta_id=eq.${contaId}`, { method: 'DELETE', headers: H });
       return json({ ok: r.ok });
     }
 

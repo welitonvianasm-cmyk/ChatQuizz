@@ -14,7 +14,7 @@
  *   EVOLUTION_INSTANCE — nome da instância (padrão: chatquizz)
  * Sem essas envs, tudo responde configurada:false e o painel cai no WhatsApp Web.
  */
-import { temConfig, autenticar } from '../_tokens.mjs';
+import { temConfig, autenticarToken } from '../_tokens.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -30,23 +30,26 @@ const configurada = () => !!(EV_URL && EV_KEY);
 const ev = (path, opts = {}) => fetch(`${EV_URL}${path}`, { ...opts, headers: { apikey: EV_KEY, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
 export const soDigitos = (t) => String(t || '').replace(/\D/g, '');
 
-/* toggles Conversas/Disparos guardados no funnel_config (valem pra todo o painel) */
-async function lerToggles() {
+/* toggles Conversas/Disparos guardados no funnel_config (por conta) */
+async function lerToggles(contaId) {
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/funnel_config?key=eq.wa_config&select=value&limit=1`, { headers: H });
+    const r = await fetch(`${SB_URL}/rest/v1/funnel_config?conta_id=eq.${contaId}&key=eq.wa_config&select=value&limit=1`, { headers: H });
     if (r.ok) { const rows = await r.json(); const v = rows[0] && JSON.parse(rows[0].value || '{}'); if (v && typeof v === 'object') return { conversas: !!v.conversas, disparos: !!v.disparos }; }
   } catch { /* padrão */ }
   return { conversas: false, disparos: false };
 }
-async function salvarToggles(t) {
-  const body = JSON.stringify({ key: 'wa_config', value: JSON.stringify(t) });
-  await fetch(`${SB_URL}/rest/v1/funnel_config?on_conflict=key`, {
+async function salvarToggles(contaId, t) {
+  const body = JSON.stringify({ conta_id: contaId, key: 'wa_config', value: JSON.stringify(t) });
+  await fetch(`${SB_URL}/rest/v1/funnel_config?on_conflict=conta_id,key`, {
     method: 'POST', headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' }, body,
   });
 }
 
-/* envia UMA mensagem de texto pela Evolution e grava no histórico */
-export async function enviarWhats(telefone, texto, quem, lead_ref) {
+/* envia UMA mensagem de texto pela Evolution e grava no histórico.
+   NOTA: a instância Evolution (EV_URL/EV_KEY/EV_INST) ainda é global —
+   todas as contas compartilham o mesmo número de WhatsApp até virar uma
+   conexão por conta (mesmo padrão já usado pro Cal.com/MentoriaHub). */
+export async function enviarWhats(contaId, telefone, texto, quem, lead_ref) {
   const tel = soDigitos(telefone);
   if (!tel || !texto) return { ok: false, error: 'telefone/mensagem vazios' };
   if (!configurada()) return { ok: false, error: 'WhatsApp não conectado (Evolution não configurada).' };
@@ -60,7 +63,7 @@ export async function enviarWhats(telefone, texto, quem, lead_ref) {
   try {
     await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
       method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
-      body: JSON.stringify({ telefone: tel, lead_ref: lead_ref || '', direcao: 'out', texto: String(texto).slice(0, 4000), quem: quem || '', wa_id, lida: true }),
+      body: JSON.stringify({ conta_id: contaId, telefone: tel, lead_ref: lead_ref || '', direcao: 'out', texto: String(texto).slice(0, 4000), quem: quem || '', wa_id, lida: true }),
     });
   } catch { /* histórico é melhor-esforço */ }
   return { ok: true };
@@ -73,15 +76,16 @@ export default async (req) => {
 
   let body = {};
   try { body = await req.json(); } catch { /* sem body */ }
-  const auth = await autenticar(req.headers.get('x-dash-token') || body.token || '');
+  const auth = await autenticarToken(req.headers.get('x-dash-token') || body.token || '');
   if (!auth.ok) return json({ error: 'unauthorized' }, 401);
   const quem = auth.user.nome || 'Equipe';
+  const contaId = auth.contaId;
 
   try {
     const a = body.action;
 
     if (a === 'status') {
-      const t = await lerToggles();
+      const t = await lerToggles(contaId);
       let estado = 'nao_configurada';
       if (configurada()) {
         estado = 'desconectada';
@@ -117,22 +121,22 @@ export default async (req) => {
 
     if (a === 'toggles') {
       if (!auth.admin) return json({ ok: false, error: 'Somente a administradora altera os controles do WhatsApp.' });
-      const t = await lerToggles();
+      const t = await lerToggles(contaId);
       if ('conversas' in body) t.conversas = !!body.conversas;
       if ('disparos' in body) t.disparos = !!body.disparos;
-      await salvarToggles(t);
+      await salvarToggles(contaId, t);
       return json({ ok: true, conversas: t.conversas, disparos: t.disparos });
     }
 
     if (a === 'send') {
-      const t = await lerToggles();
+      const t = await lerToggles(contaId);
       if (!t.conversas) return json({ ok: false, error: 'As Conversas estão desativadas nas configurações do WhatsApp.' });
-      const r = await enviarWhats(body.telefone, String(body.texto || '').trim(), quem, body.lead_ref);
+      const r = await enviarWhats(contaId, body.telefone, String(body.texto || '').trim(), quem, body.lead_ref);
       return json(r);
     }
 
     if (a === 'inbox') {
-      const r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?select=telefone,lead_ref,direcao,texto,lida,criado_em&order=criado_em.desc&limit=1200`, { headers: H });
+      const r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&select=telefone,lead_ref,direcao,texto,lida,criado_em&order=criado_em.desc&limit=1200`, { headers: H });
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       const msgs = await r.json();
       const conv = new Map();
@@ -148,11 +152,11 @@ export default async (req) => {
     if (a === 'historico') {
       const tel = soDigitos(body.telefone);
       if (!tel) return json({ ok: false, error: 'telefone obrigatório' });
-      const r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?telefone=eq.${tel}&select=direcao,texto,quem,criado_em&order=criado_em.asc&limit=500`, { headers: H });
+      const r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&telefone=eq.${tel}&select=direcao,texto,quem,criado_em&order=criado_em.asc&limit=500`, { headers: H });
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       const mensagens = await r.json();
       // abriu a conversa → recebidas viram lidas
-      fetch(`${SB_URL}/rest/v1/wa_mensagens?telefone=eq.${tel}&direcao=eq.in&lida=eq.false`, {
+      fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&telefone=eq.${tel}&direcao=eq.in&lida=eq.false`, {
         method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify({ lida: true }),
       }).catch(() => {});
       return json({ ok: true, mensagens });

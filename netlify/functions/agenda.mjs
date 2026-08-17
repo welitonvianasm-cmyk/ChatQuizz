@@ -30,6 +30,8 @@
  * arquivo privado: sem CAL_EMBED_VENDEDORES configurado, a lista de
  * vendedores fica vazia e o resto funciona normalmente.
  */
+import { resolverContaPorHost } from '../_tenant.mjs';
+
 const TZ = 'America/Sao_Paulo';
 
 /* Base da API interna (proxy externo, se você tiver um). Sem env, fica vazia
@@ -107,11 +109,11 @@ export function sortearVendedor(lista, rnd = Math.random()) {
   return lista[lista.length - 1];
 }
 
-/* lê o closer prioritário definido no painel (funnel_config). '' = sorteio normal. */
-async function lerCloserPrioritario() {
-  if (!SB_URL || !SB_KEY) return '';
+/* lê o closer prioritário definido no painel (funnel_config, por conta). '' = sorteio normal. */
+async function lerCloserPrioritario(contaId) {
+  if (!SB_URL || !SB_KEY || !contaId) return '';
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/funnel_config?key=eq.closer_prioritario&select=value&limit=1`,
+    const r = await fetch(`${SB_URL}/rest/v1/funnel_config?conta_id=eq.${contaId}&key=eq.closer_prioritario&select=value&limit=1`,
       { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } });
     if (!r.ok) return '';
     const rows = await r.json();
@@ -121,12 +123,12 @@ async function lerCloserPrioritario() {
 
 /* escolhe o vendedor da trilha. Ordem: (1) já sorteado [consistência slot↔book];
    (2) closer PRIORITÁRIO do painel; (3) sorteio ponderado. {eventTypeId,vendor,link} ou null. */
-async function resolverVendedor(trilha, vendorEventTypeId) {
+async function resolverVendedor(contaId, trilha, vendorEventTypeId) {
   const lista = vendedoresDaTrilha(trilha);
   if (lista.length) {
     let v = lista.find((x) => +x.eventTypeId === +(vendorEventTypeId || 0));   // 1) consistência
     if (!v) {                                                                  // 2) prioridade manual
-      const forced = await lerCloserPrioritario();
+      const forced = await lerCloserPrioritario(contaId);
       if (forced) v = lista.find((x) => +x.eventTypeId === +forced);
     }
     if (!v) v = sortearVendedor(lista);                                        // 3) sorteio
@@ -151,13 +153,14 @@ export default async (req) => {
   const apiKey = process.env.CALCOM_API_KEY;
 
   try {
+    const contaId = await resolverContaPorHost(req);
     const body = await req.json();
     const trilha = escolherTrilha(body);
 
     /* ---------- ROUTE: decide trilha + vendedor uma vez (front salva no lead).
        Funciona SEM a API (devolve embedLink p/ fallback). ---------- */
     if (body.action === 'route') {
-      const v = await resolverVendedor(trilha, body.vendorEventTypeId);
+      const v = await resolverVendedor(contaId, trilha, body.vendorEventTypeId);
       return json({
         ok: true, track: trilha,
         vendor: v?.vendor || '',
@@ -187,7 +190,7 @@ export default async (req) => {
       });
     }
 
-    const v = await resolverVendedor(trilha, body.vendorEventTypeId);
+    const v = await resolverVendedor(contaId, trilha, body.vendorEventTypeId);
     if (!v) return json({ ok: false, reason: 'no_event', track: trilha });
     const eventTypeId = v.eventTypeId;
     const vendor = v.vendor;
@@ -260,7 +263,7 @@ export default async (req) => {
       let videoUrl = extrairVideoUrl(b);
       // call em grupo (seats): nos assentos 2+ o Cal não devolve o link →
       // reaproveita o do 1º booking do mesmo horário (mesmo booking_uid).
-      if (!videoUrl && uid) videoUrl = await buscarVideoUrlPorUid(uid);
+      if (!videoUrl && uid) videoUrl = await buscarVideoUrlPorUid(contaId, uid);
       return json({
         ok: true,
         uid,
@@ -280,11 +283,11 @@ export default async (req) => {
 
 /* busca o link de vídeo de um booking já salvo no Supabase pelo booking_uid —
    usado pra entregar o mesmo link aos assentos seguintes de uma call em grupo. */
-async function buscarVideoUrlPorUid(uid) {
-  if (!SB_URL || !SB_KEY || !uid) return '';
+async function buscarVideoUrlPorUid(contaId, uid) {
+  if (!SB_URL || !SB_KEY || !uid || !contaId) return '';
   try {
     const r = await fetch(
-      `${SB_URL}/rest/v1/diag_instagram_leads?booking_uid=eq.${encodeURIComponent(uid)}&select=video_url&limit=20`,
+      `${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&booking_uid=eq.${encodeURIComponent(uid)}&select=video_url&limit=20`,
       { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
     );
     if (!r.ok) return '';
