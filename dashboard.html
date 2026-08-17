@@ -390,6 +390,26 @@
     </div>
   </div>
 
+  <!-- ESCOLHA DE PLANO: primeiro acesso do assinante (dá pra trocar depois em Configurações) -->
+  <div id="gate3" style="display:none;position:fixed;inset:0;z-index:60;background:var(--bg);align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:32px 28px;width:100%;max-width:640px;text-align:center;">
+      <div class="gate-logo" style="background:var(--sidebar);margin:0 auto 16px;">Q</div>
+      <h1 style="font-size:18px;margin-bottom:4px;">Escolha o seu plano</h1>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:24px;">Você pode trocar de plano quando quiser, nas Configurações.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;text-align:left;">
+        <button id="gate3-lite" style="all:unset;cursor:pointer;border:1.5px solid var(--line);border-radius:14px;padding:20px;">
+          <div style="font-weight:800;font-size:15px;margin-bottom:6px;color:var(--ink);">Lite</div>
+          <div style="color:var(--text-muted);font-size:12.5px;line-height:1.6;">Leads e Configurações do quiz — o essencial pra captar e qualificar.</div>
+        </button>
+        <button id="gate3-completo" style="all:unset;cursor:pointer;border:1.5px solid var(--lime);border-radius:14px;padding:20px;background:var(--lime-soft);">
+          <div style="font-weight:800;font-size:15px;margin-bottom:6px;color:var(--ink);">Completo</div>
+          <div style="color:var(--text-muted);font-size:12.5px;line-height:1.6;">Tudo do Lite + Quadro (Funil), Conversas, Agenda, Automação, Pós-Venda e Usuários.</div>
+        </button>
+      </div>
+      <div class="gate-err" id="gate3-err" style="margin-top:16px;"></div>
+    </div>
+  </div>
+
   <!-- POPUP DE ALERTAS PENDENTES (aparece a cada acesso até tudo virar OK) -->
   <div id="alertModal" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(20,20,40,.55);align-items:center;justify-content:center;padding:16px;">
     <div style="background:var(--card);border-radius:16px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
@@ -1034,6 +1054,20 @@
       <h2>Conexões</h2>
       <div class="sub">Tudo que liga o sistema a serviços externos.</div>
 
+      <!-- ===== card: Meu Plano ===== -->
+      <div class="conexao-card">
+        <h3>Meu Plano</h3>
+        <div class="sub"><b>Lite:</b> Leads e Configurações do quiz. <b>Completo:</b> tudo do Lite + Quadro (Funil), Conversas, Agenda, Automação, Pós-Venda e Usuários.</div>
+        <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
+          <b>Plano atual:</b> <span id="planoEstado" class="pill parcial">—</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn" id="planoBtnLite">Usar Lite</button>
+          <button class="btn" id="planoBtnCompleto">Usar Completo</button>
+        </div>
+        <div class="muted-cell" id="planoMsg" style="margin-top:8px;font-size:12.5px;"></div>
+      </div>
+
       <!-- ===== card: WhatsApp ===== -->
       <div class="conexao-card">
         <h3>WhatsApp</h3>
@@ -1219,6 +1253,8 @@ let ATENDENTES = [];      // nomes da equipe (pro seletor de responsável)
 let USUARIO = '';         // nome de quem está logado (pro controle de permissões)
 let IS_CS = false;        // usuário com Função CS (Customer Success)
 let EQUIPE_CS = [];       // nomes com Função CS (recebem leads convertidos)
+let CONTA_PLANO = 'completo';     // 'lite' | 'completo' — plano da conta logada
+let CONTA_PLANO_DEFINIDO = true;  // false = primeiro acesso, precisa escolher plano (#gate3)
 
 // ================= LOGIN =================
 function showGate(msg) {
@@ -1243,9 +1279,12 @@ async function tryToken(token) {
   ATENDENTES = data.atendentes || [];
   EQUIPE_CS = data.equipeCS || [];
   USUARIO = (data.usuario || '').trim();
+  CONTA_PLANO = data.contaPlano || 'completo';
+  CONTA_PLANO_DEFINIDO = !!data.contaPlanoDefinido;
   return data.leads || [];
 }
 function aplicarPerfil() {
+  aplicarGatingPlano();        // mostra/esconde seções conforme o plano da conta
   navGo(NAV_ATUAL);           // reaplica a seção atual do menu lateral
   if (IS_ADMIN) carregarEquipe();
 }
@@ -1257,6 +1296,12 @@ async function doLogin(token) {
       $('#gate').style.display = 'none';
       $('#app').style.display = 'none';
       $('#gate2').style.display = 'flex';
+      return;
+    }
+    if (!CONTA_PLANO_DEFINIDO) {   // conta nova (self-service): ainda não escolheu Lite/Completo
+      $('#gate').style.display = 'none';
+      $('#app').style.display = 'none';
+      $('#gate3').style.display = 'flex';
       return;
     }
     $('#gate').style.display = 'none';
@@ -1293,6 +1338,22 @@ $('#gate2-btn').onclick = async () => {
   $('#gate2-s1').value = ''; $('#gate2-s2').value = ''; $('#gate2-err').textContent = '';
   doLogin(EMAIL_LOGIN + '::' + s1);   // entra já com a senha nova
 };
+
+async function escolherPlano(plano) {
+  $('#gate3-err').textContent = 'salvando…';
+  const token = localStorage.getItem(TKEY) || '';
+  const r = await fetch('/api/conta', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-dash-token': token },
+    body: JSON.stringify({ token, action: 'salvar_plano', plano }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  if (!r.ok) { $('#gate3-err').textContent = r.error || 'Erro ao salvar.'; return; }
+  $('#gate3').style.display = 'none';
+  $('#gate3-err').textContent = '';
+  doLogin(token);   // reautentica: agora contaPlanoDefinido vem true, entra direto no painel
+}
+$('#gate3-lite').onclick = () => escolherPlano('lite');
+$('#gate3-completo').onclick = () => escolherPlano('completo');
 
 // ===== Priorizar closer =====
 async function carregarPrioridade() {
@@ -1499,6 +1560,25 @@ const SECTIONS = {
 const TODOS_PANEIS = [...new Set(Object.values(SECTIONS).flat())];
 // itens só-administradora (equivalente ao antigo bloco único "config")
 const SECOES_ADMIN = new Set(['qePerguntas', 'qeQualificadores', 'qeNiveis', 'qeResultados', 'qeRoteamento', 'qeAparencia', 'links', 'conexoes', 'usuarios']);
+// seções que só existem no plano Completo (plano Lite fica com Leads + Configurações)
+const SECOES_SO_COMPLETO = new Set([
+  'quadro', 'conversas',
+  'agendaDash', 'reunioes', 'agendados', 'calEspelho',
+  'automacoes', 'disparos',
+  'posConv', 'posAtend', 'posFin',
+  'usuarios',
+]);
+function aplicarGatingPlano() {
+  const lite = CONTA_PLANO === 'lite';
+  document.querySelectorAll('#sidenav button[data-sec]').forEach((b) => {
+    b.hidden = lite && SECOES_SO_COMPLETO.has(b.dataset.sec);
+  });
+  // esconde grupos inteiros (Agenda, Automação, Pós-Venda) quando todos os itens somem
+  document.querySelectorAll('#sidenav .sidenav-corpo > .nav-menu').forEach((grupo) => {
+    const botoes = grupo.querySelectorAll('button[data-sec]');
+    grupo.hidden = botoes.length > 0 && Array.from(botoes).every((b) => b.hidden);
+  });
+}
 const QE_TAB_POR_SEC = { qePerguntas: 'perguntas', qeQualificadores: 'qualificadores', qeNiveis: 'niveis', qeResultados: 'resultados', qeRoteamento: 'roteamento', qeAparencia: 'aparencia' };
 // a qual grupo (e sub-grupo, quando existir) do menu lateral cada `sec` pertence
 const SEC_MENU = {
@@ -1529,6 +1609,7 @@ function sincronizarMenu(sec) {
 let NAV_ATUAL = 'geral';
 function navGo(sec) {
   if (SECOES_ADMIN.has(sec) && !IS_ADMIN) { navGo('geral'); return; }
+  if (SECOES_SO_COMPLETO.has(sec) && CONTA_PLANO === 'lite') { navGo('leads'); return; }
   NAV_ATUAL = sec;
   document.querySelectorAll('#sidenav button[data-sec]').forEach((b) => b.classList.toggle('on', b.dataset.sec === sec));
   sincronizarMenu(sec);
@@ -1544,7 +1625,7 @@ function navGo(sec) {
     if (!QE_CARREGADO) qeCarregar(); else qeRenderTudo();
   }
   if (sec === 'links' && !LINKS_CARREGADO) linksCarregar();
-  if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); carregarConexaoMentoriaHub(); }
+  if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); carregarConexaoMentoriaHub(); renderPlanoInfo(); }
   if (sec === 'conversas') carregarWaStatus().then(carregarInbox);
   if (sec === 'automacoes') carregarAutomacoes();
   if (sec === 'disparos') carregarDisparos();
@@ -3751,6 +3832,35 @@ function renderConexoesInfo() {
   const wh = $('#waWebhookUrl');
   if (wh) wh.textContent = location.origin + '/api/wa-webhook?t=••••••••';
 }
+
+/* ===== Meu Plano — trocar entre Lite/Completo (aba Configurações → Conexões) ===== */
+function renderPlanoInfo() {
+  const estado = $('#planoEstado');
+  if (!estado) return;
+  const completo = CONTA_PLANO === 'completo';
+  estado.className = 'pill ' + (completo ? 'agendado' : 'parcial');
+  estado.textContent = completo ? 'Completo' : 'Lite';
+  $('#planoBtnLite').disabled = !completo;
+  $('#planoBtnCompleto').disabled = completo;
+}
+async function trocarPlano(plano) {
+  if (plano === CONTA_PLANO) return;
+  const msg = $('#planoMsg');
+  msg.textContent = 'salvando…';
+  const token = localStorage.getItem(TKEY) || '';
+  const r = await fetch('/api/conta', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-dash-token': token },
+    body: JSON.stringify({ token, action: 'salvar_plano', plano }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  if (!r.ok) { msg.textContent = r.error || 'Erro ao salvar.'; return; }
+  CONTA_PLANO = plano;
+  CONTA_PLANO_DEFINIDO = true;
+  msg.textContent = '✓ Plano atualizado!';
+  renderPlanoInfo();
+  aplicarGatingPlano();
+}
+$('#planoBtnLite').onclick = () => trocarPlano('lite');
+$('#planoBtnCompleto').onclick = () => trocarPlano('completo');
 
 /* ===== Cal.com — interface de conexão (aba Configurações → Conexões) ===== */
 async function carregarConexaoCalcom() {

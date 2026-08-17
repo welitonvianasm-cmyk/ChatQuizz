@@ -92,6 +92,13 @@ alter table public.funnel_config drop constraint if exists funnel_config_pkey;
 alter table public.funnel_config add primary key (conta_id, key);
 create index if not exists funnel_config_conta_idx on public.funnel_config (conta_id);
 
+-- 6) Fase B: registra se a conta já passou pela escolha de plano (assinantes
+--    novos escolhem no primeiro acesso; a conta 0 — já criada 'completo' —
+--    não precisa passar pela telinha de escolha).
+alter table public.contas add column if not exists plano_definido_em timestamptz;
+update public.contas set plano_definido_em = now()
+where id = (select id from public.contas order by id asc limit 1) and plano_definido_em is null;
+
 -- 5) diag_instagram_leads: a chave lógica `lead_ref` era globalmente
 --    única; agora só precisa ser única DENTRO da conta (dois tenants
 --    nunca vão colidir no mesmo lead_ref gerado no front, mas o índice

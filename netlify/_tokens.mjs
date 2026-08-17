@@ -70,7 +70,7 @@ export async function autenticar(email, senhaPlana) {
 
     // conta precisa estar ativa
     const rc = await fetch(
-      `${SB_URL}/rest/v1/contas?id=eq.${u.conta_id}&select=id,plano,status&limit=1`,
+      `${SB_URL}/rest/v1/contas?id=eq.${u.conta_id}&select=id,plano,status,plano_definido_em&limit=1`,
       { headers: SB_HEADERS }
     );
     const conta = rc.ok ? (await rc.json())[0] : null;
@@ -85,6 +85,7 @@ export async function autenticar(email, senhaPlana) {
       contaId: u.conta_id,
       contaPlano: conta.plano,
       contaStatus: conta.status,
+      contaPlanoDefinido: !!conta.plano_definido_em,
       user: { ...u, ehDono: !!u.eh_dono },
     };
   } catch {

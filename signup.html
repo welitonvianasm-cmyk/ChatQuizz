@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Criar conta · QuizzHub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --lime: #0028B3; --lime-hover: #001F8A;
+    --ink: #1F2937; --text-muted: #6B7280;
+    --bg: #F8FAFC; --card: #ffffff; --line: #E5E7EB; --sidebar: #111827;
+    --red: #FF5A5F; --green: #22A55E;
+    --shadow: 0 1px 2px rgba(17, 24, 39, .05), 0 6px 18px rgba(17, 24, 39, .04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(160deg, #f6f7fb, #eef0f8); color: var(--ink); line-height: 1.45;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .card {
+    background: var(--card); border-radius: 18px; box-shadow: var(--shadow);
+    padding: 32px 28px; width: 100%; max-width: 380px;
+  }
+  .logo {
+    width: 52px; height: 52px; border-radius: 13px; background: var(--sidebar); color: #fff;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+    font-weight: 800; font-size: 19px; letter-spacing: .02em;
+  }
+  h1 { font-size: 18px; text-align: center; margin-bottom: 4px; }
+  .sub { color: var(--text-muted); font-size: 13px; text-align: center; margin-bottom: 22px; }
+  label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+  .campo { margin-bottom: 14px; }
+  input {
+    width: 100%; padding: 13px 15px; border: 1.5px solid var(--line); border-radius: 11px;
+    font-size: 15px; outline: none; transition: border-color .15s; font-family: inherit;
+  }
+  input:focus { border-color: var(--lime); }
+  button {
+    width: 100%; padding: 13px; border: none; border-radius: 11px; cursor: pointer;
+    background: var(--lime); color: #fff; font-size: 15px; font-weight: 700; margin-top: 6px;
+  }
+  button:hover { background: var(--lime-hover); }
+  button:disabled { opacity: .6; cursor: default; }
+  .err { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 16px; text-align: center; }
+  .rodape { text-align: center; margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+  .rodape a { color: var(--lime); font-weight: 600; text-decoration: none; }
+  .rodape a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="logo">Q</div>
+    <h1>Criar sua conta</h1>
+    <div class="sub">QuizzHub — comece grátis, escolha o plano depois</div>
+
+    <div class="campo">
+      <label for="f-conta">Nome do seu negócio</label>
+      <input id="f-conta" type="text" placeholder="Ex: Clínica Bella" autocomplete="organization" />
+    </div>
+    <div class="campo">
+      <label for="f-nome">Seu nome</label>
+      <input id="f-nome" type="text" placeholder="Seu nome completo" autocomplete="name" />
+    </div>
+    <div class="campo">
+      <label for="f-email">E-mail</label>
+      <input id="f-email" type="email" placeholder="voce@email.com" autocomplete="username" />
+    </div>
+    <div class="campo">
+      <label for="f-senha">Senha</label>
+      <input id="f-senha" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+    </div>
+
+    <button id="btn-criar">Criar conta</button>
+    <div class="err" id="err"></div>
+
+    <div class="rodape">Já tem conta? <a href="/dashboard.html">Entrar</a></div>
+  </div>
+
+<script>
+'use strict';
+const TKEY = 'core_dash_token';
+const $ = (s) => document.querySelector(s);
+const btn = $('#btn-criar');
+const errEl = $('#err');
+
+async function criarConta() {
+  const nomeConta = $('#f-conta').value.trim();
+  const nomeResponsavel = $('#f-nome').value.trim();
+  const email = $('#f-email').value.trim();
+  const senha = $('#f-senha').value;
+
+  if (!nomeConta) { errEl.textContent = 'Informe o nome do seu negócio.'; return; }
+  if (!nomeResponsavel) { errEl.textContent = 'Informe seu nome.'; return; }
+  if (!email) { errEl.textContent = 'Informe seu e-mail.'; return; }
+  if (senha.length < 6) { errEl.textContent = 'A senha precisa de pelo menos 6 caracteres.'; return; }
+
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Criando…';
+  try {
+    const r = await fetch('/api/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nomeConta, nomeResponsavel, email, senha }),
+    }).then((x) => x.json());
+    if (!r.ok) {
+      errEl.textContent = r.error || 'Erro ao criar a conta.';
+      btn.disabled = false;
+      btn.textContent = 'Criar conta';
+      return;
+    }
+    localStorage.setItem(TKEY, r.token);
+    window.location.href = '/dashboard.html';
+  } catch (e) {
+    errEl.textContent = 'Erro de rede. Tente novamente.';
+    btn.disabled = false;
+    btn.textContent = 'Criar conta';
+  }
+}
+
+btn.addEventListener('click', criarConta);
+document.querySelectorAll('.card input').forEach((inp) => {
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') criarConta(); });
+});
+</script>
+</body>
+</html>
