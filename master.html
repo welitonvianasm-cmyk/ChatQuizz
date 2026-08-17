@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Painel Master · QuizzHub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --lime: #0028B3; --lime-hover: #001F8A; --lime-soft: rgba(0, 40, 179, .1);
+    --ink: #1F2937; --text-muted: #6B7280;
+    --bg: #F8FAFC; --card: #ffffff; --line: #E5E7EB; --sidebar: #111827;
+    --red: #FF5A5F; --green: #22A55E; --green-soft: #dcfce7; --amber: #F59E0B; --amber-soft: #FEF3C7;
+    --shadow: 0 1px 2px rgba(17, 24, 39, .05), 0 6px 18px rgba(17, 24, 39, .04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--ink); line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select { font-family: inherit; }
+
+  /* ===== GATE ===== */
+  #gate {
+    position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(160deg, #f6f7fb, #eef0f8); padding: 20px;
+  }
+  .gate-card { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); padding: 32px 28px; width: 100%; max-width: 360px; text-align: center; }
+  .logo { width: 52px; height: 52px; border-radius: 13px; background: var(--sidebar); color: #fff; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-weight: 800; font-size: 19px; }
+  .gate-card h1 { font-size: 18px; margin-bottom: 4px; }
+  .gate-card p { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+  .gate-card input { width: 100%; padding: 13px 15px; border: 1.5px solid var(--line); border-radius: 11px; font-size: 15px; outline: none; }
+  .gate-card input:focus { border-color: var(--lime); }
+  .gate-card button { width: 100%; padding: 13px; border: none; border-radius: 11px; cursor: pointer; background: var(--lime); color: #fff; font-size: 15px; font-weight: 700; margin-top: 12px; }
+  .gate-card button:hover { background: var(--lime-hover); }
+  .err { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 16px; }
+
+  /* ===== APP ===== */
+  #app { display: none; max-width: 1100px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px) 60px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+  header .logo { margin: 0; width: 40px; height: 40px; font-size: 15px; }
+  header h1 { font-size: 19px; }
+  header .sub { color: var(--text-muted); font-size: 13px; }
+  header span.grow { flex: 1; }
+  .btn-sair { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 13px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+  .btn-sair:hover { background: var(--bg); }
+
+  .card { background: var(--card); border-radius: 16px; box-shadow: var(--shadow); padding: 18px 20px; margin-bottom: 16px; }
+  .kpis { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .kpi { flex: 1; min-width: 140px; background: var(--card); border-radius: 14px; box-shadow: var(--shadow); padding: 14px 16px; }
+  .kpi b { display: block; font-size: 22px; }
+  .kpi span { color: var(--text-muted); font-size: 12px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--text-muted); font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; padding: 8px 10px; border-bottom: 1.5px solid var(--line); }
+  td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  td .sub-cel { color: var(--text-muted); font-size: 11.5px; }
+  select { padding: 6px 9px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: #fff; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .pill.ativa { background: var(--green-soft); color: var(--green); }
+  .pill.suspensa { background: var(--amber-soft); color: var(--amber); }
+  .status-msg { font-size: 11.5px; color: var(--text-muted); min-height: 14px; }
+  .vazio { text-align: center; color: var(--text-muted); font-size: 13px; padding: 30px 0; }
+</style>
+</head>
+<body>
+
+  <div id="gate">
+    <div class="gate-card">
+      <div class="logo">Q</div>
+      <h1>Painel Master</h1>
+      <p>QuizzHub — gestão de assinantes</p>
+      <input id="gate-pass" type="password" placeholder="Senha master" autocomplete="current-password" />
+      <button id="gate-btn">Entrar</button>
+      <div class="err" id="gate-err"></div>
+    </div>
+  </div>
+
+  <div id="app">
+    <header>
+      <div class="logo">Q</div>
+      <div>
+        <h1>Painel Master</h1>
+        <div class="sub">Todas as contas do QuizzHub</div>
+      </div>
+      <span class="grow"></span>
+      <button class="btn-sair" id="btn-sair">Sair</button>
+    </header>
+
+    <div class="kpis">
+      <div class="kpi"><b id="kpiTotal">—</b><span>Contas</span></div>
+      <div class="kpi"><b id="kpiAtivas">—</b><span>Ativas</span></div>
+      <div class="kpi"><b id="kpiCompleto">—</b><span>Plano Completo</span></div>
+      <div class="kpi"><b id="kpiLite">—</b><span>Plano Lite</span></div>
+    </div>
+
+    <div class="card">
+      <div class="tbl-wrap" style="overflow-x:auto;">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th>Conta</th>
+              <th>Contato</th>
+              <th>Usuários</th>
+              <th>Plano</th>
+              <th>Status</th>
+              <th>Criada em</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="vazio" id="vazio" style="display:none;">Nenhuma conta cadastrada ainda.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+'use strict';
+const MKEY = 'quizzhub_master_token';
+const $ = (s) => document.querySelector(s);
+let CONTAS = [];
+
+async function masterApi(payload) {
+  return fetch('/api/master', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(MKEY) || '', ...payload }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+}
+
+function fmtData(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('pt-BR'); } catch { return '—'; }
+}
+
+function render() {
+  const tbody = $('#tbody');
+  tbody.innerHTML = '';
+  $('#vazio').style.display = CONTAS.length ? 'none' : 'block';
+
+  $('#kpiTotal').textContent = CONTAS.length;
+  $('#kpiAtivas').textContent = CONTAS.filter((c) => c.status === 'ativa').length;
+  $('#kpiCompleto').textContent = CONTAS.filter((c) => c.plano === 'completo').length;
+  $('#kpiLite').textContent = CONTAS.filter((c) => c.plano === 'lite').length;
+
+  CONTAS.forEach((c) => {
+    const tr = document.createElement('tr');
+
+    const tdConta = document.createElement('td');
+    tdConta.innerHTML = '<b>' + escapeHtml(c.nome || '(sem nome)') + '</b><div class="sub-cel">' + escapeHtml(c.subdominio || '—') + '</div>';
+    tr.appendChild(tdConta);
+
+    const tdContato = document.createElement('td');
+    tdContato.textContent = c.email_contato || '—';
+    tr.appendChild(tdContato);
+
+    const tdUsuarios = document.createElement('td');
+    tdUsuarios.textContent = c.totalUsuarios ?? 0;
+    tr.appendChild(tdUsuarios);
+
+    const tdPlano = document.createElement('td');
+    const selPlano = document.createElement('select');
+    ['lite', 'completo'].forEach((p) => {
+      const o = document.createElement('option'); o.value = p; o.textContent = p === 'lite' ? 'Lite' : 'Completo';
+      if (c.plano === p) o.selected = true;
+      selPlano.appendChild(o);
+    });
+    selPlano.addEventListener('change', () => salvar(c, { plano: selPlano.value }, tdPlano));
+    tdPlano.appendChild(selPlano);
+    const msgPlano = document.createElement('div'); msgPlano.className = 'status-msg'; tdPlano.appendChild(msgPlano);
+    tr.appendChild(tdPlano);
+
+    const tdStatus = document.createElement('td');
+    const selStatus = document.createElement('select');
+    ['ativa', 'suspensa'].forEach((s) => {
+      const o = document.createElement('option'); o.value = s; o.textContent = s === 'ativa' ? 'Ativa' : 'Suspensa';
+      if (c.status === s) o.selected = true;
+      selStatus.appendChild(o);
+    });
+    selStatus.addEventListener('change', () => salvar(c, { status: selStatus.value }, tdStatus));
+    tdStatus.appendChild(selStatus);
+    const msgStatus = document.createElement('div'); msgStatus.className = 'status-msg'; tdStatus.appendChild(msgStatus);
+    tr.appendChild(tdStatus);
+
+    const tdData = document.createElement('td');
+    tdData.textContent = fmtData(c.criado_em);
+    tr.appendChild(tdData);
+
+    tbody.appendChild(tr);
+  });
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div'); d.textContent = String(s ?? ''); return d.innerHTML;
+}
+
+async function salvar(conta, campos, celula) {
+  const msg = celula.querySelector('.status-msg');
+  msg.textContent = 'salvando…';
+  const r = await masterApi({ action: 'atualizar', id: conta.id, ...campos });
+  if (!r.ok) { msg.textContent = r.error || 'erro ao salvar'; return; }
+  Object.assign(conta, campos);
+  msg.textContent = '✓ salvo';
+  setTimeout(() => { if (msg.textContent === '✓ salvo') msg.textContent = ''; }, 2000);
+}
+
+async function carregar() {
+  const r = await masterApi({ action: 'listar' });
+  if (!r.ok) {
+    $('#gate-err').textContent = r.error === 'unauthorized' ? 'Senha incorreta.' : (r.error || 'Erro ao carregar.');
+    localStorage.removeItem(MKEY);
+    $('#app').style.display = 'none';
+    $('#gate').style.display = 'flex';
+    return;
+  }
+  CONTAS = r.contas || [];
+  render();
+}
+
+async function entrar(token) {
+  localStorage.setItem(MKEY, token);
+  $('#gate-err').textContent = '';
+  const r = await masterApi({ action: 'listar' });
+  if (!r.ok) {
+    localStorage.removeItem(MKEY);
+    $('#gate-err').textContent = r.error === 'unauthorized' ? 'Senha incorreta.' : (r.error || 'Erro ao entrar.');
+    return;
+  }
+  CONTAS = r.contas || [];
+  $('#gate').style.display = 'none';
+  $('#app').style.display = 'block';
+  render();
+}
+
+$('#gate-btn').onclick = () => {
+  const p = $('#gate-pass').value.trim();
+  if (!p) { $('#gate-err').textContent = 'Informe a senha master.'; return; }
+  entrar(p);
+};
+$('#gate-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#gate-btn').click(); });
+$('#btn-sair').onclick = () => {
+  localStorage.removeItem(MKEY);
+  $('#app').style.display = 'none';
+  $('#gate').style.display = 'flex';
+  $('#gate-pass').value = '';
+};
+
+(function boot() {
+  const saved = localStorage.getItem(MKEY);
+  if (saved) {
+    $('#gate').style.display = 'none';
+    $('#app').style.display = 'block';
+    carregar();
+  } else {
+    $('#gate').style.display = 'flex';
+  }
+})();
+</script>
+</body>
+</html>
