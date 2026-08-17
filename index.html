@@ -1418,6 +1418,7 @@ async function finalPresente() {
   const rota = (qualificador && ROTEAMENTO[qualificador]) || { tipo: 'crm' };
   if (rota.tipo === 'calcom' && rota.calLink) await renderAgendaEmbutida(rota.calLink, qualificador);
   else if (rota.tipo === 'whatsapp') await ctaWhatsAutomatico();
+  else if (rota.tipo === 'url' && rota.url) await ctaUrl(rota.url);
   else await ctaCRM();
 }
 
@@ -1452,6 +1453,16 @@ async function ctaCRM() {
   salvarLead('completo');
   const s = safeData();
   await bot(`${s.primeiro}, recebi tudo certinho! Nossa equipe vai entrar em contato com você em breve 💚`, { delay: 1200 });
+}
+
+/* roteamento "Direcionar para uma URL" — link externo configurado no
+   qualificador (ex.: página de agendamento de quem não usa Cal.com) */
+async function ctaUrl(url) {
+  persist();
+  salvarLead('completo');
+  const s = safeData();
+  await bot(`${s.primeiro}, recebi tudo certinho! Clica aqui embaixo pra continuar 💚`, { delay: 1200 });
+  addRow('bot', `<a class="ag-link" href="${esc(url)}" target="_blank" rel="noopener">🔗&nbsp; Continuar</a>`);
 }
 
 /* botão para o site configurado (reservado p/ produtos low-ticket no futuro) */

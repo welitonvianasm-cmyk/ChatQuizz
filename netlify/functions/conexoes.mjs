@@ -1,16 +1,19 @@
 /**
- * CONEXÕES CONFIGURÁVEIS PELO PAINEL — hoje só Cal.com (a chave oficial
- * usada pelo "Espelho do Cal" e pelo status mostrado no quiz). A chave
- * nunca é devolvida ao navegador — só se está configurada ou não (mesmo
- * princípio de senha: escreve, nunca lê de volta em texto puro).
+ * CONEXÕES CONFIGURÁVEIS PELO PAINEL — Cal.com (chave usada pelo "Espelho
+ * do Cal" e pelo status mostrado no quiz) e MentoriaHub (espelho global
+ * de leads num CRM externo). Segredos nunca são devolvidos ao navegador —
+ * só se está configurado ou não (mesmo princípio de senha: escreve, nunca
+ * lê de volta em texto puro).
  *
  *   POST /api/conexoes { token, action:'status' }
- *     → { ok, calcom: { temEnv, temSalva, conectado } }
+ *     → { ok, calcom: { temEnv, temSalva, conectado }, mentoriahub: { conectado } }
  *   POST /api/conexoes { token, action:'salvar_calcom', api_key }   (admin)
  *   POST /api/conexoes { token, action:'remover_calcom' }           (admin)
+ *   POST /api/conexoes { token, action:'salvar_mentoriahub', url, secret, ativo }   (admin)
+ *   POST /api/conexoes { token, action:'remover_mentoriahub' }                      (admin)
  */
 import { temConfig, autenticar } from '../_tokens.mjs';
-import { lerConexaoCalcom, salvarConexaoCalcom } from '../_conexoes.mjs';
+import { lerConexaoCalcom, salvarConexaoCalcom, obterConexaoMentoriaHub, salvarConexaoMentoriaHub } from '../_conexoes.mjs';
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
@@ -29,7 +32,12 @@ export default async (req) => {
       const salvo = await lerConexaoCalcom();
       const temEnv = !!process.env.CALCOM_API_KEY;
       const temSalva = !!salvo.api_key;
-      return json({ ok: true, calcom: { temEnv, temSalva, conectado: temEnv || temSalva } });
+      const mentoriahub = await obterConexaoMentoriaHub();
+      return json({
+        ok: true,
+        calcom: { temEnv, temSalva, conectado: temEnv || temSalva },
+        mentoriahub: { conectado: !!mentoriahub },
+      });
     }
 
     if (!auth.admin) return json({ ok: false, error: 'Somente a administradora gerencia conexões.' });
@@ -43,6 +51,19 @@ export default async (req) => {
 
     if (a === 'remover_calcom') {
       await salvarConexaoCalcom({});
+      return json({ ok: true });
+    }
+
+    if (a === 'salvar_mentoriahub') {
+      const url = String(body.url || '').trim().slice(0, 500);
+      const secret = String(body.secret || '').trim().slice(0, 300);
+      if (!url) return json({ ok: false, error: 'Cole a URL do webhook do MentoriaHub.' });
+      await salvarConexaoMentoriaHub({ url, secret, ativo: body.ativo !== false });
+      return json({ ok: true });
+    }
+
+    if (a === 'remover_mentoriahub') {
+      await salvarConexaoMentoriaHub({});
       return json({ ok: true });
     }
 

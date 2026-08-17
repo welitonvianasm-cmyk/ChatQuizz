@@ -1081,6 +1081,25 @@
         <div class="muted-cell" id="calMsg" style="margin-top:8px;font-size:12.5px;"></div>
       </div>
 
+      <!-- ===== card: MentoriaHub (espelho global de leads) ===== -->
+      <div class="conexao-card">
+        <h3>MentoriaHub</h3>
+        <div class="sub">Quando conectado, <b>todo</b> lead qualificado (e todo agendamento, automático pelo quiz ou manual pelo painel) é enviado pra lá — independente do qualificador. Pra direcionar um qualificador específico pra um link externo, use "Direcionar para uma URL" em Editor do Quiz → Roteamento.</div>
+        <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
+          <b>Situação:</b> <span id="mhEstado" class="pill parcial">verificando…</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input type="text" id="mhUrl" placeholder="URL do webhook (ex: https://.../webhooks/chatquizz)" style="flex:1;min-width:240px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
+          <input type="password" id="mhSecret" placeholder="Segredo compartilhado" style="flex:1;min-width:200px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;cursor:pointer;"><input type="checkbox" id="mhAtivo" checked style="width:15px;height:15px;">Ativo</label>
+          <button class="btn" id="mhBtnSalvar">Salvar</button>
+          <button class="btn" id="mhBtnRemover" style="display:none;">Remover</button>
+        </div>
+        <div class="muted-cell" id="mhMsg" style="margin-top:8px;font-size:12.5px;"></div>
+      </div>
+
       <!-- ===== card: Infraestrutura ===== -->
       <div class="conexao-card">
         <h3>Infraestrutura</h3>
@@ -1519,7 +1538,7 @@ function navGo(sec) {
     if (!QE_CARREGADO) qeCarregar(); else qeRenderTudo();
   }
   if (sec === 'links' && !LINKS_CARREGADO) linksCarregar();
-  if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); }
+  if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); carregarConexaoMentoriaHub(); }
   if (sec === 'conversas') carregarWaStatus().then(carregarInbox);
   if (sec === 'automacoes') carregarAutomacoes();
   if (sec === 'disparos') carregarDisparos();
@@ -2428,7 +2447,7 @@ function qeRenderRoteamento(box) {
     const tit = el('div'); const titB = el('b'); titB.textContent = q.nome || q.chave; tit.appendChild(titB); tit.style.marginBottom = '8px'; card.appendChild(tit);
 
     const row = el('div'); row.style.cssText = 'display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;';
-    [['calcom', 'Cal.com (link de agendamento)'], ['whatsapp', 'WhatsApp automático'], ['crm', 'Só CRM (equipe entra em contato)']].forEach(([v, tx]) => {
+    [['calcom', 'Cal.com (link de agendamento)'], ['whatsapp', 'WhatsApp automático'], ['url', 'Direcionar para uma URL'], ['crm', 'Só CRM (equipe entra em contato)']].forEach(([v, tx]) => {
       const lab = el('label'); lab.style.cssText = 'font-size:13px;font-weight:600;display:flex;gap:6px;align-items:center;cursor:pointer;';
       const rd = el('input'); rd.type = 'radio'; rd.name = 'rota_' + q.chave; rd.checked = rota.tipo === v;
       rd.onchange = () => { rota.tipo = v; qeRenderTudo(); };
@@ -2453,6 +2472,11 @@ function qeRenderRoteamento(box) {
       ta.style.cssText = 'width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--card);font-family:inherit;';
       ta.oninput = () => { rota.mensagem = ta.value; };
       card.appendChild(ta);
+    } else if (rota.tipo === 'url') {
+      const il = el('input'); il.value = rota.url || ''; il.placeholder = 'https://...';
+      il.style.cssText = 'width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--card);';
+      il.oninput = () => { rota.url = il.value; };
+      card.appendChild(il);
     }
     box.appendChild(card);
   });
@@ -3765,6 +3789,43 @@ $('#calBtnRemover').onclick = async () => {
   }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
   $('#calMsg').textContent = r.ok ? 'Removida.' : ('' + (r.error || 'Erro ao remover.'));
   if (r.ok) { carregarConexaoCalcom(); carregarQualificadoresOrigem(); }
+};
+
+async function carregarConexaoMentoriaHub() {
+  const estado = $('#mhEstado'), msg = $('#mhMsg'), btnRemover = $('#mhBtnRemover');
+  estado.className = 'pill parcial'; estado.textContent = 'verificando…';
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'status' }),
+  }).then((x) => x.json()).catch(() => null);
+  if (!r || !r.ok) { estado.className = 'pill parcial'; estado.textContent = 'erro ao verificar'; return; }
+  const m = r.mentoriahub || {};
+  estado.className = 'pill ' + (m.conectado ? 'agendado' : 'parcial');
+  estado.textContent = m.conectado ? 'conectado' : 'não conectado';
+  btnRemover.style.display = m.conectado ? '' : 'none';
+  msg.textContent = m.conectado ? 'Conectado — todo lead qualificado é espelhado lá.' : '';
+}
+$('#mhBtnSalvar').onclick = async () => {
+  const url = ($('#mhUrl').value || '').trim();
+  const secret = ($('#mhSecret').value || '').trim();
+  if (!url) { $('#mhMsg').textContent = 'Cole a URL do webhook antes de salvar.'; return; }
+  $('#mhMsg').textContent = 'salvando…';
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'salvar_mentoriahub', url, secret, ativo: $('#mhAtivo').checked }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  $('#mhMsg').textContent = r.ok ? '✓ Salvo!' : ('' + (r.error || 'Erro ao salvar.'));
+  if (r.ok) { $('#mhUrl').value = ''; $('#mhSecret').value = ''; carregarConexaoMentoriaHub(); }
+};
+$('#mhBtnRemover').onclick = async () => {
+  if (!confirm('Remover a conexão com o MentoriaHub? Leads deixam de ser espelhados lá.')) return;
+  $('#mhMsg').textContent = 'removendo…';
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'remover_mentoriahub' }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  $('#mhMsg').textContent = r.ok ? 'Removida.' : ('' + (r.error || 'Erro ao remover.'));
+  if (r.ok) carregarConexaoMentoriaHub();
 };
 
 /* dropdown "Origem": só os links de rastreio cadastrados (de onde veio o

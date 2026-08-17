@@ -14,6 +14,7 @@
  * PREPARADO PARA O FUTURO: integração real com o cal.com usa o booking_uid já salvo.
  */
 import { temConfig, autenticar } from '../_tokens.mjs';
+import { dispararMentoriaHub } from '../_conexoes.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -200,6 +201,9 @@ export default async (req) => {
       // colunas do CRM podem não existir → grava o essencial mesmo assim
       if (!rg.ok) { delete patch.equipe_json; delete patch.agendamento_status; delete patch.etapa; temColunaEquipe = false; rg = await gravar(); }
       if (rg.ok) await moverNoKanban(ref, atendenteLead, 'agendado');   // o funil acompanha
+      if (rg.ok) dispararMentoriaHub('agendamento_confirmado', {
+        chatquizzLeadRef: ref, agendamentoEm: emISO, linkReuniao: '', bookingUid: uid,
+      });
       return json({ ok: rg.ok, equipe_json: temColunaEquipe ? JSON.stringify(eq) : '' });
     }
 

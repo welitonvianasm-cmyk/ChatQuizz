@@ -15,11 +15,11 @@
  *     qualificadores:[{ chave, nome, cor, ordem, ativo }],
  *     niveis:        [{ chave, nome, ordem }],
  *     resultados:    { por_nivel: { [chave]: { texto } }, por_qualificador: { [chave]: { texto } } },
- *     roteamento:    { [qualificadorChave]: { tipo: 'calcom'|'whatsapp'|'crm', calLink?, mensagem? } },
+ *     roteamento:    { [qualificadorChave]: { tipo: 'calcom'|'whatsapp'|'url'|'crm', calLink?, mensagem?, url? } },
  *   }
  */
 
-const TIPOS_ROTEAMENTO = ['calcom', 'whatsapp', 'crm'];
+const TIPOS_ROTEAMENTO = ['calcom', 'whatsapp', 'url', 'crm'];
 
 /* ================================================================
    PADRÃO — seed inicial, migrado à mão do quiz de 8 perguntas original.
@@ -205,7 +205,7 @@ export function sanitizar(doc) {
   for (const chave of qChaves) {
     const r = (doc.roteamento && doc.roteamento[chave]) || {};
     const tipo = String(r.tipo || '').trim();
-    if (!TIPOS_ROTEAMENTO.includes(tipo)) return { erro: `O qualificador "${chave}" precisa de um roteamento válido (Cal.com, WhatsApp ou CRM).` };
+    if (!TIPOS_ROTEAMENTO.includes(tipo)) return { erro: `O qualificador "${chave}" precisa de um roteamento válido (Cal.com, WhatsApp, URL ou CRM).` };
     const rr = { tipo };
     if (tipo === 'calcom') {
       rr.calLink = String(r.calLink || '').trim().slice(0, 300);
@@ -213,6 +213,9 @@ export function sanitizar(doc) {
     } else if (tipo === 'whatsapp') {
       rr.mensagem = String(r.mensagem || '').trim().slice(0, 1000);
       if (!rr.mensagem) return { erro: `O qualificador "${chave}" está com roteamento WhatsApp mas sem mensagem.` };
+    } else if (tipo === 'url') {
+      rr.url = String(r.url || '').trim().slice(0, 500);
+      if (!rr.url) return { erro: `O qualificador "${chave}" está com roteamento URL mas sem link.` };
     }
     roteamento[chave] = rr;
   }

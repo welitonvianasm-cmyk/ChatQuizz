@@ -24,9 +24,24 @@
  *   SUPABASE_DIAG_URL — URL do projeto dedicado.
  */
 import { votar, interpolar, carregarConfigPublicada } from '../_quiz.mjs';
+import { dispararMentoriaHub } from '../_conexoes.mjs';
 
 const SUPABASE_URL = (process.env.SUPABASE_DIAG_URL || 'https://aktktxizmpwckvxbdjzf.supabase.co').replace(/\/+$/, '');
 const TABLE = 'diag_instagram_leads';
+
+/* respostas cruas ({perguntaId: índice(s)}) -> pares legíveis, pro
+   espelho no MentoriaHub (não faz sentido mandar índice numérico pra
+   um CRM externo que não conhece a config do quiz) */
+function respostasLegiveis(perguntas, respostas) {
+  if (!Array.isArray(perguntas) || !respostas) return [];
+  return perguntas.map((p) => {
+    const r = respostas[p.id];
+    if (r === undefined || r === null) return null;
+    const idxs = Array.isArray(r) ? r : [r];
+    const textos = idxs.map((i) => (p.opts && p.opts[i] && p.opts[i].t) || '').filter(Boolean);
+    return textos.length ? { pergunta: p.q, resposta: textos.join(', ') } : null;
+  }).filter(Boolean);
+}
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
@@ -81,8 +96,10 @@ export default async (req) => {
     /* Qualificação + roteamento — só recalcula (e só dispara ação
        automática) quando o quiz foi realmente concluído. */
     let disparoWhats = null;
+    let docQuiz = null;
     if (row.status === 'completo' && respostas) {
       const { doc } = await carregarConfigPublicada(SUPABASE_URL, H);
+      docQuiz = doc;
       const qualificador = votar(doc.perguntas, respostas, 'qualificador');
       const nivel = votar(doc.perguntas, respostas, 'nivel');
       row.qualificador = txt(qualificador, 40);
@@ -125,6 +142,32 @@ export default async (req) => {
           chave_unica: 'roteamento|' + row.lead_ref,
         }),
       }).catch((e) => console.warn('[disparo roteamento] falhou (seguindo normal):', e.message));
+    }
+
+    /* Espelho global no MentoriaHub (se conectado) — independe de
+       qualificador/roteamento, dispara pra TODO lead completo. */
+    if (row.status === 'completo' && respostas) {
+      dispararMentoriaHub('lead_qualificado', {
+        nome: row.nome, email: row.email, telefone: row.whatsapp, estado: row.uf,
+        canalCaptacao: row.utm_source ? `chatquizz-${row.utm_source}` : 'chatquizz',
+        campanha: row.utm_campaign, conteudoEspecifico: row.utm_content, tags: ['chatquizz'],
+        chatquizzLeadRef: row.lead_ref,
+        qualificadorQuiz: row.qualificador, nivelConscienciaQuiz: row.nivel_consciencia,
+        scoreQuiz: row.lead_score, rendaQuiz: row.renda,
+        dadosExtras: {
+          respostas: respostasLegiveis(docQuiz && docQuiz.perguntas, respostas),
+          utm_medium: row.utm_medium, utm_term: row.utm_term, fbclid: row.fbclid, referrer: row.referrer,
+        },
+      });
+    }
+    /* Agendamento confirmado pelo embed do Cal.com dentro do próprio quiz —
+       reflete na Agenda/Reuniões do MentoriaHub (mesmo chatquizzLeadRef do
+       evento acima, pra correlacionar sem duplicar). */
+    if (row.status === 'agendado' && row.agendamento_em) {
+      dispararMentoriaHub('agendamento_confirmado', {
+        chatquizzLeadRef: row.lead_ref, agendamentoEm: row.agendamento_em,
+        linkReuniao: row.video_url, bookingUid: row.booking_uid,
+      });
     }
 
     return json({ ok: true });
