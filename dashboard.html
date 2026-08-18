@@ -9,22 +9,23 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  /* ================= DESIGN SYSTEM (30/07/2026) =================
-     Primária:   Verde Lime #CDE83A (ações principais, menu ativo, KPIs)
-     Secundária: Roxo #8B5CF6 (links, abas, foco, destaques)
-     Sidebar:    #111827 escura · Fundo geral: #F8FAFC · Cards: brancos
-     ~80% branco · 15% cinzas · 5% cor de destaque                  */
+  /* ================= DESIGN SYSTEM (18/08/2026) =================
+     Primária:   Azul #0028B3 (ações principais, sidebar, menu ativo, KPIs)
+     Secundária: Roxo claro #A78BFA (só em gráficos/informativos)
+     Sidebar:    sólida na cor primária (#0028B3) · Fundo geral: #F8FAFC · Cards: brancos
+     Ícones sempre em "chip" — quadrado arredondado com fundo pastel da cor + traço sólido
+     ~75% branco · 15% cinzas · 10% cor de destaque (esquema/distribuição inspirados no MentoriaHub)  */
   :root {
-    /* Design System v3: Azul #0028b3 é a PRIMÁRIA (substituiu o verde lima); roxo claro só em gráficos */
     --lime: #0028B3; --lime-hover: #001F8A; --lime-soft: rgba(0, 40, 179, .14);
     --lime-icon: #0028B3;
     --ink: #1F2937;
     --accent: #4F8CFF; --accent-dark: #3B75E0; --accent-soft: rgba(79, 140, 255, .12);
     --chart: #A78BFA; --chart-dark: #8B5CF6;   /* roxo claro: gráficos e informativos */
-    --bg: #F8FAFC; --card: #ffffff; --line: #E5E7EB; --sidebar: #111827;
+    --bg: #F8FAFC; --card: #ffffff; --line: #E5E7EB; --sidebar: #0028B3;
     --text: #1F2937; --text-body: #374151; --text-muted: #6B7280; --text-dim: #9CA3AF;
     --green: #22A55E; --green-soft: #dcfce7; --amber: #F59E0B; --amber-soft: #FEF3C7;
-    --blue: #4F8CFF; --blue-soft: #E3EDFF; --red: #FF5A5F;
+    --blue: #4F8CFF; --blue-soft: #E3EDFF; --red: #FF5A5F; --red-soft: #FFE7E8;
+    --chart-soft: rgba(167, 139, 250, .16);
     --shadow: 0 1px 2px rgba(17, 24, 39, .05), 0 6px 18px rgba(17, 24, 39, .04);
     --shadow-md: 0 4px 10px rgba(17, 24, 39, .07), 0 12px 32px rgba(17, 24, 39, .07);
   }
@@ -76,7 +77,7 @@
   #app { display: none; max-width: 1920px; margin: 0 auto; }
   .topbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-left: 225px; padding: 18px clamp(20px, 3vw, 48px) 0; margin-bottom: 6px; }
   .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .seg { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+  .seg { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .seg button {
     border: none; background: transparent; padding: 8px 12px; cursor: pointer; font-size: 12.5px;
     color: var(--text-muted); font-weight: 600; transition: all .12s;
@@ -84,10 +85,10 @@
   .seg button.on { background: var(--lime); color: #fff; }
   .btn {
     border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 13px;
-    cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text); box-shadow: var(--shadow);
+    cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text);
     transition: all .12s; display: inline-flex; align-items: center; gap: 6px;
   }
-  .btn:hover { background: var(--bg); border-color: var(--text-dim); }
+  .btn:hover { background: var(--bg); border-color: var(--text-dim); box-shadow: var(--shadow); }
   .updated { font-size: 11.5px; color: var(--text-dim); width: 100%; margin-top: -8px; }
 
   /* elementos escondidos pela navegação SEMPRE somem (vence display:grid etc.) */
@@ -100,27 +101,27 @@
     background: var(--sidebar); border: none; border-radius: 0; box-shadow: var(--shadow-md);
     display: flex; flex-direction: column; overflow: hidden;
   }
-  .sidenav-topo { flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
-  .sidenav-topo .logo { width: 34px; height: 34px; border-radius: 9px; background: var(--lime); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+  .sidenav-topo { flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,.15); }
+  .sidenav-topo .logo { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,.92); color: var(--lime); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
   .sidenav-topo b { color: #fff; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sidenav-corpo { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 3px; }
-  .sidenav-rodape { flex-shrink: 0; padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.08); }
+  .sidenav-rodape { flex-shrink: 0; padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.15); }
   .sidenav-user { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
-  .sidenav-user .uavatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,.12); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .sidenav-user .uavatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,.18); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
   .sidenav-user div { overflow: hidden; }
   .sidenav-user b { display: block; color: #fff; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sidenav-user small { display: block; color: #9CA3AF; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sidenav-sair { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 9px; border-radius: 9px; border: none; background: none; color: #D1D5DB; font-size: 12.5px; font-weight: 600; cursor: pointer; }
-  .sidenav-sair:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .sidenav-user small { display: block; color: rgba(255,255,255,.65); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidenav-sair { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 9px; border-radius: 10px; border: none; background: none; color: rgba(255,255,255,.8); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .sidenav-sair:hover { background: rgba(255,255,255,.14); color: #fff; }
   .sidenav-sair svg { width: 15px; height: 15px; flex-shrink: 0; }
   .maincol { margin-left: 225px; padding: 10px clamp(20px, 3vw, 48px) 60px; }
-  .sidenav button { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: none; background: none; padding: 9px 11px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #D1D5DB; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidenav button { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: none; background: none; padding: 9px 11px; border-radius: 10px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.78); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sidenav button svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .85; }
-  .sidenav button:hover { background: rgba(255, 255, 255, .08); color: #fff; }
-  .sidenav button.on { background: var(--lime); color: #fff; font-weight: 700; }
+  .sidenav button:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+  .sidenav button.on { background: rgba(255, 255, 255, .22); color: #fff; font-weight: 700; }
   .sidenav button.on svg { opacity: 1; }
   /* grupo de topo (Home/Gestão/Agenda/...): maiúsculas, negrito, fonte maior */
-  .nav-menu-btn { font-size: 13.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: #9CA3AF; margin-top: 4px; }
+  .nav-menu-btn { font-size: 13.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: rgba(255,255,255,.62); margin-top: 4px; }
   .nav-menu-btn:hover { color: #fff; }
   .nav-menu-btn.aberto { color: #fff; }
   .nav-chevron { margin-left: auto; font-size: 10px; opacity: .6; flex-shrink: 0; }
@@ -148,8 +149,8 @@
   .fdatas { display: none; gap: 6px; align-items: center; font-size: 13px; font-weight: 600; flex-wrap: wrap; }
   .fdatas input { padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 9px; font-size: 13px; }
   /* cards dentro do painel "Conexões" */
-  .conexao-card { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; background: var(--bg); }
-  .conexao-card h3 { font-size: 14px; margin-bottom: 6px; }
+  .conexao-card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-top: 16px; background: var(--bg); }
+  .conexao-card h3 { display: flex; align-items: center; gap: 10px; font-size: 14px; margin-bottom: 10px; }
 
   /* ===== AGENDA — calendário ===== */
   .ag-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 14px; }
@@ -178,7 +179,9 @@
   .kb-body::-webkit-scrollbar { width: 7px; }
   .kb-body::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
   .kb-body.drag { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: 8px; }
-  .kb-card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; cursor: grab; box-shadow: var(--shadow); position: relative; }
+  .kb-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; cursor: grab; box-shadow: var(--shadow); position: relative; }
+  .kb-card:hover { box-shadow: var(--shadow-md); border-color: rgba(79, 140, 255, .45); }
+  .kb-card:active { transform: scale(.98); }
   .kb-card b { font-size: 13px; display: block; margin-bottom: 2px; }
   .kb-card small { font-size: 11.5px; color: var(--text-muted); display: block; }
   .kb-card .x { position: absolute; top: 5px; right: 7px; cursor: pointer; color: var(--text-dim); font-size: 12px; border: none; background: none; }
@@ -237,9 +240,13 @@
   /* cards padronizados: padding 20px, raio 14px, cabeçalho com ícone (10px de vão) */
   .panel { background: var(--card); border-radius: 14px; padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--line); margin-bottom: 16px; }
   .panel h2 { display: flex; align-items: center; gap: 10px; font-size: 15.5px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
-  .panel h2 .h-ic { width: 19px; height: 19px; flex-shrink: 0; }
   .panel .sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; }
   .panel.grid2-item { margin-bottom: 0; }
+
+  /* "chip" de ícone: quadrado arredondado com fundo pastel da cor + ícone sólido centralizado */
+  .ic-chip { display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 9px; }
+  .panel h2 .h-ic { width: 30px; height: 30px; }
+  .conexao-card h3 .h-ic { width: 32px; height: 32px; border-radius: 10px; }
 
   /* ===== CABEÇALHO COLORIDO DE SEÇÃO (banner por submenu) ===== */
   .pbanner { --pb-fg: #fff; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-radius: 16px; padding: 16px 22px; margin-bottom: 18px; color: var(--pb-fg); background: linear-gradient(120deg, #0028B3, #001A73); }
@@ -334,7 +341,8 @@
   }
 
   /* ===== CABEÇALHO (busca global + usuário) ===== */
-  .topsearch { display: flex; align-items: center; gap: 7px; background: var(--card); border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 12px; flex: 0 1 250px; min-width: 170px; box-shadow: var(--shadow); margin-right: auto; }
+  .topsearch { display: flex; align-items: center; gap: 7px; background: var(--card); border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 12px; flex: 0 1 250px; min-width: 170px; margin-right: auto; }
+  .topsearch:focus-within { box-shadow: var(--shadow); border-color: var(--accent); }
   .topsearch svg { width: 15px; height: 15px; color: var(--text-dim); flex-shrink: 0; }
   .topsearch input { border: none; outline: none; font-size: 13px; width: 100%; background: transparent; color: var(--text); }
   .topsearch:focus-within { border-color: var(--accent); }
@@ -1116,7 +1124,7 @@
 
       <!-- ===== card: Meu Plano ===== -->
       <div class="conexao-card">
-        <h3>Meu Plano</h3>
+        <h3 data-ic="lista" data-cor="lima">Meu Plano</h3>
         <div class="sub"><b>Lite:</b> Leads e Configurações do quiz. <b>Completo:</b> tudo do Lite + Quadro (Funil), Conversas, Agenda, Automação, Pós-Venda e Usuários.</div>
         <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
           <b>Plano atual:</b> <span id="planoEstado" class="pill parcial">—</span>
@@ -1130,7 +1138,7 @@
 
       <!-- ===== card: Meu Domínio ===== -->
       <div class="conexao-card">
-        <h3>Meu Domínio</h3>
+        <h3 data-ic="envio" data-cor="azul">Meu Domínio</h3>
         <div class="sub">Use seu próprio domínio pro quiz (ex: <b>quiz.suaempresa.com.br</b>) em vez do endereço padrão. Depois de salvar, aponte o DNS do seu domínio (registro <b>CNAME</b>) pra <code id="domCnameAlvo" style="background:var(--bg);padding:2px 6px;border-radius:5px;">carregando…</code> — a ativação final é conferida manualmente, pode levar um tempo.</div>
         <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
           <b>Situação:</b> <span id="domEstado" class="pill parcial">—</span>
@@ -1145,7 +1153,7 @@
 
       <!-- ===== card: WhatsApp ===== -->
       <div class="conexao-card">
-        <h3>WhatsApp</h3>
+        <h3 data-ic="conversa" data-cor="verde">WhatsApp</h3>
         <div class="sub">Conecte seu número pela Evolution API e controle os dois interruptores de forma independente. Com <b>Conversas</b> desligadas, os botões Conversar abrem o WhatsApp Web normalmente; com <b>Disparos</b> desligados, nenhuma mensagem automática sai.</div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;margin-top:10px;">
           <div style="flex:1;min-width:230px;">
@@ -1178,7 +1186,7 @@
 
       <!-- ===== card: Cal.com ===== -->
       <div class="conexao-card">
-        <h3>Cal.com</h3>
+        <h3 data-ic="calendario" data-cor="azul">Cal.com</h3>
         <div class="sub">Chave da API oficial do Cal.com (v2) — usada pela aba "Espelho do Cal" e pra saber se dá pra oferecer agendamento por Cal.com no roteamento. O link de cada qualificador continua sendo configurado em Editor do Quiz → Roteamento; aqui é só a chave de acesso.</div>
         <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
           <b>Situação:</b> <span id="calEstado" class="pill parcial">verificando…</span>
@@ -1193,7 +1201,7 @@
 
       <!-- ===== card: MentoriaHub (espelho global de leads) ===== -->
       <div class="conexao-card">
-        <h3>MentoriaHub</h3>
+        <h3 data-ic="raio" data-cor="roxo">MentoriaHub</h3>
         <div class="sub">Quando conectado, <b>todo</b> lead qualificado (e todo agendamento, automático pelo quiz ou manual pelo painel) é enviado pra lá — independente do qualificador. Pra direcionar um qualificador específico pra um link externo, use "Direcionar para uma URL" em Editor do Quiz → Roteamento.</div>
         <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
           <b>Situação:</b> <span id="mhEstado" class="pill parcial">verificando…</span>
@@ -1212,7 +1220,7 @@
 
       <!-- ===== card: Infraestrutura ===== -->
       <div class="conexao-card">
-        <h3>Infraestrutura</h3>
+        <h3 data-ic="engrenagem" data-cor="cinza">Infraestrutura</h3>
         <div class="sub">Hospedagem no Netlify · banco de dados no Supabase.</div>
       </div>
     </div>
@@ -1798,6 +1806,7 @@ const DS_PATHS = {
   lista: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
 };
 const DS_CORES = { azul: '#4F8CFF', verde: '#2ECC71', laranja: '#F59E0B', lima: 'var(--lime-icon)', cinza: '#6B7280', roxo: '#A78BFA' };
+const DS_CORES_SOFT = { azul: 'var(--blue-soft)', verde: 'var(--green-soft)', laranja: 'var(--amber-soft)', lima: 'var(--lime-soft)', cinza: '#F1F1F7', roxo: 'var(--chart-soft)' };
 const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verde · Vendas laranja · Usuários lima · Config cinza · gráficos roxo claro) */
   pFunil: ['grafico', 'roxo'], pRenda: ['carteira', 'verde'], pNicho: ['grafico', 'roxo'],
   pIdadeAreas: ['grafico', 'roxo'], pDiaUF: ['grafico', 'roxo'], pOrigemUtm: ['grafico', 'roxo'], pDestino: ['envio', 'azul'],
@@ -1807,14 +1816,31 @@ const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verd
   pPosConv: ['trofeu', 'laranja'], pPosAtend: ['medalha', 'laranja'], pPosFin: ['carteira', 'verde'],
   pConversas: ['conversa', 'verde'], pAutomacoes: ['raio', 'laranja'], pDisparos: ['envio', 'laranja'],
   pQuizEditor: ['lista', 'cinza'], pConexoes: ['conversa', 'cinza'],
-  pLinks: ['envio', 'cinza'], equipePanel: ['usuarios', 'lima'],
+  pLinks: ['envio', 'cinza'], equipePanel: ['usuarios', 'lima'], pMasterContas: ['usuarios', 'roxo'],
 };
+/* botões de ação secundária com "tinta" da cor (fundo pastel + borda + texto combinando) —
+   usado em ações de linha de tabela (Master, Equipe) pra dar hierarquia sem virar botão sólido */
+const BTN_TINTS = {
+  lima: 'border:1px solid rgba(0,40,179,.35);background:var(--lime-soft);color:var(--lime);',
+  azul: 'border:1px solid rgba(79,140,255,.4);background:var(--blue-soft);color:var(--accent-dark);',
+  verde: 'border:1px solid rgba(34,165,94,.35);background:var(--green-soft);color:var(--green);',
+  vermelho: 'border:1px solid rgba(255,90,95,.4);background:var(--red-soft);color:var(--red);',
+  cinza: 'border:1px solid var(--line);background:#fff;color:var(--ink);',
+};
+function btnCssTint(cor) { return 'cursor:pointer;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;white-space:nowrap;' + (BTN_TINTS[cor] || BTN_TINTS.cinza); }
+function montarIconeChip(ic, cor, tamanho) {
+  const s = el('span', 'ic-chip h-ic');
+  s.style.background = DS_CORES_SOFT[cor];
+  s.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="' + DS_CORES[cor] + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="' + tamanho + '" height="' + tamanho + '">' + DS_PATHS[ic] + '</svg>';
+  return s;
+}
 document.querySelectorAll('.panel h2').forEach((h) => {
   const dono = h.closest('[id]');
   const [ic, cor] = DS_MAPA[dono ? dono.id : ''] || ['lista', 'cinza'];
-  const s = el('span', 'h-ic');
-  s.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="' + DS_CORES[cor] + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="19" height="19">' + DS_PATHS[ic] + '</svg>';
-  h.prepend(s);
+  h.prepend(montarIconeChip(ic, cor, 16));
+});
+document.querySelectorAll('.conexao-card h3[data-ic]').forEach((h) => {
+  h.prepend(montarIconeChip(h.dataset.ic, h.dataset.cor, 16));
 });
 
 /* ===== cabeçalho colorido por seção (banner com ícone + título + subtítulo + ações) ===== */
@@ -4856,13 +4882,12 @@ function renderEqUsers(res) {
   const tb = el('tbody');
   if (!res.users.length) { const tr = el('tr'); const c = td('Nenhum usuário criado ainda.'); c.colSpan = 9; c.className = 'muted-cell'; tr.appendChild(c); tb.appendChild(tr); }
   const hoje = new Date();
-  const btnCss = 'cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 9px;font-size:12px;white-space:nowrap;';
   res.users.forEach((u) => {
     const vencido = u.validade && new Date(u.validade + 'T23:59:59-03:00') < hoje;
     const tr = el('tr');
     const sit = el('span', 'pill ' + (vencido ? 'parcial' : 'agendado')); sit.textContent = vencido ? 'expirado' : 'ativo';
     const senhaTxt = u.trocar_senha ? 'temporária (aguardando 1º acesso)' : '✓ própria (invisível)';
-    const bEd = el('button'); bEd.textContent = 'Editar'; bEd.style.cssText = btnCss;
+    const bEd = el('button'); bEd.textContent = 'Editar'; bEd.style.cssText = btnCssTint('cinza');
     bEd.onclick = () => {
       EQ_EDIT_ID = u.id;
       $('#eqNome').value = u.nome; $('#eqEmail').value = u.email; $('#eqCel').value = u.celular || '';
@@ -4873,7 +4898,7 @@ function renderEqUsers(res) {
       $('#eqCancelar').style.display = '';
       $('#eqNome').focus();
     };
-    const bReset = el('button'); bReset.textContent = 'Resetar senha'; bReset.style.cssText = btnCss;
+    const bReset = el('button'); bReset.textContent = 'Resetar senha'; bReset.style.cssText = btnCssTint('azul');
     bReset.onclick = async () => {
       if (!confirm('Resetar a senha de ' + u.nome + '? A senha atual deixa de funcionar e você recebe uma temporária nova para enviar.')) return;
       const r = await eqApi({ action: 'reset', id: u.id });
@@ -4881,7 +4906,7 @@ function renderEqUsers(res) {
       else $('#eqStatus').textContent = r.error || 'Erro ao resetar.';
       carregarEquipe();
     };
-    const bDel = el('button'); bDel.textContent = 'Excluir'; bDel.title = 'Excluir usuário'; bDel.style.cssText = btnCss;
+    const bDel = el('button'); bDel.textContent = 'Excluir'; bDel.title = 'Excluir usuário'; bDel.style.cssText = btnCssTint('vermelho');
     bDel.onclick = async () => {
       if (!confirm('Excluir o acesso de ' + u.nome + '? Essa pessoa não conseguirá mais entrar no painel.')) return;
       let r = await eqApi({ action: 'delete', id: u.id });
@@ -5144,27 +5169,26 @@ function masterRender() {
     tr.appendChild(td(c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : '—'));
 
     const acoes = el('td'); acoes.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
-    const btnCss = 'cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 9px;font-size:12px;white-space:nowrap;';
     if (!excluida) {
-      const bAcessar = el('button'); bAcessar.textContent = 'Acessar como'; bAcessar.style.cssText = btnCss + 'font-weight:700;color:var(--lime);';
+      const bAcessar = el('button'); bAcessar.textContent = 'Acessar como'; bAcessar.style.cssText = btnCssTint('lima');
       bAcessar.onclick = () => iniciarImpersonar(c.id, c.nome);
       acoes.appendChild(bAcessar);
 
-      const bEd = el('button'); bEd.textContent = 'Editar'; bEd.style.cssText = btnCss;
+      const bEd = el('button'); bEd.textContent = 'Editar'; bEd.style.cssText = btnCssTint('cinza');
       bEd.onclick = () => mcAbrir(c);
       acoes.appendChild(bEd);
 
       if (c.dominio_proprio) {
-        const bDom = el('button'); bDom.textContent = c.dominio_status === 'ativo' ? 'Desativar domínio' : 'Ativar domínio'; bDom.style.cssText = btnCss;
+        const bDom = el('button'); bDom.textContent = c.dominio_status === 'ativo' ? 'Desativar domínio' : 'Ativar domínio'; bDom.style.cssText = btnCssTint('azul');
         bDom.onclick = () => masterAlternarDominio(c);
         acoes.appendChild(bDom);
       }
 
-      const bDel = el('button'); bDel.textContent = 'Excluir'; bDel.style.cssText = btnCss + 'color:var(--red);';
+      const bDel = el('button'); bDel.textContent = 'Excluir'; bDel.style.cssText = btnCssTint('vermelho');
       bDel.onclick = () => masterExcluir(c);
       acoes.appendChild(bDel);
     } else {
-      const bRest = el('button'); bRest.textContent = 'Restaurar'; bRest.style.cssText = btnCss;
+      const bRest = el('button'); bRest.textContent = 'Restaurar'; bRest.style.cssText = btnCssTint('verde');
       bRest.onclick = () => masterRestaurar(c);
       acoes.appendChild(bRest);
     }
