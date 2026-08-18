@@ -318,6 +318,7 @@
   .pill.prem { background: var(--accent-soft); color: var(--accent-dark); }
   .pill.aud { background: #dbeafe; color: #1e40af; }
   .pill.pad { background: #f1f1f7; color: var(--text-muted); }
+  .pill.excluida { background: #fee2e2; color: var(--red); }
   .tbl-tools { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
   .tbl-tools input {
     flex: 1; min-width: 180px; padding: 9px 13px; border: 1.5px solid var(--line); border-radius: 10px;
@@ -501,6 +502,54 @@
     </div>
   </div>
 
+  <!-- MASTER: criar/editar conta -->
+  <div id="masterContaModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:600px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;" id="mcTit">Nova conta</h2>
+        <button class="acao-btn" id="mcFechar" title="Fechar">✕</button>
+      </div>
+
+      <div style="display:flex;gap:16px;margin:10px 0;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;"><input type="radio" name="mcTipo" value="fisica" checked> Pessoa Física</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;"><input type="radio" name="mcTipo" value="juridica"> Pessoa Jurídica</label>
+      </div>
+
+      <div style="display:grid;gap:10px;">
+        <label style="font-size:11.5px;font-weight:700;">Nome da conta / razão social<input id="mcNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Ex: Clínica Bella"></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label style="font-size:11.5px;font-weight:700;" id="mcDocLbl">CPF<input id="mcDocumento" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="000.000.000-00"></label>
+          <label style="font-size:11.5px;font-weight:700;">Telefone<input id="mcTelefone" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="(11) 99999-9999"></label>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;">
+          <label style="font-size:11.5px;font-weight:700;">CEP<input id="mcCep" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="00000-000"></label>
+          <label style="font-size:11.5px;font-weight:700;">Endereço (rua e número)<input id="mcEndereco" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Rua Exemplo, 123"></label>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 70px;gap:8px;">
+          <label style="font-size:11.5px;font-weight:700;">Bairro<input id="mcBairro" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
+          <label style="font-size:11.5px;font-weight:700;">Cidade<input id="mcCidade" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
+          <label style="font-size:11.5px;font-weight:700;">UF<input id="mcUf" maxlength="2" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;text-transform:uppercase;" placeholder="SP"></label>
+        </div>
+        <label style="font-size:11.5px;font-weight:700;">Plano<select id="mcPlano" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;"><option value="lite">Lite</option><option value="completo">Completo</option></select></label>
+
+        <div id="mcBlocoNovaConta">
+          <label style="font-size:11.5px;font-weight:700;">Subdomínio (opcional — gerado automaticamente se deixar em branco)<input id="mcSubdominio" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="clinica-bella"></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+            <label style="font-size:11.5px;font-weight:700;">Nome do responsável<input id="mcDonoNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Nome de quem vai logar"></label>
+            <label style="font-size:11.5px;font-weight:700;">E-mail do responsável (login)<input id="mcDonoEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="responsavel@email.com"></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="muted-cell" id="mcErr" style="margin-top:10px;color:var(--red);"></div>
+      <div id="mcCredencial" style="display:none;background:var(--lime-soft,rgba(0,40,179,.1));border-radius:10px;padding:12px 14px;margin-top:10px;font-size:13px;"></div>
+
+      <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
+        <button id="mcSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- CHAT INTERNO DO WHATSAPP (popup de conversa) -->
   <div id="chatModal" style="display:none;position:fixed;inset:0;z-index:76;background:rgba(17,24,39,.5);align-items:center;justify-content:center;padding:16px;">
     <div style="background:var(--card);border-radius:16px;max-width:480px;width:100%;height:min(640px,92vh);display:flex;flex-direction:column;box-shadow:var(--shadow-md);overflow:hidden;">
@@ -535,6 +584,11 @@
 
   <!-- DASHBOARD -->
   <div id="app">
+    <div id="impersonarBar" hidden style="margin-left:225px;padding:10px clamp(20px,3vw,48px);background:#FEF3C7;color:#92400E;font-size:13px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span>⚠ Você está vendo como: <b id="impersonarNome">—</b></span>
+      <span style="flex:1"></span>
+      <button id="btnSairImpersonar" style="padding:7px 14px;border:none;border-radius:8px;background:#92400E;color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;">Voltar pro meu painel</button>
+    </div>
     <div class="topbar">
       <div class="topsearch" title="Pesquisa global de leads (nome, telefone ou e-mail)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -625,6 +679,12 @@
             <button data-sec="links"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Links de Rastreio</button>
             <button data-sec="conexoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Conexões</button>
             <button data-sec="usuarios"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Usuários</button>
+          </div>
+        </div>
+        <div class="nav-menu" id="navMasterGrupo" hidden>
+          <button class="nav-menu-btn" data-menu="master"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>Master<span class="nav-chevron">▸</span></button>
+          <div class="nav-sub" data-menu-body="master" hidden>
+            <button data-sec="masterContas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Contas</button>
           </div>
         </div>
         </div>
@@ -1208,6 +1268,25 @@
       <div class="sub">Cada acesso ao painel e cada extração de relatório, do mais recente para o mais antigo (últimos 300).</div>
       <div class="tbl-wrap"><table id="eqLogs"></table></div>
     </div>
+
+    <!-- ===== MASTER · CONTAS — só quem tem eh_superadmin vê ===== -->
+    <div class="panel tem-banner" id="pMasterContas" hidden>
+      <h2>Master · Contas</h2>
+      <div class="sub">Todas as contas (assinantes) do QuizzHub — criar, editar dados cadastrais, trocar plano/status, ativar domínio próprio e acessar como o cliente pra dar suporte.</div>
+
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin:14px 0;">
+        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="mkTotal" style="display:block;font-size:20px;">—</b><span class="muted-cell">Contas</span></div>
+        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="mkAtivas" style="display:block;font-size:20px;">—</b><span class="muted-cell">Ativas</span></div>
+        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="mkCompleto" style="display:block;font-size:20px;">—</b><span class="muted-cell">Plano Completo</span></div>
+        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="mkLite" style="display:block;font-size:20px;">—</b><span class="muted-cell">Plano Lite</span></div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <button id="mNovaContaBtn" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">+ Nova conta</button>
+      </div>
+      <span class="muted-cell" id="masterStatus"></span>
+      <div class="tbl-wrap"><table id="masterTable"></table></div>
+    </div>
     </div><!-- /tabFunil -->
 
     <div id="tabCal" hidden>
@@ -1272,6 +1351,11 @@ let CONTA_PLANO = 'completo';     // 'lite' | 'completo' — plano da conta loga
 let CONTA_PLANO_DEFINIDO = true;  // false = primeiro acesso, precisa escolher plano (#gate3)
 let CONTA_DOMINIO = '';           // domínio próprio configurado (vazio = usando o padrão da plataforma)
 let CONTA_DOMINIO_STATUS = '';    // '' | 'pendente' | 'ativo'
+let IS_SUPERADMIN = false;        // true = dono do QuizzHub (usuarios.eh_superadmin) — vê o módulo Master
+let IMPERSONANDO = false;         // true = está "vendo como" uma conta de cliente
+let IMPERSONANDO_NOME = '';       // nome da conta impersonada (pra faixa de aviso)
+const TKEY_ORIGINAL = 'core_dash_token_original'; // guarda o token do master enquanto impersona
+let MASTER_CONTAS = [];           // cache da última listagem carregada no módulo Master
 
 // ================= LOGIN =================
 function showGate(msg) {
@@ -1300,6 +1384,9 @@ async function tryToken(token) {
   CONTA_PLANO_DEFINIDO = !!data.contaPlanoDefinido;
   CONTA_DOMINIO = data.contaDominio || '';
   CONTA_DOMINIO_STATUS = data.contaDominioStatus || '';
+  IS_SUPERADMIN = !!data.superadmin;
+  IMPERSONANDO = !!data.impersonando;
+  IMPERSONANDO_NOME = data.contaNome || '';
   return data.leads || [];
 }
 function aplicarPerfil() {
@@ -1325,6 +1412,8 @@ async function doLogin(token) {
     }
     $('#gate').style.display = 'none';
     $('#app').style.display = 'block';
+    $('#impersonarBar').hidden = !IMPERSONANDO;
+    if (IMPERSONANDO) $('#impersonarNome').textContent = IMPERSONANDO_NOME || 'conta do cliente';
     // cartão do usuário no rodapé do menu lateral
     const nomeChip = USUARIO || 'Administradora';
     $('#userName').textContent = nomeChip;
@@ -1575,6 +1664,7 @@ const SECTIONS = {
   links: ['#pLinks'],
   conexoes: ['#pConexoes'],
   usuarios: ['#equipePanel'],
+  masterContas: ['#pMasterContas'],
 };
 const TODOS_PANEIS = [...new Set(Object.values(SECTIONS).flat())];
 // itens só-administradora (equivalente ao antigo bloco único "config")
@@ -1590,10 +1680,13 @@ const SECOES_SO_COMPLETO = new Set([
 function aplicarGatingPlano() {
   const lite = CONTA_PLANO === 'lite';
   document.querySelectorAll('#sidenav button[data-sec]').forEach((b) => {
+    if (b.dataset.sec === 'masterContas') return; // gating próprio (superadmin), não entra no de plano
     b.hidden = lite && SECOES_SO_COMPLETO.has(b.dataset.sec);
   });
+  $('#navMasterGrupo').hidden = !IS_SUPERADMIN;
   // esconde grupos inteiros (Agenda, Automação, Pós-Venda) quando todos os itens somem
   document.querySelectorAll('#sidenav .sidenav-corpo > .nav-menu').forEach((grupo) => {
+    if (grupo.id === 'navMasterGrupo') return;
     const botoes = grupo.querySelectorAll('button[data-sec]');
     grupo.hidden = botoes.length > 0 && Array.from(botoes).every((b) => b.hidden);
   });
@@ -1608,6 +1701,7 @@ const SEC_MENU = {
   posConv: 'posvenda', posAtend: 'posvenda', posFin: 'posvenda',
   links: 'config', conexoes: 'config', usuarios: 'config',
   qePerguntas: 'config', qeQualificadores: 'config', qeNiveis: 'config', qeResultados: 'config', qeRoteamento: 'config', qeAparencia: 'config',
+  masterContas: 'master',
 };
 const SEC_SUBMENU = { // 3º nível — só existe dentro de Configurações (Editor do Quiz)
   qePerguntas: 'editorquiz', qeQualificadores: 'editorquiz', qeNiveis: 'editorquiz', qeResultados: 'editorquiz', qeRoteamento: 'editorquiz', qeAparencia: 'editorquiz',
@@ -1627,6 +1721,7 @@ function sincronizarMenu(sec) {
 }
 let NAV_ATUAL = 'geral';
 function navGo(sec) {
+  if (sec === 'masterContas' && !IS_SUPERADMIN) { navGo('geral'); return; }
   if (SECOES_ADMIN.has(sec) && !IS_ADMIN) { navGo('geral'); return; }
   if (SECOES_SO_COMPLETO.has(sec) && CONTA_PLANO === 'lite') { navGo('leads'); return; }
   NAV_ATUAL = sec;
@@ -1645,6 +1740,7 @@ function navGo(sec) {
   }
   if (sec === 'links' && !LINKS_CARREGADO) linksCarregar();
   if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); carregarConexaoMentoriaHub(); renderPlanoInfo(); renderDominioInfo(); }
+  if (sec === 'masterContas') masterCarregar();
   if (sec === 'conversas') carregarWaStatus().then(carregarInbox);
   if (sec === 'automacoes') carregarAutomacoes();
   if (sec === 'disparos') carregarDisparos();
@@ -1745,6 +1841,7 @@ const PBANNER = {
   links: { tit: 'Links de Rastreio', sub: 'Crie um link curto por origem de tráfego', ic: 'envio', cor: 'cinza' },
   conexoes: { tit: 'Conexões', sub: 'Tudo que liga o sistema a serviços externos', ic: 'conversa', cor: 'cinza' },
   usuarios: { tit: 'Usuários', sub: 'Gerencie o acesso da sua equipe ao painel', ic: 'usuarios', cor: 'roxo' },
+  masterContas: { tit: 'Master · Contas', sub: 'Todas as contas do QuizzHub — só você vê essa seção', ic: 'usuarios', cor: 'roxo' },
 };
 /* leva cada barra de filtros/ações pra dentro do banner (uma vez só, no carregamento) */
 document.querySelectorAll('[data-pbanner]').forEach((elx) => $('#pbannerAcoes').appendChild(elx));
@@ -4974,6 +5071,245 @@ function renderCal() {
   });
   t.appendChild(tb);
 }
+
+// ================= MASTER · CONTAS (só eh_superadmin) =================
+async function masterApi(payload) {
+  const token = localStorage.getItem(TKEY) || '';
+  return fetch('/api/master', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-dash-token': token },
+    body: JSON.stringify({ token, ...payload }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+}
+async function masterCarregar() {
+  $('#masterStatus').textContent = 'carregando…';
+  const r = await masterApi({ action: 'listar' });
+  if (!r.ok) { $('#masterStatus').textContent = r.error || 'Erro ao carregar as contas.'; return; }
+  $('#masterStatus').textContent = '';
+  MASTER_CONTAS = r.contas || [];
+  masterRender();
+}
+function masterRender() {
+  $('#mkTotal').textContent = MASTER_CONTAS.length;
+  $('#mkAtivas').textContent = MASTER_CONTAS.filter((c) => c.status === 'ativa').length;
+  $('#mkCompleto').textContent = MASTER_CONTAS.filter((c) => c.plano === 'completo').length;
+  $('#mkLite').textContent = MASTER_CONTAS.filter((c) => c.plano === 'lite').length;
+
+  const t = $('#masterTable'); clear(t);
+  t.appendChild(tableHead(['Conta', 'Responsável', 'Documento', 'Telefone', 'Usuários', 'Plano', 'Status', 'Criada em', 'Ações']));
+  const tb = el('tbody');
+  if (!MASTER_CONTAS.length) { const tr = el('tr'); const c = td('Nenhuma conta cadastrada ainda.'); c.colSpan = 9; c.className = 'muted-cell'; tr.appendChild(c); tb.appendChild(tr); }
+
+  MASTER_CONTAS.forEach((c) => {
+    const excluida = c.status === 'excluida';
+    const tr = el('tr');
+
+    const conta = el('td');
+    conta.innerHTML = '<b>' + escapeHtmlMaster(c.nome || '(sem nome)') + '</b><div class="muted-cell">' + escapeHtmlMaster(c.subdominio || '—') + '</div>' + masterDominioHtml(c);
+    tr.appendChild(conta);
+
+    const resp = el('td');
+    resp.innerHTML = escapeHtmlMaster(c.donoNome || '—') + (c.donoEmail ? '<div class="muted-cell">' + escapeHtmlMaster(c.donoEmail) + '</div>' : '');
+    tr.appendChild(resp);
+
+    const doc = el('td');
+    doc.innerHTML = escapeHtmlMaster(c.documento || '—') + (c.tipo_pessoa ? '<div class="muted-cell">' + (c.tipo_pessoa === 'fisica' ? 'Pessoa física' : 'Pessoa jurídica') + '</div>' : '');
+    tr.appendChild(doc);
+
+    tr.appendChild(td(c.telefone || '—'));
+    tr.appendChild(td(c.totalUsuarios ?? 0));
+
+    const tdPlano = el('td');
+    if (excluida) { tdPlano.textContent = c.plano === 'lite' ? 'Lite' : 'Completo'; }
+    else {
+      const sel = el('select'); sel.style.cssText = 'padding:6px 9px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;';
+      ['lite', 'completo'].forEach((p) => { const o = el('option'); o.value = p; o.textContent = p === 'lite' ? 'Lite' : 'Completo'; if (c.plano === p) o.selected = true; sel.appendChild(o); });
+      sel.addEventListener('change', () => masterSalvarCampo(c, { plano: sel.value }, tdPlano));
+      tdPlano.appendChild(sel);
+      const msg = el('div', 'muted-cell'); msg.style.fontSize = '11px'; tdPlano.appendChild(msg);
+    }
+    tr.appendChild(tdPlano);
+
+    const tdStatus = el('td');
+    if (excluida) { const p = el('span', 'pill excluida'); p.textContent = 'Excluída'; tdStatus.appendChild(p); }
+    else {
+      const sel = el('select'); sel.style.cssText = 'padding:6px 9px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;';
+      ['ativa', 'suspensa'].forEach((s) => { const o = el('option'); o.value = s; o.textContent = s === 'ativa' ? 'Ativa' : 'Suspensa'; if (c.status === s) o.selected = true; sel.appendChild(o); });
+      sel.addEventListener('change', () => masterSalvarCampo(c, { status: sel.value }, tdStatus));
+      tdStatus.appendChild(sel);
+      const msg = el('div', 'muted-cell'); msg.style.fontSize = '11px'; tdStatus.appendChild(msg);
+    }
+    tr.appendChild(tdStatus);
+
+    tr.appendChild(td(c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : '—'));
+
+    const acoes = el('td'); acoes.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+    const btnCss = 'cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 9px;font-size:12px;white-space:nowrap;';
+    if (!excluida) {
+      const bAcessar = el('button'); bAcessar.textContent = 'Acessar como'; bAcessar.style.cssText = btnCss + 'font-weight:700;color:var(--lime);';
+      bAcessar.onclick = () => iniciarImpersonar(c.id, c.nome);
+      acoes.appendChild(bAcessar);
+
+      const bEd = el('button'); bEd.textContent = 'Editar'; bEd.style.cssText = btnCss;
+      bEd.onclick = () => mcAbrir(c);
+      acoes.appendChild(bEd);
+
+      if (c.dominio_proprio) {
+        const bDom = el('button'); bDom.textContent = c.dominio_status === 'ativo' ? 'Desativar domínio' : 'Ativar domínio'; bDom.style.cssText = btnCss;
+        bDom.onclick = () => masterAlternarDominio(c);
+        acoes.appendChild(bDom);
+      }
+
+      const bDel = el('button'); bDel.textContent = 'Excluir'; bDel.style.cssText = btnCss + 'color:var(--red);';
+      bDel.onclick = () => masterExcluir(c);
+      acoes.appendChild(bDel);
+    } else {
+      const bRest = el('button'); bRest.textContent = 'Restaurar'; bRest.style.cssText = btnCss;
+      bRest.onclick = () => masterRestaurar(c);
+      acoes.appendChild(bRest);
+    }
+    tr.appendChild(acoes);
+
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+}
+function escapeHtmlMaster(s) { const d = document.createElement('div'); d.textContent = String(s ?? ''); return d.innerHTML; }
+function masterDominioHtml(c) {
+  if (!c.dominio_proprio) return '';
+  const ativo = c.dominio_status === 'ativo';
+  return '<div class="muted-cell">' + escapeHtmlMaster(c.dominio_proprio) + ' <span class="pill ' + (ativo ? 'agendado' : 'parcial') + '" style="margin-left:4px;">' + (ativo ? 'Ativo' : 'Pendente') + '</span></div>';
+}
+async function masterSalvarCampo(c, campos, celula) {
+  const msg = celula.querySelector('.muted-cell');
+  if (msg) msg.textContent = 'salvando…';
+  const r = await masterApi({ action: 'atualizar', id: c.id, ...campos });
+  if (!r.ok) { if (msg) msg.textContent = r.error || 'erro'; return; }
+  Object.assign(c, campos);
+  if (msg) { msg.textContent = '✓ salvo'; setTimeout(() => { if (msg.textContent === '✓ salvo') msg.textContent = ''; }, 2000); }
+}
+async function masterExcluir(c) {
+  if (!confirm('Excluir a conta "' + (c.nome || '') + '"?\n\nOs dados continuam guardados e dá pra restaurar depois — a conta só some das listagens e ninguém mais consegue logar nela.')) return;
+  const r = await masterApi({ action: 'excluir', id: c.id });
+  if (!r.ok) { alert(r.error || 'Erro ao excluir.'); return; }
+  c.status = 'excluida';
+  masterRender();
+}
+async function masterRestaurar(c) {
+  const r = await masterApi({ action: 'restaurar', id: c.id });
+  if (!r.ok) { alert(r.error || 'Erro ao restaurar.'); return; }
+  c.status = 'ativa';
+  masterRender();
+}
+async function masterAlternarDominio(c) {
+  const acao = c.dominio_status === 'ativo' ? 'desativar_dominio' : 'ativar_dominio';
+  if (acao === 'ativar_dominio' && !confirm('Ativar o domínio "' + c.dominio_proprio + '"?\n\nSó confirme depois de já ter conferido o DNS e adicionado esse domínio em Netlify → Domain management → Add domain alias.')) return;
+  const r = await masterApi({ action: acao, id: c.id });
+  if (!r.ok) { alert(r.error || 'Erro ao salvar.'); return; }
+  c.dominio_status = acao === 'ativar_dominio' ? 'ativo' : 'pendente';
+  masterRender();
+}
+
+/* ===== modal: criar/editar conta ===== */
+let MC_EDIT = null; // null = criando; objeto = editando
+function mcAbrir(conta) {
+  MC_EDIT = conta || null;
+  $('#mcTit').textContent = conta ? 'Editar conta' : 'Nova conta';
+  $('#mcBlocoNovaConta').style.display = conta ? 'none' : '';
+  $('#mcErr').textContent = '';
+  $('#mcCredencial').style.display = 'none';
+
+  const tipo = (conta && conta.tipo_pessoa) || 'fisica';
+  document.querySelectorAll('input[name="mcTipo"]').forEach((r) => { r.checked = r.value === tipo; });
+  mcAtualizarLabelDoc();
+
+  $('#mcNome').value = conta ? (conta.nome || '') : '';
+  $('#mcDocumento').value = (conta && conta.documento) || '';
+  $('#mcTelefone').value = (conta && conta.telefone) || '';
+  $('#mcCep').value = (conta && conta.cep) || '';
+  $('#mcEndereco').value = (conta && conta.endereco) || '';
+  $('#mcBairro').value = (conta && conta.bairro) || '';
+  $('#mcCidade').value = (conta && conta.cidade) || '';
+  $('#mcUf').value = (conta && conta.uf) || '';
+  $('#mcPlano').value = (conta && conta.plano) || 'lite';
+  $('#mcSubdominio').value = '';
+  $('#mcDonoNome').value = '';
+  $('#mcDonoEmail').value = '';
+
+  $('#masterContaModal').style.display = 'flex';
+}
+function mcFechar() { $('#masterContaModal').style.display = 'none'; }
+function mcAtualizarLabelDoc() {
+  const tipo = document.querySelector('input[name="mcTipo"]:checked').value;
+  $('#mcDocLbl').firstChild.nodeValue = tipo === 'juridica' ? 'CNPJ' : 'CPF';
+}
+document.querySelectorAll('input[name="mcTipo"]').forEach((r) => r.addEventListener('change', mcAtualizarLabelDoc));
+async function mcSalvar() {
+  const err = $('#mcErr'); err.textContent = '';
+  const campos = {
+    tipo_pessoa: document.querySelector('input[name="mcTipo"]:checked').value,
+    nome: $('#mcNome').value.trim(),
+    documento: $('#mcDocumento').value.trim(),
+    telefone: $('#mcTelefone').value.trim(),
+    cep: $('#mcCep').value.trim(),
+    endereco: $('#mcEndereco').value.trim(),
+    bairro: $('#mcBairro').value.trim(),
+    cidade: $('#mcCidade').value.trim(),
+    uf: $('#mcUf').value.trim(),
+    plano: $('#mcPlano').value,
+  };
+  if (!campos.nome) { err.textContent = 'Informe o nome da conta.'; return; }
+
+  $('#mcSalvar').disabled = true;
+  try {
+    if (MC_EDIT) {
+      const r = await masterApi({ action: 'atualizar', id: MC_EDIT.id, ...campos });
+      if (!r.ok) { err.textContent = r.error || 'Erro ao salvar.'; return; }
+      Object.assign(MC_EDIT, campos);
+      mcFechar();
+      masterRender();
+    } else {
+      const donoNome = $('#mcDonoNome').value.trim();
+      const donoEmail = $('#mcDonoEmail').value.trim();
+      const subdominio = $('#mcSubdominio').value.trim();
+      if (!donoNome) { err.textContent = 'Informe o nome do responsável.'; return; }
+      if (!donoEmail) { err.textContent = 'Informe o e-mail do responsável.'; return; }
+      const r = await masterApi({ action: 'criar', ...campos, donoNome, donoEmail, subdominio });
+      if (!r.ok) { err.textContent = r.error || 'Erro ao criar a conta.'; return; }
+      const linkDash = location.origin + '/dashboard.html';
+      $('#mcCredencial').style.display = 'block';
+      $('#mcCredencial').innerHTML =
+        '<b>Conta criada! Repasse esse acesso pro responsável:</b>' +
+        '<div style="margin-top:6px;">Link do painel: <b>' + escapeHtmlMaster(linkDash) + '</b></div>' +
+        '<div>E-mail: <b>' + escapeHtmlMaster(donoEmail) + '</b></div>' +
+        '<div>Senha temporária: <b>' + escapeHtmlMaster(r.senhaTemporaria) + '</b> <span class="muted-cell">(troca no primeiro acesso)</span></div>';
+      await masterCarregar();
+    }
+  } finally {
+    $('#mcSalvar').disabled = false;
+  }
+}
+$('#mNovaContaBtn').onclick = () => mcAbrir(null);
+$('#mcFechar').onclick = mcFechar;
+$('#mcSalvar').onclick = mcSalvar;
+
+/* ===== "Acessar como" — impersonar a conta de um cliente pra dar suporte ===== */
+async function iniciarImpersonar(contaId, nomeConta) {
+  const tokenAtual = localStorage.getItem(TKEY) || '';
+  if (!localStorage.getItem(TKEY_ORIGINAL)) localStorage.setItem(TKEY_ORIGINAL, tokenAtual);
+  const tokenBase = localStorage.getItem(TKEY_ORIGINAL);
+  localStorage.setItem(TKEY, tokenBase + '::impersonar:' + contaId);
+  masterApi({ action: 'log_impersonar', contaId }).catch(() => {});
+  await doLogin(localStorage.getItem(TKEY));
+}
+async function sairImpersonar() {
+  const original = localStorage.getItem(TKEY_ORIGINAL);
+  if (!original) return;
+  localStorage.setItem(TKEY, original);
+  localStorage.removeItem(TKEY_ORIGINAL);
+  await doLogin(localStorage.getItem(TKEY));
+}
+$('#btnSairImpersonar').onclick = sairImpersonar;
 
 // ================= BOOT =================
 (function boot() {

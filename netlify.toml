@@ -78,8 +78,3 @@
   for = "/dashboard.html"
   [headers.values]
     X-Frame-Options = "DENY"
-
-[[headers]]
-  for = "/master.html"
-  [headers.values]
-    X-Frame-Options = "DENY"

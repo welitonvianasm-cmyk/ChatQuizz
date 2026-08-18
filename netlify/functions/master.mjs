@@ -1,8 +1,9 @@
 /**
  * PAINEL MASTER — gestão de TODAS as contas (assinantes) do QuizzHub.
- * Superfície separada do dashboard.html de cada conta: autenticada por uma
- * senha única (SUPERADMIN_TOKEN, env var), que só o dono do QuizzHub tem —
- * nunca exposta a assinantes comuns.
+ * Vive dentro do dashboard.html (módulo "Master" na barra lateral) — usa o
+ * MESMO login (e-mail+senha) de sempre. Só fica disponível pra quem tem
+ * `eh_superadmin=true` em `usuarios` (coluna nunca exposta a admins de
+ * conta comuns — só é ligada via SQL direto no banco).
  *
  *   { token, action:'listar' }
  *     → { ok, contas:[{ id, nome, subdominio, plano, status, criado_em,
@@ -26,12 +27,16 @@
  *     automático — evita mexer na configuração do site sem revisão).
  *   { token, action:'desativar_dominio', id } → { ok }  (volta pra 'pendente')
  *
+ *   { token, action:'log_impersonar', contaId } → { ok }
+ *     Registro de auditoria: chamado 1x pelo dashboard quando o master
+ *     entra em "Acessar como" — não em toda requisição feita já impersonando.
+ *
  * "E-mail do administrador" de cada conta NÃO é um campo próprio — é sempre o
  * e-mail de login de quem tem eh_dono=true em `usuarios` (fonte única da verdade,
  * evita duas cópias do mesmo dado podendo ficar dessincronizadas).
  */
-import { randomBytes, timingSafeEqual } from 'node:crypto';
-import { hashSenha } from '../_tokens.mjs';
+import { randomBytes } from 'node:crypto';
+import { hashSenha, autenticarToken, registrarLog } from '../_tokens.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -41,12 +46,11 @@ const STATUS_VALIDOS = new Set(['ativa', 'suspensa']);
 const TIPOS_PESSOA_VALIDOS = new Set(['fisica', 'juridica']);
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function autenticarMaster(token) {
-  const esperado = process.env.SUPERADMIN_TOKEN || '';
-  if (!esperado) return false;
-  const a = Buffer.from(String(token || ''));
-  const b = Buffer.from(esperado);
-  return a.length === b.length && timingSafeEqual(a, b);
+/* master = login normal (e-mail+senha) de um usuário com eh_superadmin=true */
+async function autenticarMaster(token) {
+  const auth = await autenticarToken(token);
+  if (!auth.ok || !auth.superadmin) return null;
+  return auth;
 }
 
 /* senha temporária legível, ex: quizzhub-K4TQ-7MX2 (mesmo padrão de dash-users.mjs) */
@@ -82,15 +86,22 @@ function lerCamposCadastrais(body) {
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-  if (!process.env.SUPERADMIN_TOKEN) return json({ error: 'not configured' }, 503);
   if (!SB_URL || !SB_KEY) return json({ error: 'Supabase not configured' }, 500);
 
   let body = {};
   try { body = await req.json(); } catch { /* sem body */ }
-  if (!autenticarMaster(body.token)) return json({ error: 'unauthorized' }, 401);
+  const token = req.headers.get('x-dash-token') || body.token || '';
+  const auth = await autenticarMaster(token);
+  if (!auth) return json({ error: 'unauthorized' }, 401);
 
   try {
     const a = body.action;
+
+    if (a === 'log_impersonar') {
+      const contaId = Number(body.contaId) || 0;
+      if (contaId) await registrarLog('impersonou', auth.user, contaId);
+      return json({ ok: true });
+    }
 
     if (a === 'listar') {
       const rc = await fetch(
@@ -233,7 +244,7 @@ function cors() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, x-dash-token',
   };
 }
 function json(data, status = 200) {
