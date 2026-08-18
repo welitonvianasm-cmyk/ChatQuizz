@@ -121,7 +121,7 @@ export default async (req) => {
       }
     } catch { /* melhor-esforço */ }
 
-    return json({ ok: true, admin: !!auth.admin, cs: !!auth.cs, trocar_senha: !!auth.trocarSenha, usuario: auth.user.nome || '', contaId, contaPlano: auth.contaPlano, contaPlanoDefinido: !!auth.contaPlanoDefinido, atendentes, equipeCS, total: total ?? rows.length, count: rows.length, leads: rows });
+    return json({ ok: true, admin: !!auth.admin, cs: !!auth.cs, trocar_senha: !!auth.trocarSenha, usuario: auth.user.nome || '', contaId, contaPlano: auth.contaPlano, contaPlanoDefinido: !!auth.contaPlanoDefinido, contaDominio: auth.contaDominio || '', contaDominioStatus: auth.contaDominioStatus || '', atendentes, equipeCS, total: total ?? rows.length, count: rows.length, leads: rows });
   } catch (err) {
     console.error('metrics error:', err);
     return json({ error: err.message }, 500);

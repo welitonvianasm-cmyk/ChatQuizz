@@ -279,7 +279,7 @@ function render() {
     const excluida = c.status === 'excluida';
 
     const tdConta = document.createElement('td');
-    tdConta.innerHTML = '<b>' + escapeHtml(c.nome || '(sem nome)') + '</b><div class="sub-cel">' + escapeHtml(c.subdominio || '—') + '</div>';
+    tdConta.innerHTML = '<b>' + escapeHtml(c.nome || '(sem nome)') + '</b><div class="sub-cel">' + escapeHtml(c.subdominio || '—') + '</div>' + dominioHtml(c);
     tr.appendChild(tdConta);
 
     const tdResp = document.createElement('td');
@@ -343,6 +343,14 @@ function render() {
       btnEditar.onclick = () => abrirModal(c);
       tdAcoes.appendChild(btnEditar);
 
+      if (c.dominio_proprio) {
+        const btnDominio = document.createElement('button');
+        btnDominio.className = 'btn-mini';
+        btnDominio.textContent = c.dominio_status === 'ativo' ? 'Desativar domínio' : 'Ativar domínio';
+        btnDominio.onclick = () => alternarDominio(c);
+        tdAcoes.appendChild(btnDominio);
+      }
+
       const btnExcluir = document.createElement('button');
       btnExcluir.className = 'btn-mini danger'; btnExcluir.textContent = 'Excluir';
       btnExcluir.onclick = () => excluirConta(c);
@@ -370,6 +378,21 @@ async function restaurarConta(c) {
   const r = await masterApi({ action: 'restaurar', id: c.id });
   if (!r.ok) { alert(r.error || 'Erro ao restaurar.'); return; }
   c.status = 'ativa';
+  render();
+}
+
+function dominioHtml(c) {
+  if (!c.dominio_proprio) return '';
+  const ativo = c.dominio_status === 'ativo';
+  return '<div class="sub-cel2">' + escapeHtml(c.dominio_proprio) +
+    ' <span class="pill ' + (ativo ? 'ativa' : 'suspensa') + '" style="margin-left:4px;">' + (ativo ? 'Ativo' : 'Pendente') + '</span></div>';
+}
+async function alternarDominio(c) {
+  const acao = c.dominio_status === 'ativo' ? 'desativar_dominio' : 'ativar_dominio';
+  if (acao === 'ativar_dominio' && !confirm('Ativar o domínio "' + c.dominio_proprio + '"?\n\nSó confirme depois de já ter conferido o DNS e adicionado esse domínio em Netlify → Domain management → Add domain alias.')) return;
+  const r = await masterApi({ action: acao, id: c.id });
+  if (!r.ok) { alert(r.error || 'Erro ao salvar.'); return; }
+  c.dominio_status = acao === 'ativar_dominio' ? 'ativo' : 'pendente';
   render();
 }
 

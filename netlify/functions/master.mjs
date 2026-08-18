@@ -19,6 +19,13 @@
  *   { token, action:'excluir',   id }   → { ok }   (soft delete: status='excluida')
  *   { token, action:'restaurar', id }   → { ok }   (desfaz o excluir: status='ativa')
  *
+ *   { token, action:'ativar_dominio',   id }   → { ok }
+ *     Marca dominio_status='ativo'. Rode isso SÓ depois de conferir o DNS
+ *     do domínio (deve apontar/CNAME pro site) e de adicioná-lo manualmente
+ *     em Netlify → Domain management → Add domain alias (isso não é
+ *     automático — evita mexer na configuração do site sem revisão).
+ *   { token, action:'desativar_dominio', id } → { ok }  (volta pra 'pendente')
+ *
  * "E-mail do administrador" de cada conta NÃO é um campo próprio — é sempre o
  * e-mail de login de quem tem eh_dono=true em `usuarios` (fonte única da verdade,
  * evita duas cópias do mesmo dado podendo ficar dessincronizadas).
@@ -87,7 +94,7 @@ export default async (req) => {
 
     if (a === 'listar') {
       const rc = await fetch(
-        `${SB_URL}/rest/v1/contas?select=id,nome,subdominio,plano,status,criado_em,plano_definido_em,tipo_pessoa,documento,telefone,cep,endereco,bairro,cidade,uf&order=criado_em.asc`,
+        `${SB_URL}/rest/v1/contas?select=id,nome,subdominio,plano,status,criado_em,plano_definido_em,tipo_pessoa,documento,telefone,cep,endereco,bairro,cidade,uf,dominio_proprio,dominio_status&order=criado_em.asc`,
         { headers: H }
       );
       if (!rc.ok) return json({ ok: false, error: 'Erro ao carregar as contas.' });
@@ -197,6 +204,19 @@ export default async (req) => {
         method: 'PATCH',
         headers: { ...H, Prefer: 'return=minimal' },
         body: JSON.stringify({ status, atualizado_em: new Date().toISOString() }),
+      });
+      if (!r.ok) return json({ ok: false, error: 'Erro ao salvar.' });
+      return json({ ok: true });
+    }
+
+    if (a === 'ativar_dominio' || a === 'desativar_dominio') {
+      const id = Number(body.id) || 0;
+      if (!id) return json({ ok: false, error: 'Conta inválida.' });
+      const dominio_status = a === 'ativar_dominio' ? 'ativo' : 'pendente';
+      const r = await fetch(`${SB_URL}/rest/v1/contas?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: { ...H, Prefer: 'return=minimal' },
+        body: JSON.stringify({ dominio_status, atualizado_em: new Date().toISOString() }),
       });
       if (!r.ok) return json({ ok: false, error: 'Erro ao salvar.' });
       return json({ ok: true });

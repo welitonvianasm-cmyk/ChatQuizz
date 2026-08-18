@@ -1,18 +1,21 @@
 /* ====================================================================
    Resolução de CONTA pra endpoints PÚBLICOS (o quiz e tudo que ele
-   chama sem login) — cada assinante recebe um subdomínio próprio
-   (ex: clinica-bella.quizzhub.com). A function lê o Host da requisição
-   (Netlify sempre repassa o header original) e resolve a conta por
-   `subdominio`, sem precisar de nenhum token.
+   chama sem login) — a function lê o Host da requisição (Netlify
+   sempre repassa o header original) e resolve a conta, sem precisar
+   de nenhum token, por ordem de prioridade:
+
+     1) domínio PRÓPRIO do assinante (ex: quiz.suaempresa.com.br) —
+        cadastrado pelo assinante em Configurações → Conexões e
+        ativado pelo painel master depois de conferir o DNS.
+     2) subdomínio da PLATAFORMA (ex: clinica-bella.quizzhub.com) —
+        só funciona de verdade quando a plataforma tiver domínio
+        próprio com DNS coringa configurado.
+     3) fallback: primeira conta cadastrada (dev local / acessando
+        direto pela URL do Netlify, sem nada configurado ainda) —
+        mesmo comportamento de hoje (single-tenant).
 
    Endpoints AUTENTICADOS (dashboard) não usam isso — resolvem conta_id
    a partir do login (autenticarToken, em _tokens.mjs).
-
-   Fallback: se o Host não bater com nenhum subdomínio cadastrado
-   (ex: acessando direto pela URL do Netlify, sem domínio próprio
-   configurado ainda), cai na primeira conta cadastrada — mesmo
-   comportamento de hoje (single-tenant), pra não quebrar em dev/local
-   nem antes do DNS por assinante estar pronto.
    ==================================================================== */
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -30,8 +33,18 @@ export function extrairSubdominio(req) {
 /* devolve o id da conta (number) ou null se não achar nenhuma (nem a padrão) */
 export async function resolverContaPorHost(req) {
   if (!SB_URL || !SB_KEY) return null;
-  const sub = extrairSubdominio(req);
+  const host = String(req.headers.get('host') || '').split(':')[0].toLowerCase();
   try {
+    // 1) domínio próprio do assinante, já ativado pelo painel master
+    if (host) {
+      const rd = await fetch(`${SB_URL}/rest/v1/contas?dominio_proprio=eq.${encodeURIComponent(host)}&dominio_status=eq.ativo&status=eq.ativa&select=id&limit=1`, { headers: H });
+      if (rd.ok) {
+        const rows = await rd.json();
+        if (rows[0]) return rows[0].id;
+      }
+    }
+    // 2) subdomínio da plataforma
+    const sub = extrairSubdominio(req);
     if (sub) {
       const r = await fetch(`${SB_URL}/rest/v1/contas?subdominio=eq.${encodeURIComponent(sub)}&status=eq.ativa&select=id&limit=1`, { headers: H });
       if (r.ok) {
@@ -41,7 +54,7 @@ export async function resolverContaPorHost(req) {
     }
   } catch { /* cai no fallback abaixo */ }
 
-  // fallback: primeira conta cadastrada (dev local / domínio ainda sem subdomínio configurado)
+  // fallback: primeira conta cadastrada (dev local / domínio ainda sem nada configurado)
   if (CONTA_PADRAO_CACHE) return CONTA_PADRAO_CACHE;
   try {
     const r = await fetch(`${SB_URL}/rest/v1/contas?status=eq.ativa&select=id&order=id.asc&limit=1`, { headers: H });
