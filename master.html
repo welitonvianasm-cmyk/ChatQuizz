@@ -64,8 +64,40 @@
   .pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
   .pill.ativa { background: var(--green-soft); color: var(--green); }
   .pill.suspensa { background: var(--amber-soft); color: var(--amber); }
+  .pill.excluida { background: #fee2e2; color: var(--red); }
   .status-msg { font-size: 11.5px; color: var(--text-muted); min-height: 14px; }
   .vazio { text-align: center; color: var(--text-muted); font-size: 13px; padding: 30px 0; }
+  .sub-cel2 { color: var(--text-muted); font-size: 11.5px; margin-top: 2px; }
+
+  .btn-nova { border: none; background: var(--lime); color: #fff; border-radius: 10px; padding: 9px 15px; cursor: pointer; font-size: 12.5px; font-weight: 700; }
+  .btn-nova:hover { background: var(--lime-hover); }
+  .btn-mini { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 11.5px; font-weight: 600; color: var(--ink); }
+  .btn-mini:hover { background: var(--bg); }
+  .btn-mini.danger { color: var(--red); border-color: #fecaca; }
+  .btn-mini.danger:hover { background: #fef2f2; }
+  .acoes-cel { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ===== MODAL: criar/editar conta ===== */
+  #modalConta { display: none; position: fixed; inset: 0; z-index: 20; background: rgba(17,24,39,.5); align-items: center; justify-content: center; padding: 20px; }
+  .modal-box { background: var(--card); border-radius: 16px; box-shadow: var(--shadow); padding: 24px 26px; width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; }
+  .modal-box h2 { font-size: 17px; margin-bottom: 14px; }
+  .campo-lbl { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .02em; }
+  .campo { margin-bottom: 12px; }
+  .modal-box input[type="text"], .modal-box input[type="email"], .modal-box select {
+    width: 100%; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 13.5px; outline: none;
+  }
+  .modal-box input:focus, .modal-box select:focus { border-color: var(--lime); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .radio-linha { display: flex; gap: 16px; margin-bottom: 4px; }
+  .radio-linha label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .btn-cancelar { border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .btn-salvar { border: none; background: var(--lime); color: #fff; border-radius: 10px; padding: 10px 18px; cursor: pointer; font-size: 13px; font-weight: 700; }
+  .btn-salvar:hover { background: var(--lime-hover); }
+  .modal-err { color: var(--red); font-size: 12.5px; margin-top: 10px; min-height: 15px; }
+  .credencial-box { background: var(--lime-soft); border-radius: 10px; padding: 12px 14px; margin-top: 10px; font-size: 13px; }
+  .credencial-box b { display: block; margin-bottom: 4px; }
 </style>
 </head>
 <body>
@@ -89,6 +121,7 @@
         <div class="sub">Todas as contas do QuizzHub</div>
       </div>
       <span class="grow"></span>
+      <button class="btn-nova" id="btn-nova-conta">+ Nova conta</button>
       <button class="btn-sair" id="btn-sair">Sair</button>
     </header>
 
@@ -105,16 +138,109 @@
           <thead>
             <tr>
               <th>Conta</th>
-              <th>Contato</th>
+              <th>Responsável</th>
+              <th>Documento</th>
+              <th>Telefone</th>
               <th>Usuários</th>
               <th>Plano</th>
               <th>Status</th>
               <th>Criada em</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
         </table>
         <div class="vazio" id="vazio" style="display:none;">Nenhuma conta cadastrada ainda.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: criar/editar conta ===== -->
+  <div id="modalConta">
+    <div class="modal-box">
+      <h2 id="modalTit">Nova conta</h2>
+
+      <div class="campo">
+        <span class="campo-lbl">Tipo de pessoa</span>
+        <div class="radio-linha">
+          <label><input type="radio" name="mTipo" value="fisica" checked> Pessoa Física</label>
+          <label><input type="radio" name="mTipo" value="juridica"> Pessoa Jurídica</label>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label class="campo-lbl" for="mNome">Nome da conta / razão social</label>
+        <input type="text" id="mNome" placeholder="Ex: Clínica Bella" />
+      </div>
+
+      <div class="grid2 campo">
+        <div>
+          <label class="campo-lbl" id="mDocLbl" for="mDocumento">CPF</label>
+          <input type="text" id="mDocumento" placeholder="000.000.000-00" />
+        </div>
+        <div>
+          <label class="campo-lbl" for="mTelefone">Telefone</label>
+          <input type="text" id="mTelefone" placeholder="(11) 99999-9999" />
+        </div>
+      </div>
+
+      <div class="grid3 campo">
+        <div>
+          <label class="campo-lbl" for="mCep">CEP</label>
+          <input type="text" id="mCep" placeholder="00000-000" />
+        </div>
+        <div style="grid-column: span 2;">
+          <label class="campo-lbl" for="mEndereco">Endereço (rua e número)</label>
+          <input type="text" id="mEndereco" placeholder="Rua Exemplo, 123" />
+        </div>
+      </div>
+
+      <div class="grid3 campo">
+        <div>
+          <label class="campo-lbl" for="mBairro">Bairro</label>
+          <input type="text" id="mBairro" />
+        </div>
+        <div>
+          <label class="campo-lbl" for="mCidade">Cidade</label>
+          <input type="text" id="mCidade" />
+        </div>
+        <div>
+          <label class="campo-lbl" for="mUf">UF</label>
+          <input type="text" id="mUf" maxlength="2" placeholder="SP" style="text-transform:uppercase;" />
+        </div>
+      </div>
+
+      <div class="campo">
+        <label class="campo-lbl" for="mPlano">Plano</label>
+        <select id="mPlano">
+          <option value="lite">Lite</option>
+          <option value="completo">Completo</option>
+        </select>
+      </div>
+
+      <div id="mBlocoNovaConta">
+        <div class="campo">
+          <label class="campo-lbl" for="mSubdominio">Subdomínio (opcional — gerado automaticamente se deixar em branco)</label>
+          <input type="text" id="mSubdominio" placeholder="clinica-bella" />
+        </div>
+        <div class="grid2 campo">
+          <div>
+            <label class="campo-lbl" for="mDonoNome">Nome do responsável</label>
+            <input type="text" id="mDonoNome" placeholder="Nome de quem vai logar" />
+          </div>
+          <div>
+            <label class="campo-lbl" for="mDonoEmail">E-mail do responsável (login)</label>
+            <input type="email" id="mDonoEmail" placeholder="responsavel@email.com" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-err" id="modalErr"></div>
+      <div class="credencial-box" id="modalCredencial" style="display:none;"></div>
+
+      <div class="modal-footer">
+        <button class="btn-cancelar" id="btn-modal-cancelar">Cancelar</button>
+        <button class="btn-salvar" id="btn-modal-salvar">Salvar</button>
       </div>
     </div>
   </div>
@@ -150,50 +276,183 @@ function render() {
 
   CONTAS.forEach((c) => {
     const tr = document.createElement('tr');
+    const excluida = c.status === 'excluida';
 
     const tdConta = document.createElement('td');
     tdConta.innerHTML = '<b>' + escapeHtml(c.nome || '(sem nome)') + '</b><div class="sub-cel">' + escapeHtml(c.subdominio || '—') + '</div>';
     tr.appendChild(tdConta);
 
-    const tdContato = document.createElement('td');
-    tdContato.textContent = c.email_contato || '—';
-    tr.appendChild(tdContato);
+    const tdResp = document.createElement('td');
+    tdResp.innerHTML = escapeHtml(c.donoNome || '—') + (c.donoEmail ? '<div class="sub-cel2">' + escapeHtml(c.donoEmail) + '</div>' : '');
+    tr.appendChild(tdResp);
+
+    const tdDoc = document.createElement('td');
+    tdDoc.innerHTML = escapeHtml(c.documento || '—') + (c.tipo_pessoa ? '<div class="sub-cel2">' + (c.tipo_pessoa === 'fisica' ? 'Pessoa física' : 'Pessoa jurídica') + '</div>' : '');
+    tr.appendChild(tdDoc);
+
+    const tdTel = document.createElement('td');
+    tdTel.textContent = c.telefone || '—';
+    tr.appendChild(tdTel);
 
     const tdUsuarios = document.createElement('td');
     tdUsuarios.textContent = c.totalUsuarios ?? 0;
     tr.appendChild(tdUsuarios);
 
     const tdPlano = document.createElement('td');
-    const selPlano = document.createElement('select');
-    ['lite', 'completo'].forEach((p) => {
-      const o = document.createElement('option'); o.value = p; o.textContent = p === 'lite' ? 'Lite' : 'Completo';
-      if (c.plano === p) o.selected = true;
-      selPlano.appendChild(o);
-    });
-    selPlano.addEventListener('change', () => salvar(c, { plano: selPlano.value }, tdPlano));
-    tdPlano.appendChild(selPlano);
-    const msgPlano = document.createElement('div'); msgPlano.className = 'status-msg'; tdPlano.appendChild(msgPlano);
+    if (excluida) {
+      tdPlano.textContent = c.plano === 'lite' ? 'Lite' : 'Completo';
+    } else {
+      const selPlano = document.createElement('select');
+      ['lite', 'completo'].forEach((p) => {
+        const o = document.createElement('option'); o.value = p; o.textContent = p === 'lite' ? 'Lite' : 'Completo';
+        if (c.plano === p) o.selected = true;
+        selPlano.appendChild(o);
+      });
+      selPlano.addEventListener('change', () => salvar(c, { plano: selPlano.value }, tdPlano));
+      tdPlano.appendChild(selPlano);
+      const msgPlano = document.createElement('div'); msgPlano.className = 'status-msg'; tdPlano.appendChild(msgPlano);
+    }
     tr.appendChild(tdPlano);
 
     const tdStatus = document.createElement('td');
-    const selStatus = document.createElement('select');
-    ['ativa', 'suspensa'].forEach((s) => {
-      const o = document.createElement('option'); o.value = s; o.textContent = s === 'ativa' ? 'Ativa' : 'Suspensa';
-      if (c.status === s) o.selected = true;
-      selStatus.appendChild(o);
-    });
-    selStatus.addEventListener('change', () => salvar(c, { status: selStatus.value }, tdStatus));
-    tdStatus.appendChild(selStatus);
-    const msgStatus = document.createElement('div'); msgStatus.className = 'status-msg'; tdStatus.appendChild(msgStatus);
+    if (excluida) {
+      const pill = document.createElement('span'); pill.className = 'pill excluida'; pill.textContent = 'Excluída';
+      tdStatus.appendChild(pill);
+    } else {
+      const selStatus = document.createElement('select');
+      ['ativa', 'suspensa'].forEach((s) => {
+        const o = document.createElement('option'); o.value = s; o.textContent = s === 'ativa' ? 'Ativa' : 'Suspensa';
+        if (c.status === s) o.selected = true;
+        selStatus.appendChild(o);
+      });
+      selStatus.addEventListener('change', () => salvar(c, { status: selStatus.value }, tdStatus));
+      tdStatus.appendChild(selStatus);
+      const msgStatus = document.createElement('div'); msgStatus.className = 'status-msg'; tdStatus.appendChild(msgStatus);
+    }
     tr.appendChild(tdStatus);
 
     const tdData = document.createElement('td');
     tdData.textContent = fmtData(c.criado_em);
     tr.appendChild(tdData);
 
+    const tdAcoes = document.createElement('td');
+    tdAcoes.className = 'acoes-cel';
+    if (!excluida) {
+      const btnEditar = document.createElement('button');
+      btnEditar.className = 'btn-mini'; btnEditar.textContent = 'Editar';
+      btnEditar.onclick = () => abrirModal(c);
+      tdAcoes.appendChild(btnEditar);
+
+      const btnExcluir = document.createElement('button');
+      btnExcluir.className = 'btn-mini danger'; btnExcluir.textContent = 'Excluir';
+      btnExcluir.onclick = () => excluirConta(c);
+      tdAcoes.appendChild(btnExcluir);
+    } else {
+      const btnRestaurar = document.createElement('button');
+      btnRestaurar.className = 'btn-mini'; btnRestaurar.textContent = 'Restaurar';
+      btnRestaurar.onclick = () => restaurarConta(c);
+      tdAcoes.appendChild(btnRestaurar);
+    }
+    tr.appendChild(tdAcoes);
+
     tbody.appendChild(tr);
   });
 }
+
+async function excluirConta(c) {
+  if (!confirm('Excluir a conta "' + (c.nome || '') + '"?\n\nOs dados continuam guardados e dá pra restaurar depois — a conta só some das listagens e ninguém mais consegue logar nela.')) return;
+  const r = await masterApi({ action: 'excluir', id: c.id });
+  if (!r.ok) { alert(r.error || 'Erro ao excluir.'); return; }
+  c.status = 'excluida';
+  render();
+}
+async function restaurarConta(c) {
+  const r = await masterApi({ action: 'restaurar', id: c.id });
+  if (!r.ok) { alert(r.error || 'Erro ao restaurar.'); return; }
+  c.status = 'ativa';
+  render();
+}
+
+/* ===== modal: criar/editar conta ===== */
+let MODAL_CONTA = null; // null = criando; objeto = editando
+
+function abrirModal(conta) {
+  MODAL_CONTA = conta || null;
+  $('#modalTit').textContent = conta ? 'Editar conta' : 'Nova conta';
+  $('#mBlocoNovaConta').style.display = conta ? 'none' : 'block';
+  $('#modalErr').textContent = '';
+  $('#modalCredencial').style.display = 'none';
+
+  const tipo = (conta && conta.tipo_pessoa) || 'fisica';
+  document.querySelectorAll('input[name="mTipo"]').forEach((r) => { r.checked = r.value === tipo; });
+  atualizarLabelDocumento();
+
+  $('#mNome').value = conta ? (conta.nome || '') : '';
+  $('#mDocumento').value = (conta && conta.documento) || '';
+  $('#mTelefone').value = (conta && conta.telefone) || '';
+  $('#mCep').value = (conta && conta.cep) || '';
+  $('#mEndereco').value = (conta && conta.endereco) || '';
+  $('#mBairro').value = (conta && conta.bairro) || '';
+  $('#mCidade').value = (conta && conta.cidade) || '';
+  $('#mUf').value = (conta && conta.uf) || '';
+  $('#mPlano').value = (conta && conta.plano) || 'lite';
+  $('#mSubdominio').value = '';
+  $('#mDonoNome').value = '';
+  $('#mDonoEmail').value = '';
+
+  $('#modalConta').style.display = 'flex';
+}
+function fecharModal() { $('#modalConta').style.display = 'none'; }
+function atualizarLabelDocumento() {
+  const tipo = document.querySelector('input[name="mTipo"]:checked').value;
+  $('#mDocLbl').textContent = tipo === 'juridica' ? 'CNPJ' : 'CPF';
+}
+document.querySelectorAll('input[name="mTipo"]').forEach((r) => r.addEventListener('change', atualizarLabelDocumento));
+
+async function salvarModal() {
+  const err = $('#modalErr');
+  err.textContent = '';
+  const campos = {
+    tipo_pessoa: document.querySelector('input[name="mTipo"]:checked').value,
+    nome: $('#mNome').value.trim(),
+    documento: $('#mDocumento').value.trim(),
+    telefone: $('#mTelefone').value.trim(),
+    cep: $('#mCep').value.trim(),
+    endereco: $('#mEndereco').value.trim(),
+    bairro: $('#mBairro').value.trim(),
+    cidade: $('#mCidade').value.trim(),
+    uf: $('#mUf').value.trim(),
+    plano: $('#mPlano').value,
+  };
+  if (!campos.nome) { err.textContent = 'Informe o nome da conta.'; return; }
+
+  $('#btn-modal-salvar').disabled = true;
+  try {
+    if (MODAL_CONTA) {
+      const r = await masterApi({ action: 'atualizar', id: MODAL_CONTA.id, ...campos });
+      if (!r.ok) { err.textContent = r.error || 'Erro ao salvar.'; return; }
+      Object.assign(MODAL_CONTA, campos);
+      fecharModal();
+      render();
+    } else {
+      const donoNome = $('#mDonoNome').value.trim();
+      const donoEmail = $('#mDonoEmail').value.trim();
+      const subdominio = $('#mSubdominio').value.trim();
+      if (!donoNome) { err.textContent = 'Informe o nome do responsável.'; return; }
+      if (!donoEmail) { err.textContent = 'Informe o e-mail do responsável.'; return; }
+      const r = await masterApi({ action: 'criar', ...campos, donoNome, donoEmail, subdominio });
+      if (!r.ok) { err.textContent = r.error || 'Erro ao criar a conta.'; return; }
+      $('#modalCredencial').style.display = 'block';
+      $('#modalCredencial').innerHTML = '<b>Conta criada!</b>Repasse pro responsável: e-mail <b>' + escapeHtml(donoEmail) + '</b>, senha temporária <b>' + escapeHtml(r.senhaTemporaria) + '</b> (troca no primeiro acesso). Subdomínio: ' + escapeHtml(r.subdominio) + '.';
+      await carregar();
+    }
+  } finally {
+    $('#btn-modal-salvar').disabled = false;
+  }
+}
+$('#btn-nova-conta').onclick = () => abrirModal(null);
+$('#btn-modal-cancelar').onclick = fecharModal;
+$('#btn-modal-salvar').onclick = salvarModal;
 
 function escapeHtml(s) {
   const d = document.createElement('div'); d.textContent = String(s ?? ''); return d.innerHTML;
