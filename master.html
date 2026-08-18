@@ -442,8 +442,14 @@ async function salvarModal() {
       if (!donoEmail) { err.textContent = 'Informe o e-mail do responsável.'; return; }
       const r = await masterApi({ action: 'criar', ...campos, donoNome, donoEmail, subdominio });
       if (!r.ok) { err.textContent = r.error || 'Erro ao criar a conta.'; return; }
+      const linkDash = location.origin + '/dashboard.html';
       $('#modalCredencial').style.display = 'block';
-      $('#modalCredencial').innerHTML = '<b>Conta criada!</b>Repasse pro responsável: e-mail <b>' + escapeHtml(donoEmail) + '</b>, senha temporária <b>' + escapeHtml(r.senhaTemporaria) + '</b> (troca no primeiro acesso). Subdomínio: ' + escapeHtml(r.subdominio) + '.';
+      $('#modalCredencial').innerHTML =
+        '<b>Conta criada! Repasse esse acesso pro responsável:</b>' +
+        '<div style="margin-top:6px;">Link do painel: <b>' + escapeHtml(linkDash) + '</b></div>' +
+        '<div>E-mail: <b>' + escapeHtml(donoEmail) + '</b></div>' +
+        '<div>Senha temporária: <b>' + escapeHtml(r.senhaTemporaria) + '</b> <span style="color:var(--text-muted);">(troca no primeiro acesso)</span></div>' +
+        '<div style="margin-top:6px;color:var(--text-muted);font-size:12px;">Subdomínio reservado: ' + escapeHtml(r.subdominio) + ' — o link do quiz com esse subdomínio só fica ativo depois que um domínio próprio for configurado (ver observação no chat).</div>';
       await carregar();
     }
   } finally {
