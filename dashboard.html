@@ -781,6 +781,21 @@
     </div>
   </div>
 
+  <!-- POPUP GENÉRICO: substitui prompt()/window prompts por um formulário no padrão do sistema —
+       usado por Kanban (novo quadro/coluna, renomear, atendente), Editor do Quiz, Produtos e Usuários -->
+  <div id="promptModal" style="display:none;position:fixed;inset:0;z-index:85;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:22px 24px;box-shadow:var(--shadow);">
+      <h2 id="pmTitulo" style="font-size:16px;margin-bottom:4px;"></h2>
+      <div id="pmSub" class="sub" style="margin:0 0 14px;white-space:pre-line;"></div>
+      <div id="pmCampos" style="display:grid;gap:12px;"></div>
+      <div class="muted-cell" id="pmErro" style="margin-top:8px;color:var(--red);min-height:15px;"></div>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button id="pmCancelar" style="flex:1;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-weight:600;font-size:13px;cursor:pointer;">Cancelar</button>
+        <button id="pmOk" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--lime);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- DASHBOARD -->
   <div id="app">
     <div id="impersonarBar" hidden style="margin-left:225px;padding:10px clamp(20px,3vw,48px);background:#FEF3C7;color:#92400E;font-size:13px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -2283,7 +2298,7 @@ function abrirLeadModal(r) {
   [['novo', 'Novo'], ['atribuido', 'Atribuído'], ['conversa', 'Em Conversa'], ['agendado', 'Agendado'], ['convertido', '✓ Convertido'], ['perdido', '✕ Perdido']]
     .forEach(([v, tx]) => { const o = el('option'); o.value = v; o.textContent = tx; stSel.appendChild(o); });
   stSel.value = statusCRM(r);
-  stSel.onchange = () => {
+  stSel.onchange = async () => {
     const v = stSel.value;
     if (v === 'convertido') {
       if (confirm('Marcar ' + (r.nome || 'este lead') + ' como CONVERTIDO?')) salvarLeadCampos(r, { resultado: 'convertido' });
@@ -2291,7 +2306,7 @@ function abrirLeadModal(r) {
       return;
     }
     if (v === 'perdido') {
-      const m = prompt('Qual o motivo da perda? (opcional — pode deixar em branco)');
+      const m = await perguntarMotivoPerda();
       if (m === null) { stSel.value = statusCRM(r); return; }
       salvarLeadCampos(r, { resultado: 'perdido', resultado_motivo: m });
       return;
@@ -2329,8 +2344,8 @@ function abrirLeadModal(r) {
     perd.textContent = '✕ Perdido';
     perd.title = 'Marcar este lead como PERDIDO (sai dos ativos)';
     perd.style.cssText = 'background:#fff;color:var(--amber);border:1.5px solid var(--amber);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
-    perd.onclick = () => {
-      const m = prompt('Qual o motivo da perda? (opcional — pode deixar em branco)');
+    perd.onclick = async () => {
+      const m = await perguntarMotivoPerda();
       if (m === null) return;
       salvarLeadCampos(r, { resultado: 'perdido', resultado_motivo: m });
     };
@@ -2809,9 +2824,10 @@ function qeRenderLista(box, chaveLista, temCor) {
     box.appendChild(row);
   });
   const badd = el('button', 'acao-btn'); badd.textContent = '+ Novo ' + singular;
-  badd.onclick = () => {
-    const nome = prompt('Nome do novo ' + singular + ':');
-    if (!nome) return;
+  badd.onclick = async () => {
+    const r = await promptModal({ titulo: 'Novo ' + singular, campos: [{ id: 'nome', label: 'Nome', obrigatorio: true }], textoOk: 'Criar' });
+    if (!r) return;
+    const nome = r.nome;
     const chave = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || ('item' + Date.now());
     if (lista.some((x) => x.chave === chave)) { alert('Já existe um ' + singular + ' com essa chave.'); return; }
@@ -3341,9 +3357,9 @@ function kbRender() {
     }
     const bRen = el('button'); bRen.textContent = 'Renomear coluna';
     bRen.onclick = async () => {
-      const novo = prompt('Novo nome da coluna:', col.nome);
-      if (!novo) return;
-      await kbApi({ action: 'col_editar', id: col.id, nome: novo });
+      const r = await promptModal({ titulo: 'Renomear coluna', campos: [{ id: 'nome', label: 'Nome da coluna', valor: col.nome, obrigatorio: true }], textoOk: 'Salvar' });
+      if (!r) return;
+      await kbApi({ action: 'col_editar', id: col.id, nome: r.nome });
       kbCarregar();
     };
     const bCorTit = el('button'); bCorTit.textContent = 'Cor do cabeçalho:'; bCorTit.style.cursor = 'default';
@@ -3387,7 +3403,7 @@ function kbRender() {
       KB_DRAG = null;
       let motivo;
       if (col.tipo === 'perdido') {
-        motivo = prompt('Qual o motivo da perda? (opcional — pode deixar em branco)');
+        motivo = await perguntarMotivoPerda();
         if (motivo === null) { kbRender(); return; }   // desistiu
       }
       const r = await kbApi({ action: 'card_mover', id: cardMovido ? cardMovido.id : 0, col_id: col.id, motivo });
@@ -3485,32 +3501,33 @@ $('#kbBoardSel').addEventListener('change', (e) => { KB_BOARD = Number(e.target.
 $('#kbVinculo').onclick = async () => {
   if (!KB_BOARD || !IS_ADMIN) return;
   const b = KB.boards.find((x) => x.id === KB_BOARD);
-  const novo = prompt('Atendente responsável pelo quadro "' + (b ? b.nome : '') + '":\n(nomes da equipe: ' + (ATENDENTES || []).join(', ') + ')', b ? (b.atendente || '') : '');
-  if (novo === null) return;
-  const r = await kbApi({ action: 'board_editar', id: KB_BOARD, atendente: novo.trim() });
+  const resp = await promptModal({
+    titulo: 'Atendente do quadro',
+    sub: 'Quadro: ' + (b ? b.nome : ''),
+    campos: [{ id: 'atendente', label: 'Atendente responsável', tipo: 'select', options: ATENDENTES || [], valor: b ? (b.atendente || '') : '' }],
+    textoOk: 'Salvar',
+  });
+  if (!resp) return;
+  const r = await kbApi({ action: 'board_editar', id: KB_BOARD, atendente: resp.atendente.trim() });
   if (!r.ok) $('#kbAviso').textContent = r.error || 'Erro.';
   kbCarregar();
 };
 $('#kbNovoQuadro').onclick = async () => {
-  const nome = prompt('Nome do novo quadro (funil):' + (IS_ADMIN ? '' : '\n(o quadro será vinculado a você)'));
-  if (!nome) return;
-  let atendente = USUARIO;
-  if (IS_ADMIN) {
-    atendente = prompt('Atendente responsável por este quadro (obrigatório):\n(nomes da equipe: ' + (ATENDENTES || []).join(', ') + ')');
-    if (atendente === null) return;
-    atendente = atendente.trim();
-    if (!atendente) { alert('Todo quadro precisa de um atendente responsável.'); return; }
-  }
-  const r = await kbApi({ action: 'board_criar', nome, atendente });
+  const campos = [{ id: 'nome', label: 'Nome do quadro (funil)', placeholder: 'Ex: Funil Instagram', obrigatorio: true }];
+  if (IS_ADMIN) campos.push({ id: 'atendente', label: 'Atendente responsável', tipo: 'select', options: ATENDENTES || [], obrigatorio: true });
+  const resp = await promptModal({ titulo: 'Novo quadro', sub: !IS_ADMIN ? 'O quadro será vinculado a você.' : '', campos, textoOk: 'Criar quadro' });
+  if (!resp) return;
+  const atendente = IS_ADMIN ? resp.atendente : USUARIO;
+  const r = await kbApi({ action: 'board_criar', nome: resp.nome, atendente });
   if (r.ok) { KB_BOARD = r.board_id; if (r.aviso) $('#kbAviso').textContent = r.aviso; }
   else $('#kbAviso').textContent = r.error || 'Erro.';
   kbCarregar();
 };
 $('#kbNovaCol').onclick = async () => {
   if (!KB_BOARD) { $('#kbAviso').textContent = 'Crie um quadro primeiro.'; return; }
-  const nome = prompt('Nome da nova coluna:');
-  if (!nome) return;
-  await kbApi({ action: 'col_criar', board_id: KB_BOARD, nome });
+  const resp = await promptModal({ titulo: 'Nova coluna', campos: [{ id: 'nome', label: 'Nome da coluna', placeholder: 'Ex: Em negociação', obrigatorio: true }], textoOk: 'Criar coluna' });
+  if (!resp) return;
+  await kbApi({ action: 'col_criar', board_id: KB_BOARD, nome: resp.nome });
   kbCarregar();
 };
 $('#kbExcluirQuadro').onclick = async () => {
@@ -4161,6 +4178,66 @@ function espelharPill(origemEl, destinoId) {
   destino.textContent = origemEl.textContent;
 }
 
+/* ===== popup genérico (substitui prompt()) =====
+   promptModal({ titulo, sub?, campos:[{id,label,valor?,placeholder?,tipo?:'select',options?,obrigatorio?}], textoOk? })
+   → Promise<{[id]:valor} | null>  (null = cancelado) */
+let PM_RESOLVER = null;
+function promptModal({ titulo, sub, campos, textoOk }) {
+  return new Promise((resolve) => {
+    PM_RESOLVER = resolve;
+    $('#pmTitulo').textContent = titulo || '';
+    $('#pmSub').textContent = sub || '';
+    $('#pmSub').hidden = !sub;
+    $('#pmErro').textContent = '';
+    $('#pmOk').textContent = textoOk || 'Confirmar';
+    const box = $('#pmCampos'); clear(box);
+    (campos || []).forEach((c) => {
+      const wrap = el('label');
+      wrap.style.cssText = 'display:block;font-size:11.5px;font-weight:700;color:var(--text-muted);';
+      wrap.textContent = c.label || '';
+      let campo;
+      if (c.tipo === 'select') {
+        campo = el('select');
+        campo.style.cssText = 'width:100%;margin-top:5px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;background:#fff;cursor:pointer;';
+        (c.options || []).forEach((op) => { const o = el('option'); o.value = op; o.textContent = op; campo.appendChild(o); });
+      } else {
+        campo = el('input'); campo.type = c.tipoInput || 'text';
+        campo.style.cssText = 'width:100%;margin-top:5px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;';
+        if (c.placeholder) campo.placeholder = c.placeholder;
+      }
+      if (c.valor != null) campo.value = c.valor;
+      campo.dataset.campoId = c.id;
+      campo.dataset.obrigatorio = c.obrigatorio ? '1' : '';
+      wrap.appendChild(campo);
+      box.appendChild(wrap);
+    });
+    $('#promptModal').style.display = 'flex';
+    const primeiro = box.querySelector('input,select');
+    if (primeiro) setTimeout(() => primeiro.focus(), 30);
+  });
+}
+function pmFechar(valor) {
+  $('#promptModal').style.display = 'none';
+  if (PM_RESOLVER) { const r = PM_RESOLVER; PM_RESOLVER = null; r(valor); }
+}
+function pmConfirmar() {
+  const campos = [...document.querySelectorAll('#pmCampos [data-campo-id]')];
+  const valores = {};
+  for (const c of campos) {
+    const v = typeof c.value === 'string' ? c.value.trim() : c.value;
+    if (c.dataset.obrigatorio === '1' && !v) { $('#pmErro').textContent = 'Preencha todos os campos obrigatórios.'; return; }
+    valores[c.dataset.campoId] = v;
+  }
+  pmFechar(valores);
+}
+$('#pmCancelar').onclick = () => pmFechar(null);
+$('#pmOk').onclick = pmConfirmar;
+$('#pmCampos').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName !== 'SELECT') { e.preventDefault(); pmConfirmar(); } });
+async function perguntarMotivoPerda() {
+  const r = await promptModal({ titulo: 'Marcar como perdido', campos: [{ id: 'motivo', label: 'Motivo da perda (opcional)', placeholder: 'Ex: não teve orçamento' }], textoOk: 'Confirmar' });
+  return r ? r.motivo : null;
+}
+
 /* preenche os textos informativos do painel "Conexões" (webhook + Cal.com) —
    chamado sempre que a config carrega e toda vez que a seção é aberta. */
 function renderConexoesInfo() {
@@ -4596,10 +4673,16 @@ $('#vmProduto').addEventListener('change', (e) => {
   if (op && op.dataset.valor !== undefined) $('#vmValor').value = op.dataset.valor;   // valor automático
 });
 $('#vmNovoProduto').onclick = async () => {
-  const nome = prompt('Nome do novo produto:');
-  if (!nome) return;
-  const valor = prompt('Valor do produto (R$):', '0');
-  if (valor === null) return;
+  const resp = await promptModal({
+    titulo: 'Novo produto',
+    campos: [
+      { id: 'nome', label: 'Nome do produto', obrigatorio: true },
+      { id: 'valor', label: 'Valor (R$)', valor: '0' },
+    ],
+    textoOk: 'Cadastrar',
+  });
+  if (!resp) return;
+  const { nome, valor } = resp;
   const r = await fetch('/api/produtos', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'criar', nome, valor: Number(String(valor).replace(/\./g, '').replace(',', '.')) || 0 }),
@@ -5111,13 +5194,16 @@ function renderEqUsers(res) {
       let r = await eqApi({ action: 'delete', id: u.id });
       // atendente com leads/quadro: a administradora decide o destino ANTES (nada se perde)
       if (!r.ok && r.precisaDestino) {
-        const msg = u.nome + ' tem ' + (r.leads || 0) + ' lead(s)' + (r.temQuadro ? ' e um quadro Kanban' : '') + ' vinculados.\n\n'
-          + 'Digite o NOME do atendente que vai herdar os leads e o quadro,\n'
-          + 'ou escreva MANTER para deixar tudo como está (o quadro fica visível só para você).\n\n'
-          + 'Equipe: ' + (ATENDENTES || []).filter((n) => n !== u.nome).join(', ');
-        const destino = prompt(msg);
-        if (destino === null || !destino.trim()) { $('#eqStatus').textContent = 'Exclusão cancelada — nada foi alterado.'; carregarEquipe(); return; }
-        const d = destino.trim().toLowerCase() === 'manter' ? '(manter)' : destino.trim();
+        const manterOpcao = 'Manter como está (quadro fica visível só pra você)';
+        const opcoes = [manterOpcao, ...(ATENDENTES || []).filter((n) => n !== u.nome)];
+        const resp = await promptModal({
+          titulo: 'Leads vinculados a ' + u.nome,
+          sub: u.nome + ' tem ' + (r.leads || 0) + ' lead(s)' + (r.temQuadro ? ' e um quadro Kanban' : '') + ' vinculados. Escolha o que fazer antes de excluir.',
+          campos: [{ id: 'destino', label: 'Transferir para', tipo: 'select', options: opcoes }],
+          textoOk: 'Confirmar e excluir',
+        });
+        if (!resp) { $('#eqStatus').textContent = 'Exclusão cancelada — nada foi alterado.'; carregarEquipe(); return; }
+        const d = resp.destino === manterOpcao ? '(manter)' : resp.destino;
         r = await eqApi({ action: 'delete', id: u.id, destino: d });
       }
       if (!r.ok) $('#eqStatus').textContent = r.error || 'Erro ao excluir.';
