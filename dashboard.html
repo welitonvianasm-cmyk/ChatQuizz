@@ -148,9 +148,20 @@
   .fextra select { padding: 8px 11px; border: 1.5px solid var(--line); border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; background: #fff; max-width: 190px; }
   .fdatas { display: none; gap: 6px; align-items: center; font-size: 13px; font-weight: 600; flex-wrap: wrap; }
   .fdatas input { padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 9px; font-size: 13px; }
-  /* cards dentro do painel "Conexões" */
-  .conexao-card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-top: 16px; background: var(--bg); }
-  .conexao-card h3 { display: flex; align-items: center; gap: 10px; font-size: 14px; margin-bottom: 10px; }
+  /* grade de cards da tela "Conexões" — cada card é um resumo clicável, o
+     formulário de configuração de verdade vive num popup (#modalConexao*) */
+  .conexoes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; }
+  .conexao-tile { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+  .conexao-tile:hover { box-shadow: var(--shadow-md); }
+  .ct-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .ct-topo .ic-chip { width: 40px; height: 40px; border-radius: 12px; }
+  .conexao-tile h3 { font-size: 14.5px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+  .ct-desc { font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px; }
+  .ct-lista { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; flex: 1; }
+  .ct-lista li { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-body); }
+  .ct-lista li b { color: var(--green); font-weight: 800; }
+  .ct-btn { width: 100%; padding: 10px; border: none; border-radius: 10px; background: var(--lime); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; margin-top: auto; }
+  .ct-btn:hover { background: var(--lime-hover); }
 
   /* ===== AGENDA — calendário ===== */
   .ag-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 14px; }
@@ -246,7 +257,6 @@
   /* "chip" de ícone: quadrado arredondado com fundo pastel da cor + ícone sólido centralizado */
   .ic-chip { display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 9px; }
   .panel h2 .h-ic { width: 30px; height: 30px; }
-  .conexao-card h3 .h-ic { width: 32px; height: 32px; border-radius: 10px; }
 
   /* ===== CABEÇALHO COLORIDO DE SEÇÃO (banner por submenu) ===== */
   .pbanner { --pb-fg: #fff; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-radius: 16px; padding: 16px 22px; margin-bottom: 18px; color: var(--pb-fg); background: linear-gradient(120deg, #0028B3, #001A73); }
@@ -587,6 +597,123 @@
       </div>
       <div id="cmAviso" class="sub" style="margin:0 0 10px;"></div>
       <div id="cmSlot" style="min-height:560px;"></div>
+    </div>
+  </div>
+
+  <!-- CONEXÕES: popups de configuração (abertos a partir dos cards em Conexões) -->
+  <div id="modalConexaoPlano" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:480px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;">Meu Plano</h2>
+        <button class="acao-btn" onclick="fecharModalConexao('modalConexaoPlano')" title="Fechar">✕</button>
+      </div>
+      <div class="sub" style="margin:0 0 12px;"><b>Lite:</b> Leads e Configurações do quiz. <b>Completo:</b> tudo do Lite + Quadro (Funil), Conversas, Agenda, Automação, Pós-Venda e Usuários.</div>
+      <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
+        <b>Plano atual:</b> <span id="planoEstado" class="pill parcial">—</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" id="planoBtnLite">Usar Lite</button>
+        <button class="btn" id="planoBtnCompleto">Usar Completo</button>
+      </div>
+      <div class="muted-cell" id="planoMsg" style="margin-top:8px;font-size:12.5px;"></div>
+    </div>
+  </div>
+
+  <div id="modalConexaoDominio" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:520px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;">Meu Domínio</h2>
+        <button class="acao-btn" onclick="fecharModalConexao('modalConexaoDominio')" title="Fechar">✕</button>
+      </div>
+      <div class="sub" style="margin:0 0 12px;">Use seu próprio domínio pro quiz (ex: <b>quiz.suaempresa.com.br</b>) em vez do endereço padrão. Depois de salvar, aponte o DNS do seu domínio (registro <b>CNAME</b>) pra <code id="domCnameAlvo" style="background:var(--bg);padding:2px 6px;border-radius:5px;">carregando…</code> — a ativação final é conferida manualmente, pode levar um tempo.</div>
+      <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
+        <b>Situação:</b> <span id="domEstado" class="pill parcial">—</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="domInput" placeholder="quiz.suaempresa.com.br" style="flex:1;min-width:220px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
+        <button class="btn" id="domBtnSalvar">Salvar</button>
+        <button class="btn" id="domBtnRemover" style="display:none;">Remover</button>
+      </div>
+      <div class="muted-cell" id="domMsg" style="margin-top:8px;font-size:12.5px;"></div>
+    </div>
+  </div>
+
+  <div id="modalConexaoWhatsapp" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:640px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;">WhatsApp</h2>
+        <button class="acao-btn" onclick="fecharModalConexao('modalConexaoWhatsapp')" title="Fechar">✕</button>
+      </div>
+      <div class="sub" style="margin:0 0 12px;">Conecte seu número pela Evolution API e controle os dois interruptores de forma independente. Com <b>Conversas</b> desligadas, os botões Conversar abrem o WhatsApp Web normalmente; com <b>Disparos</b> desligados, nenhuma mensagem automática sai.</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
+        <div style="flex:1;min-width:230px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <b>Situação:</b> <span id="waEstado" class="pill parcial">verificando…</span>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;margin:8px 0;cursor:pointer;">
+            <input type="checkbox" id="waTgConversas" style="width:17px;height:17px;accent-color:var(--lime);">
+            Conversas <span class="muted-cell" style="font-weight:400;">(inbox + popup interno em tempo real)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;margin:8px 0;cursor:pointer;">
+            <input type="checkbox" id="waTgDisparos" style="width:17px;height:17px;accent-color:var(--lime);">
+            Disparos <span class="muted-cell" style="font-weight:400;">(automações, agendadas e lembretes)</span>
+          </label>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <button class="btn" id="waBtnQr">Gerar QR Code</button>
+            <button class="btn" id="waBtnStatus">Atualizar situação</button>
+          </div>
+          <div class="muted-cell" id="waMsg" style="margin-top:10px;font-size:12.5px;"></div>
+          <div class="muted-cell" style="margin-top:10px;font-size:12px;border-top:1px solid var(--line);padding-top:8px;">
+            Webhook de mensagens recebidas: registrado automaticamente ao conectar. Se precisar configurar manualmente na Evolution, use <code id="waWebhookUrl" style="background:var(--bg);padding:2px 6px;border-radius:5px;">carregando…</code>
+          </div>
+        </div>
+        <div id="waQrBox" style="display:none;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;">
+          <img id="waQrImg" alt="QR Code do WhatsApp" style="width:220px;height:220px;object-fit:contain;">
+          <div class="muted-cell" style="font-size:12px;margin-top:6px;">WhatsApp → Aparelhos conectados → Conectar aparelho</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalConexaoCalcom" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;">Cal.com</h2>
+        <button class="acao-btn" onclick="fecharModalConexao('modalConexaoCalcom')" title="Fechar">✕</button>
+      </div>
+      <div class="sub" style="margin:0 0 12px;">Chave da API oficial do Cal.com (v2) — usada pela aba "Espelho do Cal" e pra saber se dá pra oferecer agendamento por Cal.com no roteamento. O link de cada qualificador continua sendo configurado em Editor do Quiz → Roteamento; aqui é só a chave de acesso.</div>
+      <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
+        <b>Situação:</b> <span id="calEstado" class="pill parcial">verificando…</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="password" id="calApiKey" placeholder="Cole a chave da API do Cal.com" style="flex:1;min-width:240px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
+        <button class="btn" id="calBtnSalvar">Salvar</button>
+        <button class="btn" id="calBtnRemover" style="display:none;">Remover</button>
+      </div>
+      <div class="muted-cell" id="calMsg" style="margin-top:8px;font-size:12.5px;"></div>
+    </div>
+  </div>
+
+  <div id="modalConexaoMentoriaHub" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:600px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;">MentoriaHub</h2>
+        <button class="acao-btn" onclick="fecharModalConexao('modalConexaoMentoriaHub')" title="Fechar">✕</button>
+      </div>
+      <div class="sub" style="margin:0 0 12px;">Quando conectado, <b>todo</b> lead qualificado (e todo agendamento, automático pelo quiz ou manual pelo painel) é enviado pra lá — independente do qualificador. Pra direcionar um qualificador específico pra um link externo, use "Direcionar para uma URL" em Editor do Quiz → Roteamento.</div>
+      <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
+        <b>Situação:</b> <span id="mhEstado" class="pill parcial">verificando…</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="mhUrl" placeholder="URL do webhook (ex: https://.../webhooks/chatquizz)" style="flex:1;min-width:240px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
+        <input type="password" id="mhSecret" placeholder="Segredo compartilhado" style="flex:1;min-width:200px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;cursor:pointer;"><input type="checkbox" id="mhAtivo" checked style="width:15px;height:15px;">Ativo</label>
+        <button class="btn" id="mhBtnSalvar">Salvar</button>
+        <button class="btn" id="mhBtnRemover" style="display:none;">Remover</button>
+      </div>
+      <div class="muted-cell" id="mhMsg" style="margin-top:8px;font-size:12.5px;"></div>
     </div>
   </div>
 
@@ -1120,108 +1247,91 @@
     <!-- ===== CONEXÕES — WhatsApp, Cal.com, webhook e infraestrutura (só administradora) ===== -->
     <div class="panel tem-banner" id="pConexoes" hidden>
       <h2>Conexões</h2>
-      <div class="sub">Tudo que liga o sistema a serviços externos.</div>
+      <div class="sub">Tudo que liga o sistema a serviços externos. Clique num card pra configurar.</div>
 
-      <!-- ===== card: Meu Plano ===== -->
-      <div class="conexao-card">
-        <h3 data-ic="lista" data-cor="lima">Meu Plano</h3>
-        <div class="sub"><b>Lite:</b> Leads e Configurações do quiz. <b>Completo:</b> tudo do Lite + Quadro (Funil), Conversas, Agenda, Automação, Pós-Venda e Usuários.</div>
-        <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
-          <b>Plano atual:</b> <span id="planoEstado" class="pill parcial">—</span>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn" id="planoBtnLite">Usar Lite</button>
-          <button class="btn" id="planoBtnCompleto">Usar Completo</button>
-        </div>
-        <div class="muted-cell" id="planoMsg" style="margin-top:8px;font-size:12.5px;"></div>
-      </div>
-
-      <!-- ===== card: Meu Domínio ===== -->
-      <div class="conexao-card">
-        <h3 data-ic="envio" data-cor="azul">Meu Domínio</h3>
-        <div class="sub">Use seu próprio domínio pro quiz (ex: <b>quiz.suaempresa.com.br</b>) em vez do endereço padrão. Depois de salvar, aponte o DNS do seu domínio (registro <b>CNAME</b>) pra <code id="domCnameAlvo" style="background:var(--bg);padding:2px 6px;border-radius:5px;">carregando…</code> — a ativação final é conferida manualmente, pode levar um tempo.</div>
-        <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
-          <b>Situação:</b> <span id="domEstado" class="pill parcial">—</span>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <input type="text" id="domInput" placeholder="quiz.suaempresa.com.br" style="flex:1;min-width:220px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
-          <button class="btn" id="domBtnSalvar">Salvar</button>
-          <button class="btn" id="domBtnRemover" style="display:none;">Remover</button>
-        </div>
-        <div class="muted-cell" id="domMsg" style="margin-top:8px;font-size:12.5px;"></div>
-      </div>
-
-      <!-- ===== card: WhatsApp ===== -->
-      <div class="conexao-card">
-        <h3 data-ic="conversa" data-cor="verde">WhatsApp</h3>
-        <div class="sub">Conecte seu número pela Evolution API e controle os dois interruptores de forma independente. Com <b>Conversas</b> desligadas, os botões Conversar abrem o WhatsApp Web normalmente; com <b>Disparos</b> desligados, nenhuma mensagem automática sai.</div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;margin-top:10px;">
-          <div style="flex:1;min-width:230px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-              <b>Situação:</b> <span id="waEstado" class="pill parcial">verificando…</span>
-            </div>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;margin:8px 0;cursor:pointer;">
-              <input type="checkbox" id="waTgConversas" style="width:17px;height:17px;accent-color:var(--lime);">
-              Conversas <span class="muted-cell" style="font-weight:400;">(inbox + popup interno em tempo real)</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;margin:8px 0;cursor:pointer;">
-              <input type="checkbox" id="waTgDisparos" style="width:17px;height:17px;accent-color:var(--lime);">
-              Disparos <span class="muted-cell" style="font-weight:400;">(automações, agendadas e lembretes)</span>
-            </label>
-            <div style="display:flex;gap:8px;margin-top:12px;">
-              <button class="btn" id="waBtnQr">Gerar QR Code</button>
-              <button class="btn" id="waBtnStatus">Atualizar situação</button>
-            </div>
-            <div class="muted-cell" id="waMsg" style="margin-top:10px;font-size:12.5px;"></div>
-            <div class="muted-cell" style="margin-top:10px;font-size:12px;border-top:1px solid var(--line);padding-top:8px;">
-              Webhook de mensagens recebidas: registrado automaticamente ao conectar. Se precisar configurar manualmente na Evolution, use <code id="waWebhookUrl" style="background:var(--bg);padding:2px 6px;border-radius:5px;">carregando…</code>
-            </div>
+      <div class="conexoes-grid">
+        <div class="conexao-tile">
+          <div class="ct-topo">
+            <span class="ic-chip" data-ic="lista" data-cor="lima"></span>
+            <span class="pill parcial" id="ctPlanoPill">—</span>
           </div>
-          <div id="waQrBox" style="display:none;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;">
-            <img id="waQrImg" alt="QR Code do WhatsApp" style="width:220px;height:220px;object-fit:contain;">
-            <div class="muted-cell" style="font-size:12px;margin-top:6px;">WhatsApp → Aparelhos conectados → Conectar aparelho</div>
+          <h3>Meu Plano</h3>
+          <div class="ct-desc">Controla quais módulos aparecem no seu painel.</div>
+          <ul class="ct-lista">
+            <li><b>✓</b> Lite: Leads + Configurações</li>
+            <li><b>✓</b> Completo: todos os módulos</li>
+            <li><b>✓</b> Troca quando quiser</li>
+          </ul>
+          <button class="ct-btn" onclick="abrirModalConexao('modalConexaoPlano')">Gerenciar plano</button>
+        </div>
+
+        <div class="conexao-tile">
+          <div class="ct-topo">
+            <span class="ic-chip" data-ic="envio" data-cor="azul"></span>
+            <span class="pill parcial" id="ctDominioPill">—</span>
           </div>
+          <h3>Meu Domínio</h3>
+          <div class="ct-desc">Use seu próprio domínio no lugar do padrão da plataforma.</div>
+          <ul class="ct-lista">
+            <li><b>✓</b> Domínio próprio no quiz</li>
+            <li><b>✓</b> Ativa por registro CNAME</li>
+            <li><b>✓</b> Ativação conferida manualmente</li>
+          </ul>
+          <button class="ct-btn" onclick="abrirModalConexao('modalConexaoDominio')">Configurar domínio</button>
         </div>
-      </div>
 
-      <!-- ===== card: Cal.com ===== -->
-      <div class="conexao-card">
-        <h3 data-ic="calendario" data-cor="azul">Cal.com</h3>
-        <div class="sub">Chave da API oficial do Cal.com (v2) — usada pela aba "Espelho do Cal" e pra saber se dá pra oferecer agendamento por Cal.com no roteamento. O link de cada qualificador continua sendo configurado em Editor do Quiz → Roteamento; aqui é só a chave de acesso.</div>
-        <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
-          <b>Situação:</b> <span id="calEstado" class="pill parcial">verificando…</span>
+        <div class="conexao-tile">
+          <div class="ct-topo">
+            <span class="ic-chip" data-ic="conversa" data-cor="verde"></span>
+            <span class="pill parcial" id="ctWaPill">verificando…</span>
+          </div>
+          <h3>WhatsApp</h3>
+          <div class="ct-desc">Conecte pela Evolution API e controle envio/recebimento.</div>
+          <ul class="ct-lista">
+            <li><b>✓</b> Conexão por QR Code</li>
+            <li><b>✓</b> Conversas e disparos independentes</li>
+            <li><b>✓</b> Webhook automático</li>
+          </ul>
+          <button class="ct-btn" onclick="abrirModalConexao('modalConexaoWhatsapp')">Configurar WhatsApp</button>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <input type="password" id="calApiKey" placeholder="Cole a chave da API do Cal.com" style="flex:1;min-width:240px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
-          <button class="btn" id="calBtnSalvar">Salvar</button>
-          <button class="btn" id="calBtnRemover" style="display:none;">Remover</button>
-        </div>
-        <div class="muted-cell" id="calMsg" style="margin-top:8px;font-size:12.5px;"></div>
-      </div>
 
-      <!-- ===== card: MentoriaHub (espelho global de leads) ===== -->
-      <div class="conexao-card">
-        <h3 data-ic="raio" data-cor="roxo">MentoriaHub</h3>
-        <div class="sub">Quando conectado, <b>todo</b> lead qualificado (e todo agendamento, automático pelo quiz ou manual pelo painel) é enviado pra lá — independente do qualificador. Pra direcionar um qualificador específico pra um link externo, use "Direcionar para uma URL" em Editor do Quiz → Roteamento.</div>
-        <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
-          <b>Situação:</b> <span id="mhEstado" class="pill parcial">verificando…</span>
+        <div class="conexao-tile">
+          <div class="ct-topo">
+            <span class="ic-chip" data-ic="calendario" data-cor="azul"></span>
+            <span class="pill parcial" id="ctCalPill">verificando…</span>
+          </div>
+          <h3>Cal.com</h3>
+          <div class="ct-desc">Chave oficial da API v2 pro agendamento automático.</div>
+          <ul class="ct-lista">
+            <li><b>✓</b> Habilita agendamento no roteamento</li>
+            <li><b>✓</b> Usado no Espelho do Cal</li>
+          </ul>
+          <button class="ct-btn" onclick="abrirModalConexao('modalConexaoCalcom')">Configurar Cal.com</button>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <input type="text" id="mhUrl" placeholder="URL do webhook (ex: https://.../webhooks/chatquizz)" style="flex:1;min-width:240px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
-          <input type="password" id="mhSecret" placeholder="Segredo compartilhado" style="flex:1;min-width:200px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;cursor:pointer;"><input type="checkbox" id="mhAtivo" checked style="width:15px;height:15px;">Ativo</label>
-          <button class="btn" id="mhBtnSalvar">Salvar</button>
-          <button class="btn" id="mhBtnRemover" style="display:none;">Remover</button>
-        </div>
-        <div class="muted-cell" id="mhMsg" style="margin-top:8px;font-size:12.5px;"></div>
-      </div>
 
-      <!-- ===== card: Infraestrutura ===== -->
-      <div class="conexao-card">
-        <h3 data-ic="engrenagem" data-cor="cinza">Infraestrutura</h3>
-        <div class="sub">Hospedagem no Netlify · banco de dados no Supabase.</div>
+        <div class="conexao-tile">
+          <div class="ct-topo">
+            <span class="ic-chip" data-ic="raio" data-cor="roxo"></span>
+            <span class="pill parcial" id="ctMhPill">verificando…</span>
+          </div>
+          <h3>MentoriaHub</h3>
+          <div class="ct-desc">Espelha todo lead qualificado e agendamento pra lá.</div>
+          <ul class="ct-lista">
+            <li><b>✓</b> Espelho global de leads</li>
+            <li><b>✓</b> Inclui agendamentos automáticos</li>
+            <li><b>✓</b> Webhook com segredo compartilhado</li>
+          </ul>
+          <button class="ct-btn" onclick="abrirModalConexao('modalConexaoMentoriaHub')">Configurar MentoriaHub</button>
+        </div>
+
+        <div class="conexao-tile">
+          <div class="ct-topo">
+            <span class="ic-chip" data-ic="engrenagem" data-cor="cinza"></span>
+            <span class="pill agendado">Ativo</span>
+          </div>
+          <h3>Infraestrutura</h3>
+          <div class="ct-desc">Hospedagem no Netlify · banco de dados no Supabase.</div>
+        </div>
       </div>
     </div>
 
@@ -1839,8 +1949,10 @@ document.querySelectorAll('.panel h2').forEach((h) => {
   const [ic, cor] = DS_MAPA[dono ? dono.id : ''] || ['lista', 'cinza'];
   h.prepend(montarIconeChip(ic, cor, 16));
 });
-document.querySelectorAll('.conexao-card h3[data-ic]').forEach((h) => {
-  h.prepend(montarIconeChip(h.dataset.ic, h.dataset.cor, 16));
+document.querySelectorAll('.conexao-tile .ic-chip[data-ic]').forEach((chip) => {
+  const cor = chip.dataset.cor;
+  chip.style.background = DS_CORES_SOFT[cor];
+  chip.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="' + DS_CORES[cor] + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">' + DS_PATHS[chip.dataset.ic] + '</svg>';
 });
 
 /* ===== cabeçalho colorido por seção (banner com ícone + título + subtítulo + ações) ===== */
@@ -3968,6 +4080,17 @@ function primeiroCalLinkConfigurado() {
   const q = ORIGEM_QUALIFICADORES.find((x) => (ROTEAMENTO_CACHE[x.chave] || {}).tipo === 'calcom' && (ROTEAMENTO_CACHE[x.chave] || {}).calLink);
   return q ? ROTEAMENTO_CACHE[q.chave].calLink : '';
 }
+/* popups de configuração dos cards de Conexões — cada card abre o seu */
+function abrirModalConexao(id) { $('#' + id).style.display = 'flex'; }
+function fecharModalConexao(id) { $('#' + id).style.display = 'none'; }
+/* copia classe+texto do "estado" de dentro do popup pro selo resumido no card */
+function espelharPill(origemEl, destinoId) {
+  const destino = $('#' + destinoId);
+  if (!destino || !origemEl) return;
+  destino.className = origemEl.className;
+  destino.textContent = origemEl.textContent;
+}
+
 /* preenche os textos informativos do painel "Conexões" (webhook + Cal.com) —
    chamado sempre que a config carrega e toda vez que a seção é aberta. */
 function renderConexoesInfo() {
@@ -3984,6 +4107,7 @@ function renderPlanoInfo() {
   estado.textContent = completo ? 'Completo' : 'Lite';
   $('#planoBtnLite').disabled = !completo;
   $('#planoBtnCompleto').disabled = completo;
+  espelharPill(estado, 'ctPlanoPill');
 }
 async function trocarPlano(plano) {
   if (plano === CONTA_PLANO) return;
@@ -4014,6 +4138,7 @@ function renderDominioInfo() {
     $('#domInput').value = ''; $('#domInput').disabled = false;
     $('#domBtnRemover').style.display = 'none';
     $('#domMsg').textContent = '';
+    espelharPill(estado, 'ctDominioPill');
     return;
   }
   const ativo = CONTA_DOMINIO_STATUS === 'ativo';
@@ -4022,6 +4147,7 @@ function renderDominioInfo() {
   $('#domInput').value = CONTA_DOMINIO;
   $('#domBtnRemover').style.display = '';
   $('#domMsg').textContent = ativo ? '' : 'Aponte o DNS (CNAME) e aguarde a confirmação — pode levar um tempo.';
+  espelharPill(estado, 'ctDominioPill');
 }
 $('#domBtnSalvar').onclick = async () => {
   const dominio = ($('#domInput').value || '').trim();
@@ -4057,7 +4183,7 @@ async function carregarConexaoCalcom() {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'status' }),
   }).then((x) => x.json()).catch(() => null);
-  if (!r || !r.ok) { estado.className = 'pill parcial'; estado.textContent = 'erro ao verificar'; return; }
+  if (!r || !r.ok) { estado.className = 'pill parcial'; estado.textContent = 'erro ao verificar'; espelharPill(estado, 'ctCalPill'); return; }
   const c = r.calcom;
   estado.className = 'pill ' + (c.conectado ? 'agendado' : 'parcial');
   estado.textContent = c.conectado ? 'conectada' : 'não conectada';
@@ -4071,6 +4197,7 @@ async function carregarConexaoCalcom() {
     input.disabled = false; input.placeholder = 'Cole a chave da API do Cal.com';
     $('#calBtnSalvar').disabled = false;
   }
+  espelharPill(estado, 'ctCalPill');
 }
 $('#calBtnSalvar').onclick = async () => {
   const api_key = ($('#calApiKey').value || '').trim();
@@ -4101,12 +4228,13 @@ async function carregarConexaoMentoriaHub() {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'status' }),
   }).then((x) => x.json()).catch(() => null);
-  if (!r || !r.ok) { estado.className = 'pill parcial'; estado.textContent = 'erro ao verificar'; return; }
+  if (!r || !r.ok) { estado.className = 'pill parcial'; estado.textContent = 'erro ao verificar'; espelharPill(estado, 'ctMhPill'); return; }
   const m = r.mentoriahub || {};
   estado.className = 'pill ' + (m.conectado ? 'agendado' : 'parcial');
   estado.textContent = m.conectado ? 'conectado' : 'não conectado';
   btnRemover.style.display = m.conectado ? '' : 'none';
   msg.textContent = m.conectado ? 'Conectado — todo lead qualificado é espelhado lá.' : '';
+  espelharPill(estado, 'ctMhPill');
 }
 $('#mhBtnSalvar').onclick = async () => {
   const url = ($('#mhUrl').value || '').trim();
@@ -4531,6 +4659,7 @@ function renderWaCfg() {
   p.className = 'pill ' + cls; p.textContent = tx;
   $('#waTgConversas').checked = WA.conversas;
   $('#waTgDisparos').checked = WA.disparos;
+  espelharPill(p, 'ctWaPill');
 }
 async function waToggle(campo, valor) {
   const r = await waApi({ action: 'toggles', [campo]: valor });
