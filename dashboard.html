@@ -43,11 +43,50 @@
   button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   button:not(:disabled):active { transform: scale(.97); }
 
-  /* ===== LOGIN GATE ===== */
-  #gate {
-    position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(160deg, #f6f7fb, #eef0f8); padding: 20px;
+  /* ===== LOGIN GATE (tela dividida: esquerda marca/destaques, direita card de login) ===== */
+  #gate { position: fixed; inset: 0; z-index: 100; display: flex; overflow: hidden; }
+  .gl-esq {
+    flex: 1 1 56%; min-width: 0; position: relative; overflow: hidden;
+    background: linear-gradient(160deg, #f6f9ff, #eaf0fb);
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 48px clamp(28px, 6vw, 90px);
   }
+  .gl-esq::before, .gl-esq::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
+  .gl-esq::before { width: 340px; height: 340px; top: -130px; right: -110px; background: rgba(0, 40, 179, .07); }
+  .gl-esq::after { width: 260px; height: 260px; bottom: -110px; left: -70px; background: rgba(0, 40, 179, .05); }
+  .gl-marca { display: flex; align-items: center; gap: 12px; margin-bottom: 44px; position: relative; z-index: 1; }
+  .gl-marca .logo { width: 44px; height: 44px; border-radius: 12px; background: var(--lime); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 19px; flex-shrink: 0; }
+  .gl-marca b { font-size: 20px; font-weight: 800; color: var(--ink); }
+  .gl-marca b span { color: var(--lime); }
+  .gl-titulo { font-size: clamp(26px, 3.4vw, 38px); font-weight: 800; color: var(--ink); line-height: 1.18; margin-bottom: 14px; position: relative; z-index: 1; max-width: 480px; }
+  .gl-titulo span { color: var(--lime); }
+  .gl-sub { font-size: 14.5px; color: var(--text-muted); margin-bottom: 30px; position: relative; z-index: 1; max-width: 420px; }
+  .gl-icones { display: flex; gap: 10px; flex-wrap: wrap; position: relative; z-index: 1; }
+  .gl-icones span { width: 40px; height: 40px; border-radius: 50%; background: #fff; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; color: var(--lime); flex-shrink: 0; }
+  .gl-icones svg { width: 18px; height: 18px; }
+  .gl-dir { flex: 0 0 44%; min-width: 320px; display: flex; align-items: center; justify-content: center; padding: 40px 24px; background: linear-gradient(135deg, #0028B3, #001A73); }
+  .gl-card { background: var(--card); border-radius: 18px; box-shadow: var(--shadow-md); padding: 36px 32px; width: 100%; max-width: 380px; }
+  .gl-card h1 { font-size: 21px; font-weight: 800; margin-bottom: 4px; text-align: left; }
+  .gl-lead { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; text-align: left; }
+  .gl-campo { margin-bottom: 16px; text-align: left; position: relative; }
+  .gl-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .gl-card input {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg);
+    font-size: 14.5px; outline: none; transition: border-color .15s, background .15s;
+  }
+  .gl-card input:focus { border-color: var(--accent); background: #fff; }
+  .gl-ver { position: absolute; right: 13px; top: 34px; font-size: 11.5px; font-weight: 700; color: var(--lime); cursor: pointer; -webkit-user-select: none; user-select: none; }
+  .gl-card button {
+    width: 100%; padding: 13px; border: none; border-radius: 11px; cursor: pointer;
+    background: var(--lime); color: #fff; font-size: 15px; font-weight: 700; margin-top: 6px;
+  }
+  .gl-card button:hover { background: var(--lime-hover); }
+  @media (max-width: 860px) {
+    .gl-esq { display: none; }
+    .gl-dir { flex: 1 1 100%; min-width: 0; }
+  }
+
+  /* ===== #gate2/#gate3 (troca de senha, escolha de plano) — card simples e centralizado ===== */
   .gate-card {
     background: var(--card); border-radius: 18px; box-shadow: var(--shadow);
     padding: 32px 28px; width: 100%; max-width: 360px; text-align: center;
@@ -385,14 +424,39 @@
 
   <!-- LOGIN -->
   <div id="gate">
-    <div class="gate-card">
-      <div class="gate-logo" style="background:var(--sidebar);">Q</div>
-      <h1>Painel de Leads</h1>
-      <p>ChatQuizz</p>
-      <input id="gate-email" type="email" placeholder="Seu e-mail" autocomplete="username" style="margin-bottom:8px;" />
-      <input id="gate-pass" type="password" placeholder="Senha de acesso" autocomplete="current-password" />
-      <button id="gate-btn">Entrar</button>
-      <div class="gate-err" id="gate-err"></div>
+    <div class="gl-esq">
+      <div class="gl-marca">
+        <div class="logo">Q</div>
+        <b>Quizz<span>Hub</span></b>
+      </div>
+      <div class="gl-titulo">Seus Leads em <span>um só lugar</span>.</div>
+      <div class="gl-sub">Quiz, qualificação, atendimento e conversão — tudo integrado.</div>
+      <div class="gl-icones">
+        <span title="Leads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        <span title="Quadro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v11"/><path d="M12 5v6"/><path d="M18 5v14"/></svg></span>
+        <span title="Agenda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg></span>
+        <span title="Conversas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></span>
+        <span title="Automação"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+        <span title="Relatórios"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 13v4"/><path d="M12 9v8"/><path d="M17 5v12"/></svg></span>
+        <span title="Configurações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>
+      </div>
+    </div>
+    <div class="gl-dir">
+      <div class="gl-card">
+        <h1>Bem-vindo de volta</h1>
+        <div class="gl-lead">Faça login para acessar sua conta.</div>
+        <div class="gl-campo">
+          <label class="gl-label" for="gate-email">E-mail</label>
+          <input id="gate-email" type="email" placeholder="seuemail@empresa.com" autocomplete="username" />
+        </div>
+        <div class="gl-campo">
+          <label class="gl-label" for="gate-pass">Senha</label>
+          <input id="gate-pass" type="password" placeholder="Sua senha" autocomplete="current-password" />
+          <span class="gl-ver" id="gate-ver">Ver</span>
+        </div>
+        <button id="gate-btn">Entrar →</button>
+        <div class="gate-err" id="gate-err"></div>
+      </div>
     </div>
   </div>
 
@@ -1620,6 +1684,12 @@ $('#gate-btn').onclick = () => {
 };
 $('#gate-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#gate-btn').click(); });
 $('#gate-email').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#gate-pass').focus(); });
+$('#gate-ver').onclick = () => {
+  const inp = $('#gate-pass');
+  const mostrando = inp.type === 'text';
+  inp.type = mostrando ? 'password' : 'text';
+  $('#gate-ver').textContent = mostrando ? 'Ver' : 'Ocultar';
+};
 
 async function refresh() {
   const token = localStorage.getItem(TKEY);
