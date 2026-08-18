@@ -49,7 +49,7 @@ export default async (req) => {
     const sent = req.headers.get('x-dash-token') || body.token || '';
     const auth = await autenticarToken(sent);
     if (!auth.ok) {
-      return json({ error: auth.expirado ? 'expired' : (auth.contaSuspensa ? 'suspended' : 'unauthorized'), debugReason: auth.reason }, auth.expirado ? 403 : 401);
+      return json({ error: auth.expirado ? 'expired' : (auth.contaSuspensa ? 'suspended' : 'unauthorized') }, auth.expirado ? 403 : 401);
     }
     const contaId = auth.contaId;
 

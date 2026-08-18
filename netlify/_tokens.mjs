@@ -55,9 +55,8 @@ async function carregarConta(contaId) {
     { headers: SB_HEADERS }
   );
   if (!rc.ok) {
-    const bodyTxt = await rc.text().catch(() => '');
-    console.error('carregarConta: falhou', contaId, rc.status, bodyTxt);
-    return { _debugStatus: rc.status, _debugBody: bodyTxt };
+    console.error('carregarConta: falhou', contaId, rc.status, await rc.text().catch(() => ''));
+    return null;
   }
   const rows = await rc.json();
   return rows[0] || null;
@@ -75,20 +74,19 @@ export async function autenticar(email, senhaPlana) {
       `${SB_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(emailNorm)}&select=id,nome,email,celular,validade,senha_hash,trocar_senha,funcao_adm,funcao_cs,eh_dono,eh_superadmin,conta_id&limit=1`,
       { headers: SB_HEADERS }
     );
-    if (!r.ok) return { ok: false, reason: 'select_usuarios_falhou:' + r.status + ':' + (await r.text().catch(() => '')) };
+    if (!r.ok) { console.error('autenticar: select usuarios falhou', r.status, await r.text().catch(() => '')); return { ok: false }; }
     const rows = await r.json();
     const u = Array.isArray(rows) ? rows[0] : null;
-    if (!u) return { ok: false, reason: 'usuario_nao_encontrado' };
-    if (!verificarSenha(senha, u.senha_hash)) return { ok: false, reason: 'senha_nao_bateu' };
+    if (!u) return { ok: false };
+    if (!verificarSenha(senha, u.senha_hash)) return { ok: false };
     if (u.validade && new Date(u.validade + 'T23:59:59-03:00') < new Date()) {
-      return { ok: false, expirado: true, reason: 'validade_vencida' };
+      return { ok: false, expirado: true };
     }
 
     // conta precisa estar ativa
     const conta = await carregarConta(u.conta_id);
-    if (conta && conta._debugStatus) return { ok: false, reason: 'conta_select_falhou:' + conta._debugStatus + ':' + conta._debugBody };
-    if (!conta) return { ok: false, reason: 'conta_nao_encontrada:' + u.conta_id };
-    if (conta.status !== 'ativa') return { ok: false, contaSuspensa: true, reason: 'conta_status:' + conta.status };
+    if (!conta) return { ok: false };
+    if (conta.status !== 'ativa') return { ok: false, contaSuspensa: true };
 
     return {
       ok: true,
@@ -105,7 +103,8 @@ export async function autenticar(email, senhaPlana) {
       user: { ...u, ehDono: !!u.eh_dono },
     };
   } catch (e) {
-    return { ok: false, reason: 'excecao:' + (e?.message || e) };
+    console.error('autenticar:', e?.message || e);
+    return { ok: false };
   }
 }
 
