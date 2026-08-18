@@ -69,19 +69,19 @@ export async function autenticar(email, senhaPlana) {
       `${SB_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(emailNorm)}&select=id,nome,email,celular,validade,senha_hash,trocar_senha,funcao_adm,funcao_cs,eh_dono,eh_superadmin,conta_id&limit=1`,
       { headers: SB_HEADERS }
     );
-    if (!r.ok) return { ok: false };
+    if (!r.ok) return { ok: false, reason: 'select_usuarios_falhou:' + r.status + ':' + (await r.text().catch(() => '')) };
     const rows = await r.json();
     const u = Array.isArray(rows) ? rows[0] : null;
-    if (!u) return { ok: false };
-    if (!verificarSenha(senha, u.senha_hash)) return { ok: false };
+    if (!u) return { ok: false, reason: 'usuario_nao_encontrado' };
+    if (!verificarSenha(senha, u.senha_hash)) return { ok: false, reason: 'senha_nao_bateu' };
     if (u.validade && new Date(u.validade + 'T23:59:59-03:00') < new Date()) {
-      return { ok: false, expirado: true };
+      return { ok: false, expirado: true, reason: 'validade_vencida' };
     }
 
     // conta precisa estar ativa
     const conta = await carregarConta(u.conta_id);
-    if (!conta) return { ok: false };
-    if (conta.status !== 'ativa') return { ok: false, contaSuspensa: true };
+    if (!conta) return { ok: false, reason: 'conta_nao_encontrada:' + u.conta_id };
+    if (conta.status !== 'ativa') return { ok: false, contaSuspensa: true, reason: 'conta_status:' + conta.status };
 
     return {
       ok: true,
@@ -97,8 +97,8 @@ export async function autenticar(email, senhaPlana) {
       contaDominioStatus: conta.dominio_status || '',
       user: { ...u, ehDono: !!u.eh_dono },
     };
-  } catch {
-    return { ok: false };
+  } catch (e) {
+    return { ok: false, reason: 'excecao:' + (e?.message || e) };
   }
 }
 
