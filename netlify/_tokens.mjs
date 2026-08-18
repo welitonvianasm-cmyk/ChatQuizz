@@ -54,7 +54,13 @@ async function carregarConta(contaId) {
     `${SB_URL}/rest/v1/contas?id=eq.${contaId}&select=id,nome,plano,status,plano_definido_em,dominio_proprio,dominio_status&limit=1`,
     { headers: SB_HEADERS }
   );
-  return rc.ok ? (await rc.json())[0] || null : null;
+  if (!rc.ok) {
+    const bodyTxt = await rc.text().catch(() => '');
+    console.error('carregarConta: falhou', contaId, rc.status, bodyTxt);
+    return { _debugStatus: rc.status, _debugBody: bodyTxt };
+  }
+  const rows = await rc.json();
+  return rows[0] || null;
 }
 
 /* valida e-mail+senha → { ok, admin, cs, superadmin, expirado?, trocarSenha?, contaId, contaPlano, contaStatus, user:{id,nome,email,celular,validade,ehDono} } */
@@ -80,6 +86,7 @@ export async function autenticar(email, senhaPlana) {
 
     // conta precisa estar ativa
     const conta = await carregarConta(u.conta_id);
+    if (conta && conta._debugStatus) return { ok: false, reason: 'conta_select_falhou:' + conta._debugStatus + ':' + conta._debugBody };
     if (!conta) return { ok: false, reason: 'conta_nao_encontrada:' + u.conta_id };
     if (conta.status !== 'ativa') return { ok: false, contaSuspensa: true, reason: 'conta_status:' + conta.status };
 
