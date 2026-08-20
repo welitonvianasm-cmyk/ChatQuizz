@@ -56,6 +56,8 @@
   }
   h1, h2, h3, h4, b, th, .k-num { color: var(--text); }
   b { font-weight: 700; }
+  /* título de cada "caixa" no Editor do Quiz (Pergunta N, nível/qualificador, roteamento) */
+  .qe-titulo { color: var(--brand); }
   ::selection { background: var(--lime-soft); }
   /* navegador não herda cor de texto em campos de formulário por padrão — sem isso,
      todo input/select/textarea sem "color" explícito cai no preto padrão do navegador
@@ -3025,7 +3027,7 @@ function qeRenderPerguntas(box) {
     card.style.cssText = 'border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:var(--bg);';
 
     const head = el('div'); head.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;';
-    const num = el('b'); num.textContent = 'Pergunta ' + (pi + 1); head.appendChild(num);
+    const num = el('b', 'qe-titulo'); num.textContent = 'Pergunta ' + (pi + 1); head.appendChild(num);
 
     const lativa = el('label'); lativa.style.cssText = 'font-size:12.5px;font-weight:600;display:flex;gap:5px;align-items:center;cursor:pointer;';
     const cativa = el('input'); cativa.type = 'checkbox'; cativa.checked = p.ativo !== false;
@@ -3140,7 +3142,7 @@ function qeRenderLista(box, chaveLista, temCor) {
 
 function qeCampoTexto(titulo, valor, onInput, linhas) {
   const wrap = el('div'); wrap.style.cssText = 'margin-bottom:14px;';
-  const lab = el('div'); const labB = el('b'); labB.textContent = titulo; lab.appendChild(labB); lab.style.marginBottom = '4px'; wrap.appendChild(lab);
+  const lab = el('div'); const labB = el('b', 'qe-titulo'); labB.textContent = titulo; lab.appendChild(labB); lab.style.marginBottom = '4px'; wrap.appendChild(lab);
   const ta = el('textarea'); ta.value = valor || ''; ta.rows = linhas;
   ta.placeholder = 'Use {nome} pro primeiro nome do lead. Deixe uma linha em branco entre parágrafos, cada um vira uma mensagem separada.';
   ta.style.cssText = 'width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--card);font-family:inherit;';
@@ -3149,13 +3151,13 @@ function qeCampoTexto(titulo, valor, onInput, linhas) {
   return wrap;
 }
 function qeRenderResultados(box) {
-  const h1 = el('h3'); h1.textContent = 'Por nível de consciência (diagnóstico)'; h1.style.margin = '6px 0'; box.appendChild(h1);
+  const h1 = el('h3', 'qe-titulo'); h1.textContent = 'Por nível de consciência (diagnóstico)'; h1.style.margin = '6px 0'; box.appendChild(h1);
   QE.niveis.forEach((n) => {
     QE.resultados.por_nivel[n.chave] = QE.resultados.por_nivel[n.chave] || { texto: '' };
     box.appendChild(qeCampoTexto(n.nome || n.chave, QE.resultados.por_nivel[n.chave].texto,
       (v) => { QE.resultados.por_nivel[n.chave].texto = v; }, 5));
   });
-  const h2 = el('h3'); h2.textContent = 'Por qualificador (convite)'; h2.style.margin = '16px 0 6px'; box.appendChild(h2);
+  const h2 = el('h3', 'qe-titulo'); h2.textContent = 'Por qualificador (convite)'; h2.style.margin = '16px 0 6px'; box.appendChild(h2);
   QE.qualificadores.forEach((q) => {
     QE.resultados.por_qualificador[q.chave] = QE.resultados.por_qualificador[q.chave] || { texto: '' };
     box.appendChild(qeCampoTexto(q.nome || q.chave, QE.resultados.por_qualificador[q.chave].texto,
@@ -3168,7 +3170,7 @@ function qeRenderRoteamento(box) {
     const rota = QE.roteamento[q.chave] = QE.roteamento[q.chave] || { tipo: 'crm' };
     const card = el('div');
     card.style.cssText = 'border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:var(--bg);';
-    const tit = el('div'); const titB = el('b'); titB.textContent = q.nome || q.chave; tit.appendChild(titB); tit.style.marginBottom = '8px'; card.appendChild(tit);
+    const tit = el('div'); const titB = el('b', 'qe-titulo'); titB.textContent = q.nome || q.chave; tit.appendChild(titB); tit.style.marginBottom = '8px'; card.appendChild(tit);
 
     const row = el('div'); row.style.cssText = 'display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;';
     [['calcom', 'Cal.com (link de agendamento)'], ['whatsapp', 'WhatsApp automático'], ['url', 'Direcionar para uma URL'], ['crm', 'Só CRM (equipe entra em contato)']].forEach(([v, tx]) => {
