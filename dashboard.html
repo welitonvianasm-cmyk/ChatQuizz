@@ -59,6 +59,9 @@
   /* título de cada "caixa" no Editor do Quiz (Pergunta N, nível/qualificador, roteamento) */
   .qe-titulo { color: var(--brand); }
   ::selection { background: var(--lime-soft); }
+  /* mesmo problema dos campos de formulário: link sem "color" próprio cai no
+     azul/roxo padrão do navegador — aqui vira o texto do tema por padrão */
+  a { color: inherit; }
   /* navegador não herda cor de texto em campos de formulário por padrão — sem isso,
      todo input/select/textarea sem "color" explícito cai no preto padrão do navegador
      (invisível em cima de fundo escuro) */
@@ -2678,7 +2681,7 @@ function abrirLeadModal(r) {
   const h2 = el('h2'); h2.textContent = 'Respostas do quiz'; h2.style.marginTop = '14px'; c.appendChild(h2);
   if (r.whatsapp) {
     const a = el('a'); a.href = 'https://wa.me/' + String(r.whatsapp).replace(/\D/g, ''); a.target = '_blank'; a.rel = 'noopener';
-    a.textContent = r.whatsapp; a.style.fontWeight = '600';
+    a.textContent = r.whatsapp; a.style.cssText = 'font-weight:600;color:var(--text);';
     c.appendChild(lmLinha('WhatsApp', a));
   } else c.appendChild(lmLinha('WhatsApp', '—'));
   c.appendChild(lmLinha('E-mail', r.email));
@@ -3427,7 +3430,7 @@ function linksRender() {
     const tr = el('tr');
     const url = base + '/l/' + l.slug;
     const linkCel = el('span');
-    const a = el('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = url; a.style.cssText = 'font-family:monospace;font-size:12px;';
+    const a = el('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = url; a.style.cssText = 'font-family:monospace;font-size:12px;color:var(--text);';
     const copiar = el('button', 'acao-btn'); copiar.textContent = 'Copiar'; copiar.style.marginLeft = '8px';
     copiar.onclick = () => { navigator.clipboard.writeText(url).catch(() => {}); copiar.textContent = 'Copiado!'; setTimeout(() => copiar.textContent = 'Copiar', 1500); };
     linkCel.append(a, copiar);
