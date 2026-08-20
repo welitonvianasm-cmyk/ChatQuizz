@@ -57,7 +57,11 @@
   h1, h2, h3, h4, b, th, .k-num { color: var(--text); }
   b { font-weight: 700; }
   ::selection { background: var(--lime-soft); }
-  button, input, select, textarea { font-family: inherit; }
+  /* navegador não herda cor de texto em campos de formulário por padrão — sem isso,
+     todo input/select/textarea sem "color" explícito cai no preto padrão do navegador
+     (invisível em cima de fundo escuro) */
+  button, input, select, textarea { font-family: inherit; color: var(--text); }
+  input::placeholder, textarea::placeholder { color: var(--text-3); opacity: 1; }
   button, .kb-card, tr, select, input, a { transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .12s ease, opacity .15s ease; }
   button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   button:not(:disabled):active { transform: scale(.97); }
