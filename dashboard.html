@@ -2608,7 +2608,7 @@ function abrirLeadModal(r) {
     const wa = el('button');
     wa.textContent = 'Conversar';
     wa.title = 'WhatsApp conectado + Conversas ativadas = chat aqui dentro; senão abre o WhatsApp Web';
-    wa.style.cssText = 'background:var(--green);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:9px;border:0;cursor:pointer;';
+    wa.style.cssText = 'background:var(--success-bg);color:var(--success-text);font-weight:700;font-size:13px;padding:9px 16px;border-radius:9px;border:0;cursor:pointer;';
     wa.onclick = () => abrirConversa(r);
     acoes.appendChild(wa);
   }
