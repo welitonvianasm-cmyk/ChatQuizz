@@ -500,7 +500,7 @@
   /* ===== MODAIS — abertura suave + card/overlay unificados ===== */
   @keyframes dsPop { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
   #leadModal > div, #calModal > div, #vendaModal > div, #alertModal > div, #diaModal > div,
-  #novoLeadModal > div, #masterContaModal > div, #euNovoModal > div, #euDetModal > div, #chatModal > div,
+  #novoLeadModal > div, #remarcarModal > div, #masterContaModal > div, #euNovoModal > div, #euDetModal > div, #chatModal > div,
   #modalConexaoPlano > div, #modalConexaoDominio > div, #modalConexaoWhatsapp > div, #modalConexaoCalcom > div,
   #modalConexaoMentoriaHub > div, #promptModal > div { animation: dsPop .18s ease; }
   #sinoLista { animation: dsPop .15s ease; }
@@ -717,6 +717,22 @@
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
         <button id="nlSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Cadastrar lead</button>
         <span class="muted-cell" id="nlStatus"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- REMARCAR agendamento (Cal.com de verdade, ou só a data no painel se for manual) -->
+  <div id="remarcarModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:420px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;">Remarcar agendamento</h2>
+        <button class="acao-btn" id="rmFechar" title="Fechar">✕</button>
+      </div>
+      <div class="sub" id="rmAviso" style="margin:0 0 12px;"></div>
+      <label style="font-size:11.5px;font-weight:700;">Novo dia e horário<input id="rmData" type="datetime-local" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+      <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
+        <button id="rmSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar novo horário</button>
+        <span class="muted-cell" id="rmStatus"></span>
       </div>
     </div>
   </div>
@@ -2487,13 +2503,50 @@ function acoesAgendamento(r) {
     return b;
   };
   if (r.agendamento_status) { wrap.appendChild(mk('desfazer', '', 'Voltar para confirmado')); return wrap; }
+  const bRemarcar = el('button', 'acao-btn'); bRemarcar.textContent = 'Remarcar';
+  bRemarcar.title = r.booking_uid ? 'Escolher outro dia/horário (remarca de verdade no Cal.com)' : 'Escolher outro dia/horário';
+  bRemarcar.onclick = () => abrirRemarcarModal(r);
   wrap.append(
     mk('✓ Concluir', 'concluido', 'Encontro realizado'),
-    mk('Reagendar', 'reagendado', 'Marcar como reagendado (ajuste a data no cal.com)'),
-    mk('✕ Cancelar', 'cancelado', 'Cancelar este agendamento (status no painel)'),
+    bRemarcar,
+    mk('✕ Cancelar', 'cancelado', 'Cancelar este agendamento'),
   );
   return wrap;
 }
+let RM_ATUAL = null;
+function abrirRemarcarModal(r) {
+  if (!podeAcessarLead(r)) { avisarLeadBloqueado(r); return; }
+  RM_ATUAL = r;
+  $('#rmAviso').textContent = r.booking_uid
+    ? 'Esse agendamento veio do Cal.com — ao salvar, a reunião é movida de verdade lá também.'
+    : 'Agendamento manual — a data é atualizada só aqui no painel.';
+  const d = r.agendamento_em ? new Date(r.agendamento_em) : new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  $('#rmData').value = isNaN(d) ? '' : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  $('#rmStatus').textContent = '';
+  $('#remarcarModal').style.display = 'flex';
+}
+function fecharRemarcarModal() { $('#remarcarModal').style.display = 'none'; RM_ATUAL = null; }
+$('#rmFechar').onclick = fecharRemarcarModal;
+$('#rmSalvar').onclick = async () => {
+  const r = RM_ATUAL; if (!r) return;
+  const val = $('#rmData').value;
+  if (!val) { $('#rmStatus').textContent = 'Escolha um dia e horário.'; return; }
+  const iso = new Date(val).toISOString();
+  $('#rmStatus').textContent = 'salvando…';
+  const res = await fetch('/api/lead-admin', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', lead_ref: r.lead_ref, action: 'remarcar', agendamento_em: iso }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  if (!res.ok) { $('#rmStatus').textContent = res.error || 'Erro ao remarcar.'; return; }
+  r.agendamento_em = res.agendamento_em || iso;
+  r.agendamento_status = '';
+  if (res.booking_uid !== undefined) r.booking_uid = res.booking_uid;
+  toast('success', 'Remarcado!', 'Novo horário salvo.');
+  fecharRemarcarModal();
+  drawLeads(); renderAgendaCal(); renderAgDia(); renderAgendaram(); renderReunioes();
+  if (LM_ATUAL === r) abrirLeadModal(r);   // cartão aberto acompanha a mudança
+};
 
 /* ===== filtro de período do módulo Leads ===== */
 let LEADS_RANGE = { tipo: 'tudo', ini: null, fim: null };

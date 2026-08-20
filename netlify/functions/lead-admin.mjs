@@ -7,14 +7,19 @@
  *     → { ok }   (remove o lead da base e dos quadros Kanban)
  *   POST /api/lead-admin { token, action:'criar', lead: { nome, whatsapp?, email?, uf?, renda?, atendente? } }
  *     → { ok, lead }   (cadastro manual pelo painel — ex: botão "+ Novo Lead" do Quadro)
+ *   POST /api/lead-admin { token, action:'remarcar', lead_ref, agendamento_em }
+ *     → { ok, agendamento_em, booking_uid }   (novo dia/horário — se tiver booking_uid,
+ *        remarca de verdade via API do Cal.com antes de gravar aqui; cancela o
+ *        lembrete "1h antes" pendente do horário antigo)
  *
  * equipe_json (coluna no lead) = { obs, campos:[{k,v}], historico:[{t,quem,txt}] }
  * O histórico é preenchido AUTOMATICAMENTE a cada mudança, com o nome de quem fez.
  *
- * PREPARADO PARA O FUTURO: integração real com o cal.com usa o booking_uid já salvo.
+ * Cancelar o agendamento (agendamento_status:'cancelado') também cancela o
+ * lembrete "1h antes" pendente desse lead, se houver (cancelarLembretesPendentes).
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
-import { dispararMentoriaHub } from '../_conexoes.mjs';
+import { dispararMentoriaHub, obterCalcomApiKey } from '../_conexoes.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -22,6 +27,21 @@ const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': '
 const STATUS_VALIDOS = ['', 'concluido', 'reagendado', 'cancelado', 'compareceu', 'nao_compareceu'];
 const ETAPAS_VALIDAS = ['', 'novo', 'atribuido', 'conversa', 'agendado'];   // perdido/convertido vivem no `resultado`
 const AVISO_SQL = 'Falta rodar o setup-card.sql no Supabase (coluna de anotações da equipe).';
+const CAL_API = 'https://api.cal.com/v2';
+const CAL_VERSAO = '2024-08-13';
+
+/* cancela o(s) lembrete(s) de reunião ("1h antes") ainda pendentes desse lead —
+   chamado sempre que o agendamento é cancelado ou remarcado, senão o cron
+   (wa-cron.mjs) manda um lembrete de uma reunião que já não vale mais.
+   Não mexe no disparo de roteamento automático (origem 'roteamento_quiz'),
+   que é independente da reunião. Melhor-esforço: nunca derruba a ação principal. */
+async function cancelarLembretesPendentes(refUrl) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/disparos?lead_ref=eq.${refUrl}&status=eq.pendente&origem=eq.reuniao_1h`, {
+      method: 'DELETE', headers: H,
+    });
+  } catch { /* melhor-esforço */ }
+}
 
 /* colunas oficiais do funil (espelho do kanban.mjs) */
 const FUNIL = [
@@ -208,6 +228,79 @@ export default async (req) => {
       return json({ ok: rg.ok, equipe_json: temColunaEquipe ? JSON.stringify(eq) : '' });
     }
 
+    /* ---------- REMARCAR pelo painel (novo dia/horário pra um agendamento existente) ----------
+       Sem booking_uid (agendamento manual): só atualiza a data aqui.
+       Com booking_uid (veio do Cal.com): remarca de VERDADE via API oficial do
+       Cal.com (POST /bookings/{uid}/reschedule) antes de tocar no nosso banco —
+       se a chamada falhar, não mexe em nada aqui pra não dessincronizar os dois lados. */
+    if (body.action === 'remarcar') {
+      const quem3 = auth.user.nome || 'Equipe';
+      const em2 = body.agendamento_em ? new Date(body.agendamento_em) : null;
+      if (!em2 || isNaN(em2)) return json({ ok: false, error: 'Data/horário inválido.' });
+      let emISO2 = em2.toISOString();
+
+      let eq2 = { obs: '', campos: [], historico: [] };
+      let temColunaEquipe2 = true;
+      let atendenteLead2 = '';
+      const rc3 = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=equipe_json,atendente,booking_uid,agendamento_em&limit=1`, { headers: H });
+      if (!rc3.ok) return json({ ok: false, error: 'Lead não encontrado.' });
+      const rowAtual = (await rc3.json())[0] || {};
+      if (semPermissao(rowAtual.atendente)) return erroBloqueio(rowAtual.atendente);
+      atendenteLead2 = String(rowAtual.atendente || '').trim();
+      try { const p = JSON.parse(rowAtual.equipe_json || ''); if (p && typeof p === 'object') eq2 = { obs: p.obs || '', campos: Array.isArray(p.campos) ? p.campos : [], historico: Array.isArray(p.historico) ? p.historico : [] }; } catch { /* começa vazio */ }
+
+      const uidAtual = String(rowAtual.booking_uid || '').trim();
+      let novoUid = uidAtual;
+      let viaCalcom = false;
+      if (uidAtual) {
+        viaCalcom = true;
+        const apiKey = await obterCalcomApiKey(contaId);
+        if (!apiKey) return json({ ok: false, error: 'Chave do Cal.com não configurada (aba Conexões) — não dá pra remarcar esse agendamento de verdade.' });
+        let rcal;
+        try {
+          rcal = await fetch(`${CAL_API}/bookings/${encodeURIComponent(uidAtual)}/reschedule`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${apiKey}`, 'cal-api-version': CAL_VERSAO, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ start: emISO2 }),
+          });
+        } catch (e) {
+          return json({ ok: false, error: 'Erro de rede ao falar com o Cal.com: ' + (e?.message || e) });
+        }
+        if (!rcal.ok) {
+          const t = await rcal.text().catch(() => '');
+          console.error('lead-admin remarcar (cal.com):', rcal.status, t.slice(0, 300));
+          return json({ ok: false, error: 'O Cal.com recusou a remarcação (status ' + rcal.status + '). Nada foi alterado.' });
+        }
+        const respCal = await rcal.json().catch(() => ({}));
+        const bookingNovo = respCal?.data || respCal;
+        novoUid = String(bookingNovo?.uid || uidAtual);
+        const novoStart = bookingNovo?.start || bookingNovo?.startTime;
+        if (novoStart) { const d3 = new Date(novoStart); if (!isNaN(d3)) emISO2 = d3.toISOString(); }
+      }
+
+      const quandoAntes = rowAtual.agendamento_em
+        ? new Date(rowAtual.agendamento_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : 'sem data';
+      const quandoDepois = new Date(emISO2).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      eq2.historico.unshift({ t: new Date().toISOString(), quem: quem3, txt: 'Remarcou pelo painel: ' + quandoAntes + ' → ' + quandoDepois + (viaCalcom ? ' (Cal.com)' : '') });
+      eq2.historico = eq2.historico.slice(0, 60);
+
+      const patch2 = { agendamento_em: emISO2, agendamento_status: '', updated_at: new Date().toISOString() };
+      if (viaCalcom) patch2.booking_uid = novoUid;
+      if (temColunaEquipe2) patch2.equipe_json = JSON.stringify(eq2);
+      const gravar2 = () => fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, {
+        method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch2),
+      });
+      let rg2 = await gravar2();
+      if (!rg2.ok) { delete patch2.equipe_json; delete patch2.agendamento_status; temColunaEquipe2 = false; rg2 = await gravar2(); }
+      if (!rg2.ok) return json({ ok: false, error: viaCalcom ? 'A reunião foi remarcada no Cal.com, mas não consegui salvar aqui no painel — confira manualmente.' : 'Erro ao salvar.' });
+      await cancelarLembretesPendentes(refUrl);
+      dispararMentoriaHub(contaId, 'agendamento_reagendado', {
+        chatquizzLeadRef: ref, agendamentoEm: emISO2, bookingUid: novoUid,
+      });
+      return json({ ok: true, agendamento_em: emISO2, booking_uid: novoUid, equipe_json: temColunaEquipe2 ? JSON.stringify(eq2) : '' });
+    }
+
     /* ---------- PÓS-VENDA: dados da conversão + recebimento pelo CS ---------- */
     if (body.action === 'venda' || body.action === 'recebido') {
       const quemV = auth.user.nome || 'Equipe';
@@ -326,6 +419,7 @@ export default async (req) => {
       }
     }
     let alertaPresenca = null;   // criado no fim, se a presença foi registrada
+    let cancelarLembrete = false;   // true → mata o lembrete "1h antes" pendente, no fim
     if ('agendamento_status' in c) {
       const st = String(c.agendamento_status || '').trim();
       if (!STATUS_VALIDOS.includes(st)) return json({ ok: false, error: 'status inválido' });
@@ -334,6 +428,7 @@ export default async (req) => {
         const rotulos = { '': 'confirmado', concluido: 'concluído', reagendado: 'reagendado', cancelado: 'cancelado', compareceu: 'COMPARECEU ✓', nao_compareceu: 'NÃO COMPARECEU ✕' };
         hist((st === 'compareceu' || st === 'nao_compareceu' ? 'Presença: ' : 'Agendamento: ') + (rotulos[st] || st));
         mexeuEquipe = true;
+        if (st === 'cancelado') cancelarLembrete = true;
         // presença registrada → alerta automático: pro responsável, ou pra
         // TODA a equipe quando o lead ainda não tem atendente (atendente vazio)
         const destinatario = ('atendente' in c ? patch.atendente : (atual.atendente || '')).trim();
@@ -415,6 +510,7 @@ export default async (req) => {
         });
       } catch { /* alerta é melhor-esforço; a presença já foi salva */ }
     }
+    if (cancelarLembrete) await cancelarLembretesPendentes(refUrl);
     // o quadro Kanban do responsável acompanha a mudança (melhor-esforço)
     const atendenteFinal = 'atendente' in c ? patch.atendente : (atual.atendente || '');
     if (mudouAtendente) {
