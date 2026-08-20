@@ -1555,10 +1555,19 @@
       </div>
       <span class="muted-cell" id="eqStatus"></span>
       <div id="eqLista" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
+    </div>
 
-      <h2 style="margin-top:22px;">Livro de registros (log)</h2>
-      <div class="sub">Cada acesso ao painel e cada extração de relatório, do mais recente para o mais antigo (últimos 300).</div>
-      <div class="tbl-wrap"><table id="eqLogs"></table></div>
+    <!-- ===== Livro de registros — card separado, recolhido por padrão ===== -->
+    <div class="panel tem-banner" id="equipeLogsPanel" hidden>
+      <h2 id="eqLogsToggle" style="cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;">
+        <span style="flex:1;">Livro de registros (log)</span>
+        <span class="muted-cell" id="eqLogsCount"></span>
+        <span id="eqLogsChevron" style="font-size:12px;color:var(--text-muted);transition:transform .15s;">▸</span>
+      </h2>
+      <div id="eqLogsBody" style="display:none;">
+        <div class="sub">Cada acesso ao painel e cada extração de relatório, do mais recente para o mais antigo (últimos 300).</div>
+        <div class="tbl-wrap"><table id="eqLogs"></table></div>
+      </div>
     </div>
 
     <!-- ===== MASTER · CONTAS — só quem tem eh_superadmin vê ===== -->
@@ -1961,7 +1970,7 @@ const SECTIONS = {
   qeResultados: ['#pQuizEditor'], qeRoteamento: ['#pQuizEditor'], qeAparencia: ['#pQuizEditor'],
   links: ['#pLinks'],
   conexoes: ['#pConexoes'],
-  usuarios: ['#equipePanel'],
+  usuarios: ['#equipePanel', '#equipeLogsPanel'],
   masterContas: ['#pMasterContas'],
 };
 const TODOS_PANEIS = [...new Set(Object.values(SECTIONS).flat())];
@@ -2038,6 +2047,7 @@ function navGo(sec) {
   }
   if (sec === 'links' && !LINKS_CARREGADO) linksCarregar();
   if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); carregarConexaoMentoriaHub(); renderPlanoInfo(); renderDominioInfo(); }
+  if (sec === 'usuarios') { $('#eqLogsBody').style.display = 'none'; $('#eqLogsChevron').style.transform = 'none'; }
   if (sec === 'masterContas') masterCarregar();
   if (sec === 'conversas') carregarWaStatus().then(carregarInbox);
   if (sec === 'automacoes') carregarAutomacoes();
@@ -2106,7 +2116,7 @@ const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verd
   pPosConv: ['trofeu', 'laranja'], pPosAtend: ['medalha', 'laranja'], pPosFin: ['carteira', 'verde'],
   pConversas: ['conversa', 'verde'], pAutomacoes: ['raio', 'laranja'], pDisparos: ['envio', 'laranja'],
   pQuizEditor: ['lista', 'cinza'], pConexoes: ['conversa', 'cinza'],
-  pLinks: ['envio', 'cinza'], equipePanel: ['usuarios', 'lima'], pMasterContas: ['usuarios', 'roxo'],
+  pLinks: ['envio', 'cinza'], equipePanel: ['usuarios', 'lima'], equipeLogsPanel: ['lista', 'cinza'], pMasterContas: ['usuarios', 'roxo'],
 };
 /* botões de ação secundária com "tinta" da cor (fundo pastel + borda + texto combinando) —
    usado em ações de linha de tabela (Master, Equipe) pra dar hierarquia sem virar botão sólido */
@@ -5261,6 +5271,12 @@ async function carregarEquipe() {
   renderEqLista(u, EQ_LOGS_CACHE);
   renderEqLogs(l);
 }
+/* livro de registros: sempre recolhido ao entrar na página; expande/recolhe no clique */
+$('#eqLogsToggle').onclick = () => {
+  const aberto = $('#eqLogsBody').style.display !== 'none';
+  $('#eqLogsBody').style.display = aberto ? 'none' : 'block';
+  $('#eqLogsChevron').style.transform = aberto ? 'none' : 'rotate(90deg)';
+};
 function eqPerfilLabel(u) {
   if (u.funcao_adm) return 'Administrador';
   if (u.funcao_cs) return 'Customer Success';
@@ -5476,6 +5492,7 @@ $('#eudExcluir').onclick = async () => {
 function renderEqLogs(res) {
   const t = $('#eqLogs'); clear(t);
   if (!res.ok) return;
+  $('#eqLogsCount').textContent = res.logs.length + ' registro' + (res.logs.length === 1 ? '' : 's');
   t.appendChild(tableHead(['Data', 'Hora', 'Ação', 'Nome do usuário', 'E-mail', 'Celular', 'Validade']));
   const tb = el('tbody');
   if (!res.logs.length) { const tr = el('tr'); const c = td('Nenhum registro ainda.'); c.colSpan = 7; c.className = 'muted-cell'; tr.appendChild(c); tb.appendChild(tr); }
