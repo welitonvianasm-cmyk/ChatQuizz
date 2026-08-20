@@ -206,14 +206,14 @@
   .sidenav-sair svg { width: 15px; height: 15px; flex-shrink: 0; }
   .maincol { margin-left: 225px; padding: 10px clamp(20px, 3vw, 48px) 60px; transition: margin-left .18s ease; }
   .sidenav button { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: none; background: none; padding: 10px 11px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--text-2); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sidenav button svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .85; stroke: currentColor; }
+  .sidenav button svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 1; stroke: currentColor; color: var(--brand); }
   .sidenav button:hover { background: var(--surface-hover); color: var(--text-1); }
   .sidenav button.on { background: var(--brand); color: var(--brand-ink); font-weight: 700; }
-  .sidenav button.on svg { opacity: 1; }
-  /* grupo de topo (Home/Gestão/Agenda/...): maiúsculas, negrito, fonte maior */
-  .nav-menu-btn { font-size: 13.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--text-3); margin-top: 4px; }
-  .nav-menu-btn:hover { color: var(--text-1); }
-  .nav-menu-btn.aberto { color: var(--text-1); }
+  .sidenav button.on svg { opacity: 1; color: var(--brand-ink); }
+  /* grupo de topo (Home/Gestão/Agenda/...): maiúsculas, negrito, fonte maior, fundo amarelo suave pra destacar do resto */
+  .nav-menu-btn { font-size: 13.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--text-1); margin-top: 4px; background: rgba(242, 248, 98, .14); }
+  .nav-menu-btn:hover { color: var(--text-1); background: rgba(242, 248, 98, .22); }
+  .nav-menu-btn.aberto { color: var(--text-1); background: rgba(242, 248, 98, .22); }
   .nav-chevron { margin-left: auto; font-size: 10px; opacity: .6; flex-shrink: 0; }
   .nav-sub { display: flex; flex-direction: column; gap: 4px; padding: 4px 0 8px; }
   .nav-sub button:not(.nav-menu-btn) { padding-left: 27px; font-size: 12.5px; }
