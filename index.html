@@ -589,6 +589,7 @@ const APARENCIA_PADRAO = {
   mensagem_boas_vindas: 'Oi! Eu estou aqui pra te ajudar a entender melhor o seu momento. Responda com sinceridade! 💚',
   tem_presente: false,
   presente_imagem: '', presente_nome: '', presente_descricao: '',
+  cta_url_texto: 'Continuar', cta_url_cor: '#a155f2',
 };
 let APARENCIA = APARENCIA_PADRAO;
 
@@ -608,6 +609,8 @@ async function carregarAparencia() {
       mensagem_boas_vindas: j.mensagem_boas_vindas || APARENCIA_PADRAO.mensagem_boas_vindas,
       tem_presente: !!j.tem_presente, presente_imagem: j.presente_imagem || '',
       presente_nome: j.presente_nome || '', presente_descricao: j.presente_descricao || '',
+      cta_url_texto: j.cta_url_texto || APARENCIA_PADRAO.cta_url_texto,
+      cta_url_cor: /^#[0-9a-fA-F]{6}$/.test(j.cta_url_cor || '') ? j.cta_url_cor : APARENCIA_PADRAO.cta_url_cor,
     };
     aplicarCorPrimaria(APARENCIA.cor_primaria);
   } catch (e) { /* mantém o padrão embutido */ }
@@ -1462,7 +1465,9 @@ async function ctaUrl(url) {
   salvarLead('completo');
   const s = safeData();
   await bot(`${s.primeiro}, recebi tudo certinho! Clica aqui embaixo pra continuar 💚`, { delay: 1200 });
-  addRow('bot', `<a class="ag-link" href="${esc(url)}" target="_blank" rel="noopener">🔗&nbsp; Continuar</a>`);
+  const texto = esc(APARENCIA.cta_url_texto || 'Continuar');
+  const cor = APARENCIA.cta_url_cor || '#a155f2';
+  addRow('bot', `<a class="ag-link" href="${esc(url)}" target="_blank" rel="noopener" style="background:${cor};box-shadow:0 5px 18px ${cor}4d;">🔗&nbsp; ${texto}</a>`);
 }
 
 /* botão para o site configurado (reservado p/ produtos low-ticket no futuro) */

@@ -29,6 +29,8 @@ const PADRAO = {
   presente_imagem: '',
   presente_nome: '',
   presente_descricao: '',
+  cta_url_texto: 'Continuar',
+  cta_url_cor: '#a155f2',
 };
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -37,6 +39,8 @@ function sanitizar(body) {
   const txt = (v, max) => String(v ?? '').trim().slice(0, max);
   const cor = txt(body.cor_primaria, 7);
   if (cor && !HEX.test(cor)) return { erro: 'Cor primária precisa ser um hexadecimal válido, ex: #005355.' };
+  const ctaCor = txt(body.cta_url_cor, 7);
+  if (ctaCor && !HEX.test(ctaCor)) return { erro: 'Cor do botão precisa ser um hexadecimal válido, ex: #a155f2.' };
   const numero = txt(body.whatsapp_numero, 20).replace(/\D/g, '');
   if (numero && numero.length < 10) return { erro: 'Número de WhatsApp inválido (use DDI+DDD+número, só dígitos).' };
   return {
@@ -51,6 +55,8 @@ function sanitizar(body) {
       presente_imagem: txt(body.presente_imagem, 500),
       presente_nome: txt(body.presente_nome, 80),
       presente_descricao: txt(body.presente_descricao, 200),
+      cta_url_texto: txt(body.cta_url_texto, 40) || PADRAO.cta_url_texto,
+      cta_url_cor: ctaCor || PADRAO.cta_url_cor,
     },
   };
 }

@@ -3163,6 +3163,76 @@ function qeRenderResultados(box) {
     box.appendChild(qeCampoTexto(q.nome || q.chave, QE.resultados.por_qualificador[q.chave].texto,
       (v) => { QE.resultados.por_qualificador[q.chave].texto = v; }, 4));
   });
+
+  box.appendChild(qeRenderPreview());
+}
+
+/* ===== PRÉVIA: como fica o resultado (diagnóstico + convite) pra uma
+   combinação nível + qualificador, sem precisar publicar pra testar ===== */
+function qePreviewInterpolar(texto) {
+  return String(texto || '').replace(/\{(\w+)\}/g, (m, k) => (k === 'nome' ? 'Ana' : ''));
+}
+function qePreviewBalao(texto) {
+  const wrap = el('div');
+  qePreviewInterpolar(texto).split(/\n{2,}/).map((p) => p.trim()).filter(Boolean).forEach((p) => {
+    const b = el('div'); b.style.cssText = 'background:var(--surface-card-2);border:1px solid var(--border);border-radius:12px;padding:10px 13px;font-size:13px;line-height:1.5;margin-bottom:8px;max-width:480px;';
+    b.innerHTML = p;
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+function qeRenderPreview() {
+  const box = el('div'); box.style.cssText = 'margin-top:22px;border-top:1px solid var(--border);padding-top:16px;';
+  const tit = el('div', 'qe-titulo'); tit.textContent = 'Prévia do resultado'; tit.style.cssText = 'font-weight:800;margin-bottom:4px;';
+  box.appendChild(tit);
+  const sub = el('div', 'sub'); sub.style.marginBottom = '10px';
+  sub.textContent = 'Escolha um nível de consciência + um qualificador pra ver como fica o diagnóstico, o convite e o que acontece no final ({nome} vira "Ana" só pra ilustrar).';
+  box.appendChild(sub);
+
+  const row = el('div'); row.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;';
+  const selNivel = el('select'); selNivel.style.cssText = 'padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);';
+  QE.niveis.forEach((n) => { const o = el('option'); o.value = n.chave; o.textContent = n.nome || n.chave; selNivel.appendChild(o); });
+  const selQuali = el('select'); selQuali.style.cssText = selNivel.style.cssText;
+  QE.qualificadores.forEach((q) => { const o = el('option'); o.value = q.chave; o.textContent = q.nome || q.chave; selQuali.appendChild(o); });
+  const btnVer = el('button'); btnVer.textContent = 'Ver prévia';
+  btnVer.style.cssText = 'padding:9px 16px;border:none;border-radius:9px;background:var(--brand);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;';
+  row.append(selNivel, selQuali, btnVer);
+  box.appendChild(row);
+
+  const out = el('div'); out.style.display = 'none';
+  box.appendChild(out);
+
+  btnVer.onclick = () => {
+    clear(out); out.style.display = 'block';
+    const nivel = QE.niveis.find((n) => n.chave === selNivel.value);
+    const quali = QE.qualificadores.find((q) => q.chave === selQuali.value);
+    const textoNivel = (QE.resultados.por_nivel[selNivel.value] || {}).texto || '';
+    const textoQuali = (QE.resultados.por_qualificador[selQuali.value] || {}).texto || '';
+
+    const l1 = el('div', 'muted-cell'); l1.textContent = 'Diagnóstico (nível: ' + (nivel?.nome || selNivel.value) + ')'; l1.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;';
+    out.appendChild(l1);
+    out.appendChild(textoNivel ? qePreviewBalao(textoNivel) : (() => { const e = el('div', 'muted-cell'); e.textContent = 'Sem texto configurado pra esse nível.'; return e; })());
+
+    const l2 = el('div', 'muted-cell'); l2.textContent = 'Convite (qualificador: ' + (quali?.nome || selQuali.value) + ')'; l2.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:14px 0 6px;';
+    out.appendChild(l2);
+    out.appendChild(textoQuali ? qePreviewBalao(textoQuali) : (() => { const e = el('div', 'muted-cell'); e.textContent = 'Sem texto configurado pra esse qualificador.'; return e; })());
+
+    const rota = QE.roteamento[selQuali.value] || { tipo: 'crm' };
+    const l3 = el('div', 'muted-cell'); l3.textContent = 'Como termina'; l3.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:14px 0 6px;';
+    out.appendChild(l3);
+    const fim = el('div'); fim.style.cssText = 'font-size:13px;';
+    if (rota.tipo === 'calcom') fim.textContent = '📅 Agenda do Cal.com embutida (' + (rota.calLink || 'sem link configurado') + ')';
+    else if (rota.tipo === 'whatsapp') fim.textContent = '💬 Mensagem automática de WhatsApp (fora daqui, no número do lead)';
+    else if (rota.tipo === 'url') {
+      fim.innerHTML = '🔗 Botão configurável, direciona pra ' + escapeHtmlMaster(rota.url || '(sem link configurado)');
+      const btn = el('a'); btn.href = '#'; btn.onclick = (e) => e.preventDefault();
+      btn.style.cssText = 'display:inline-flex;margin-top:8px;padding:11px 16px;border-radius:11px;font-weight:700;font-size:13px;color:#fff;background:' + (AP?.cta_url_cor || '#a155f2') + ';';
+      btn.textContent = '🔗  ' + (AP?.cta_url_texto || 'Continuar');
+      fim.appendChild(el('br')); fim.appendChild(btn);
+    } else fim.textContent = '👤 Sem ação automática, a equipe (CRM) entra em contato depois.';
+    out.appendChild(fim);
+  };
+  return box;
 }
 
 function qeRenderRoteamento(box) {
@@ -3221,7 +3291,8 @@ async function apCarregar(box) {
     tem_presente: !!r.tem_presente,
     presente_imagem: r.presente_imagem || '', presente_nome: r.presente_nome || '',
     presente_descricao: r.presente_descricao || '',
-  } : { whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '', cor_primaria: '#005355', mensagem_boas_vindas: '', tem_presente: false, presente_imagem: '', presente_nome: '', presente_descricao: '' };
+    cta_url_texto: r.cta_url_texto || 'Continuar', cta_url_cor: r.cta_url_cor || '#a155f2',
+  } : { whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '', cor_primaria: '#005355', mensagem_boas_vindas: '', tem_presente: false, presente_imagem: '', presente_nome: '', presente_descricao: '', cta_url_texto: 'Continuar', cta_url_cor: '#a155f2' };
   if (QE_TAB === 'aparencia') qeRenderAparencia(box || $('#qeLista'));
 }
 function apCampo(label, valor, onInput, tipo) {
@@ -3263,6 +3334,26 @@ function qeRenderAparencia(box) {
   corRow.append(corPicker, corTexto);
   corWrap.appendChild(corRow);
   box.appendChild(corWrap);
+
+  const ctaTit = el('div', 'qe-titulo'); ctaTit.textContent = 'Botão "Direcionar para uma URL" (Roteamento)'; ctaTit.style.cssText = 'font-weight:800;margin:16px 0 4px;';
+  box.appendChild(ctaTit);
+  const ctaSub = el('div', 'sub'); ctaSub.style.marginBottom = '10px';
+  ctaSub.textContent = 'Esse botão aparece sozinho no final da conversa quando o qualificador estiver com roteamento "Direcionar para uma URL" (aba Roteamento).';
+  box.appendChild(ctaSub);
+  box.appendChild(apCampo('Texto do botão (CTA)', AP.cta_url_texto, (v) => { AP.cta_url_texto = v; }));
+
+  const ctaCorWrap = el('label'); ctaCorWrap.style.cssText = 'display:block;font-size:11.5px;font-weight:600;margin-bottom:12px;';
+  ctaCorWrap.textContent = 'Cor do botão';
+  const ctaCorRow = el('div'); ctaCorRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:4px;';
+  const ctaCorPicker = el('input'); ctaCorPicker.type = 'color'; ctaCorPicker.value = /^#[0-9a-fA-F]{6}$/.test(AP.cta_url_cor) ? AP.cta_url_cor : '#a155f2';
+  ctaCorPicker.style.cssText = 'width:44px;height:36px;border:1.5px solid var(--line);border-radius:8px;cursor:pointer;padding:2px;';
+  const ctaCorTexto = el('input'); ctaCorTexto.value = AP.cta_url_cor || '#a155f2'; ctaCorTexto.placeholder = '#a155f2';
+  ctaCorTexto.style.cssText = 'width:110px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--card);font-family:monospace;';
+  ctaCorPicker.oninput = () => { AP.cta_url_cor = ctaCorPicker.value; ctaCorTexto.value = ctaCorPicker.value; };
+  ctaCorTexto.oninput = () => { AP.cta_url_cor = ctaCorTexto.value; if (/^#[0-9a-fA-F]{6}$/.test(ctaCorTexto.value)) ctaCorPicker.value = ctaCorTexto.value; };
+  ctaCorRow.append(ctaCorPicker, ctaCorTexto);
+  ctaCorWrap.appendChild(ctaCorRow);
+  box.appendChild(ctaCorWrap);
 
   const lp = el('label'); lp.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin:14px 0 10px;cursor:pointer;';
   const cp = el('input'); cp.type = 'checkbox'; cp.checked = !!AP.tem_presente;
