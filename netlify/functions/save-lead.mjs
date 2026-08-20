@@ -112,7 +112,7 @@ export default async (req) => {
       const rota = qualificador && doc.roteamento ? doc.roteamento[qualificador] : null;
       if (rota) {
         row.roteamento_tipo = txt(rota.tipo, 20);
-        if (rota.tipo === 'whatsapp' && e164 && rota.mensagem) {
+        if (rota.tipo === 'whatsapp' && rota.auto && e164 && rota.mensagem) {
           row.roteamento_disparado_em = new Date().toISOString();
           disparoWhats = {
             telefone: digits,

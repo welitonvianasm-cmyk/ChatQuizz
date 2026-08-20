@@ -124,7 +124,7 @@ export const PADRAO = {
   },
   roteamento: {
     comunidade: { tipo: 'calcom', calLink: 'https://cal.com/sua-agenda/comunidade' },
-    premium: { tipo: 'whatsapp', mensagem: 'Olá {nome}! Vi que você concluiu o quiz 💚 Vamos marcar nossa conversa?' },
+    premium: { tipo: 'whatsapp', auto: true, mensagem: 'Olá {nome}! Vi que você concluiu o quiz 💚 Vamos marcar nossa conversa?' },
   },
 };
 
@@ -211,8 +211,17 @@ export function sanitizar(doc) {
       rr.calLink = String(r.calLink || '').trim().slice(0, 300);
       if (!rr.calLink) return { erro: `O qualificador "${chave}" está com roteamento Cal.com mas sem link.` };
     } else if (tipo === 'whatsapp') {
-      rr.mensagem = String(r.mensagem || '').trim().slice(0, 1000);
-      if (!rr.mensagem) return { erro: `O qualificador "${chave}" está com roteamento WhatsApp mas sem mensagem.` };
+      rr.auto = !!r.auto;
+      rr.botao = !!r.botao;
+      if (!rr.auto && !rr.botao) return { erro: `O qualificador "${chave}" está com roteamento WhatsApp mas sem "Enviar mensagem automática" nem "Mostrar botão de WhatsApp" marcados — marque pelo menos um.` };
+      if (rr.auto) {
+        rr.mensagem = String(r.mensagem || '').trim().slice(0, 1000);
+        if (!rr.mensagem) return { erro: `O qualificador "${chave}" está com envio automático marcado mas sem mensagem.` };
+      }
+      if (rr.botao) {
+        rr.numero_ou_link = String(r.numero_ou_link || '').trim().slice(0, 300);
+        if (!rr.numero_ou_link) return { erro: `O qualificador "${chave}" está com botão de WhatsApp marcado mas sem número ou link.` };
+      }
     } else if (tipo === 'url') {
       rr.url = String(r.url || '').trim().slice(0, 500);
       if (!rr.url) return { erro: `O qualificador "${chave}" está com roteamento URL mas sem link.` };

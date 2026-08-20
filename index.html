@@ -736,7 +736,7 @@ const RESULTADOS_PADRAO = {
 };
 const ROTEAMENTO_PADRAO = {
   comunidade: { tipo: 'calcom', calLink: 'https://cal.com/sua-agenda/comunidade' },
-  premium: { tipo: 'whatsapp', mensagem: 'Olá {nome}! Vi que você concluiu o quiz 💚 Vamos marcar nossa conversa?' },
+  premium: { tipo: 'whatsapp', auto: true, mensagem: 'Olá {nome}! Vi que você concluiu o quiz 💚 Vamos marcar nossa conversa?' },
 };
 
 let QUIZ = QUIZ_PADRAO;                                // perguntas em uso (podem vir do painel)
@@ -1444,10 +1444,18 @@ async function ctaWhatsAutomatico() {
   persist();
   salvarLead('completo');
   const s = safeData();
-  await bot(`${s.primeiro}, recebi tudo certinho! Você vai receber uma mensagem no WhatsApp em instantes pra a gente combinar o melhor horário 💚`, { delay: 1200 });
-  if (WHATSAPP_CONECTADO) {
-    addRow('bot', `<a class="ag-link" href="${waLink()}" target="_blank" rel="noopener">💬&nbsp; Ou já chama agora no WhatsApp</a>`);
+  const rota = (state.data.qualificador && ROTEAMENTO[state.data.qualificador]) || {};
+  const auto = rota.auto && WHATSAPP_CONECTADO;
+  const link = rota.botao ? linkWhatsappRota(rota.numero_ou_link) : '';
+
+  if (auto) {
+    await bot(`${s.primeiro}, recebi tudo certinho! Você vai receber uma mensagem no WhatsApp em instantes pra a gente combinar o melhor horário 💚`, { delay: 1200 });
+  } else if (link) {
+    await bot(`${s.primeiro}, recebi tudo certinho! Clica aqui embaixo pra continuar no WhatsApp 💚`, { delay: 1200 });
+  } else {
+    await bot(`${s.primeiro}, recebi tudo certinho! Nossa equipe vai entrar em contato com você em breve 💚`, { delay: 1200 });
   }
+  if (link) addRow('bot', `<a class="ag-link" href="${esc(link)}" target="_blank" rel="noopener">💬&nbsp; ${auto ? 'Ou já chama agora no WhatsApp' : 'Chamar no WhatsApp'}</a>`);
 }
 
 /* roteamento "CRM" — sem ação automática, a equipe entra em contato depois */
@@ -1572,16 +1580,13 @@ async function onEmbedAgendado(e, row, info) {
   await bot(`Prontinho, <b>${s.primeiro}</b> 💚 Seu Encontro está marcado! Guardei sua <a href="${pageUrl}" target="_blank" rel="noopener"><b>página do Encontro</b></a> com todos os detalhes${presenteMsg}. Até lá!`, { delay: 900 });
 }
 
-function waLink() {
-  const d = state.data;
-  const nivelInfo = NIVEIS.find((n) => n.chave === d.nivel);
-  const perfilNome = (nivelInfo && nivelInfo.nome) || 'Baixa Consciência';
-  const msg = encodeURIComponent(
-    `Olá! Acabei de fazer o quiz.\n\n` +
-    `Nome: ${d.nome}\nResultado: ${perfilNome}\n\n` +
-    `Quero agendar minha conversa! 💚`
-  );
-  return `https://wa.me/${APARENCIA.whatsapp_numero}?text=${msg}`;
+/* normaliza o campo "número ou link" do roteamento WhatsApp (rota.numero_ou_link)
+   pra uma URL wa.me válida — aceita tanto um link já pronto quanto só os dígitos */
+function linkWhatsappRota(valor) {
+  const v = String(valor || '').trim();
+  if (/^https?:\/\//i.test(v)) return v;
+  const digitos = v.replace(/\D/g, '');
+  return digitos ? `https://wa.me/${digitos}` : '';
 }
 
 /* ================================================================
