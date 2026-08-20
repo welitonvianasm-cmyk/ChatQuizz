@@ -632,6 +632,101 @@
     </div>
   </div>
 
+  <!-- EQUIPE: novo usuário -->
+  <div id="euNovoModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;">Novo Usuário</h2>
+        <button class="acao-btn" id="euNovoFechar" title="Fechar">✕</button>
+      </div>
+
+      <div id="euNovoForm" style="display:grid;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label style="font-size:11.5px;font-weight:700;">Nome completo *<input id="eunNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Maria da Silva"></label>
+          <label style="font-size:11.5px;font-weight:700;">Celular<input id="eunCel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="(11) 99999-9999"></label>
+        </div>
+        <label style="font-size:11.5px;font-weight:700;">E-mail *<input id="eunEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="maria@email.com"></label>
+        <label style="font-size:11.5px;font-weight:700;">Validade do acesso (vazio = sem prazo)<input id="eunVal" type="date" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
+
+        <div>
+          <label style="font-size:11.5px;font-weight:700;display:block;margin-bottom:6px;">Perfil</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <label style="display:flex;align-items:center;gap:6px;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;" id="eunPerfilOpAdm"><input type="radio" name="eunPerfil" value="adm" style="accent-color:var(--accent);">Administrador</label>
+            <label style="display:flex;align-items:center;gap:6px;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;" id="eunPerfilOpCs"><input type="radio" name="eunPerfil" value="cs" style="accent-color:var(--accent);">Customer Success</label>
+            <label style="display:flex;align-items:center;gap:6px;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;" id="eunPerfilOpOp"><input type="radio" name="eunPerfil" value="op" checked style="accent-color:var(--accent);">Operacional</label>
+          </div>
+          <p class="muted-cell" style="margin-top:6px;">Administrador tem privilégios completos. Customer Success recebe leads convertidos no Pós-Venda. Operacional não tem nenhuma das duas funções.</p>
+        </div>
+
+        <div class="muted-cell" id="eunErr" style="color:var(--red);"></div>
+        <button id="eunSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Criar usuário</button>
+      </div>
+
+      <div id="euNovoResultado" style="display:none;">
+        <div style="background:var(--green-soft);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--green);margin-bottom:12px;">Usuário criado! Envie o acesso abaixo pra pessoa — ela cria a própria senha no primeiro login.</div>
+        <label style="font-size:11.5px;font-weight:700;">E-mail de acesso<div id="eunResEmail" style="margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-family:monospace;background:#fafafa;"></div></label>
+        <label style="font-size:11.5px;font-weight:700;display:block;margin-top:10px;">Senha temporária
+          <div style="display:flex;gap:8px;margin-top:4px;">
+            <div id="eunResSenha" style="flex:1;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-family:monospace;background:#fafafa;"></div>
+            <button id="eunResCopiar" style="padding:9px 14px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap;">Copiar</button>
+          </div>
+        </label>
+        <button id="eunResFechar" style="margin-top:16px;width:100%;padding:10px 18px;border:1.5px solid var(--line);border-radius:9px;background:#fff;font-weight:600;font-size:13px;cursor:pointer;">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EQUIPE: detalhe / editar usuário -->
+  <div id="euDetModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <h2 style="flex:1;margin:0;font-size:17px;" id="eudTit">Usuário</h2>
+        <button class="acao-btn" id="euDetFechar" title="Fechar">✕</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="eudBadges"></div>
+
+      <div style="display:flex;gap:16px;border-bottom:1.5px solid var(--line);margin-bottom:14px;">
+        <button class="euDetAba" data-aba="dados" style="padding:8px 2px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;color:var(--lime);border-bottom:2px solid var(--lime);">Dados &amp; Acesso</button>
+        <button class="euDetAba" data-aba="perfil" style="padding:8px 2px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;">Perfil &amp; Permissões</button>
+      </div>
+
+      <div id="eudAbaDados" style="display:grid;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label style="font-size:11.5px;font-weight:700;">Nome completo<input id="eudNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
+          <label style="font-size:11.5px;font-weight:700;">Celular<input id="eudCel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
+        </div>
+        <label style="font-size:11.5px;font-weight:700;">E-mail<input id="eudEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
+        <label style="font-size:11.5px;font-weight:700;">Validade do acesso<input id="eudVal" type="date" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
+        <div class="muted-cell" id="eudCriadoEm"></div>
+
+        <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px;">
+          <p style="font-size:11.5px;font-weight:700;margin:0 0 6px;">Senha</p>
+          <div id="eudSenhaStatus" class="muted-cell" style="margin-bottom:8px;"></div>
+          <button id="eudResetar" style="padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" >Resetar senha</button>
+        </div>
+
+        <div class="muted-cell" id="eudErr" style="color:var(--red);"></div>
+        <button id="eudSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Salvar alterações</button>
+      </div>
+
+      <div id="eudAbaPerfil" style="display:none;">
+        <label style="font-size:11.5px;font-weight:700;display:block;margin-bottom:6px;">Perfil</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <label style="display:flex;align-items:center;gap:6px;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;" id="eudPerfilOpAdm"><input type="radio" name="eudPerfil" value="adm" style="accent-color:var(--accent);">Administrador</label>
+          <label style="display:flex;align-items:center;gap:6px;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;" id="eudPerfilOpCs"><input type="radio" name="eudPerfil" value="cs" style="accent-color:var(--accent);">Customer Success</label>
+          <label style="display:flex;align-items:center;gap:6px;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;" id="eudPerfilOpOp"><input type="radio" name="eudPerfil" value="op" style="accent-color:var(--accent);">Operacional</label>
+        </div>
+        <p class="muted-cell" style="margin-top:6px;">Administrador tem privilégios completos. Customer Success recebe leads convertidos no Pós-Venda. Operacional não tem nenhuma das duas funções.</p>
+        <button id="eudSalvarPerfil" style="margin-top:12px;padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Salvar perfil</button>
+
+        <div style="border-top:1px solid var(--line);margin-top:18px;padding-top:14px;" id="eudBlocoExcluir">
+          <p style="font-size:11.5px;font-weight:700;margin:0 0 8px;color:var(--red);">Zona de risco</p>
+          <button id="eudExcluir" style="padding:9px 16px;border-radius:9px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid rgba(255,90,95,.4);background:var(--red-soft);color:var(--red);">Excluir usuário</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- CHAT INTERNO DO WHATSAPP (popup de conversa) -->
   <div id="chatModal" style="display:none;position:fixed;inset:0;z-index:76;background:rgba(17,24,39,.5);align-items:center;justify-content:center;padding:16px;">
     <div style="background:var(--card);border-radius:16px;max-width:480px;width:100%;height:min(640px,92vh);display:flex;flex-direction:column;box-shadow:var(--shadow-md);overflow:hidden;">
@@ -1448,18 +1543,18 @@
       <h2>Usuários</h2>
       <div class="sub">Só você (administradora) vê esta área. Ao criar um usuário, o sistema gera uma <b>senha temporária</b> para você enviar à pessoa — no primeiro acesso ela cria a própria senha (que ninguém consegue ver, nem você). A data de validade corta o acesso automaticamente ao vencer (vazia = sem prazo).</div>
 
-      <div style="display:grid;grid-template-columns:2fr 2fr 1.4fr 1.2fr auto auto auto auto;gap:8px;margin:14px 0;align-items:end;">
-        <label style="font-size:11.5px;font-weight:600;">Nome completo<input id="eqNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Maria da Silva"></label>
-        <label style="font-size:11.5px;font-weight:600;">E-mail<input id="eqEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="maria@email.com"></label>
-        <label style="font-size:11.5px;font-weight:600;">Celular<input id="eqCel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="(11) 99999-9999"></label>
-        <label style="font-size:11.5px;font-weight:600;">Validade<input id="eqVal" type="date" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
-        <label style="font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:5px;white-space:nowrap;padding-bottom:10px;" title="Recebe leads convertidos no Pós-Venda (Customer Success)"><input id="eqCS" type="checkbox" style="width:16px;height:16px;accent-color:var(--accent);">Função CS</label>
-        <label style="font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:5px;white-space:nowrap;padding-bottom:10px;" title="Privilégios completos de administradora em todos os módulos"><input id="eqADM" type="checkbox" style="width:16px;height:16px;accent-color:var(--accent);">Funções de ADM</label>
-        <button id="eqSalvar" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">Adicionar</button>
-        <button id="eqCancelar" style="padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;background:#fff;font-weight:600;font-size:13px;cursor:pointer;display:none;">Cancelar</button>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin:14px 0;">
+        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="eqkTotal" style="display:block;font-size:20px;">—</b><span class="muted-cell">Total</span></div>
+        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="eqkAtivos" style="display:block;font-size:20px;">—</b><span class="muted-cell">Ativos</span></div>
+        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="eqkPendentes" style="display:block;font-size:20px;">—</b><span class="muted-cell">Aguardando 1º acesso</span></div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+        <input id="eqBusca" placeholder="Buscar por nome ou e-mail..." style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
+        <button id="eqNovoBtn" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">+ Novo Usuário</button>
       </div>
       <span class="muted-cell" id="eqStatus"></span>
-      <div class="tbl-wrap"><table id="eqUsers"></table></div>
+      <div id="eqLista" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
 
       <h2 style="margin-top:22px;">Livro de registros (log)</h2>
       <div class="sub">Cada acesso ao painel e cada extração de relatório, do mais recente para o mais antigo (últimos 300).</div>
@@ -5138,7 +5233,9 @@ $('#btn-csv').onclick = () => {
 };
 
 // ================= ÁREA EQUIPE (só administradora) =================
-let EQ_EDIT_ID = null;   // null = criando; número = editando esse usuário
+let EQ_USERS_CACHE = [];   // último "list" recebido — evita refetch pra abrir o modal de detalhe
+let EQ_LOGS_CACHE = [];    // último "logs" recebido — usado pra calcular "último acesso" e reaplicar busca sem round-trip
+let EQ_DET_ID = null;      // id do usuário aberto no modal de detalhe
 async function eqApi(payload) {
   const r = await fetch('/api/dash-users', {
     method: 'POST',
@@ -5152,80 +5249,230 @@ function fmtDataBR(d) {
   const [y, m, dd] = String(d).slice(0, 10).split('-');
   return dd + '/' + m + '/' + y;
 }
+function fmtDataHoraBR(iso) {
+  if (!iso) return 'Nunca';
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
 async function carregarEquipe() {
   const [u, l] = await Promise.all([eqApi({ action: 'list' }), eqApi({ action: 'logs' })]);
-  renderEqUsers(u);
+  if (u.ok) EQ_USERS_CACHE = u.users;
+  if (l.ok) EQ_LOGS_CACHE = l.logs;
+  renderEqLista(u, EQ_LOGS_CACHE);
   renderEqLogs(l);
 }
-function renderEqUsers(res) {
-  const t = $('#eqUsers'); clear(t);
+function eqPerfilLabel(u) {
+  if (u.funcao_adm) return 'Administrador';
+  if (u.funcao_cs) return 'Customer Success';
+  return 'Operacional';
+}
+function eqUltimoAcesso(email, logs) {
+  const doUsuario = (logs || []).filter((g) => g.tipo === 'acesso' && g.email === email);
+  return doUsuario.length ? doUsuario[0].criado_em : null; // logs já vêm ordenados desc
+}
+function renderEqLista(res, logs) {
+  const lista = $('#eqLista'); clear(lista);
   if (!res.ok) { $('#eqStatus').textContent = res.error || 'Erro ao carregar usuários.'; return; }
-  t.appendChild(tableHead(['Nome completo', 'E-mail', 'Celular', 'Validade', 'Senha', 'Situação', '', '', '']));
-  const tb = el('tbody');
-  if (!res.users.length) { const tr = el('tr'); const c = td('Nenhum usuário criado ainda.'); c.colSpan = 9; c.className = 'muted-cell'; tr.appendChild(c); tb.appendChild(tr); }
+  $('#eqStatus').textContent = '';
+
   const hoje = new Date();
-  res.users.forEach((u) => {
+  const busca = ($('#eqBusca').value || '').trim().toLowerCase();
+  const todos = res.users;
+  const filtrados = !busca ? todos : todos.filter((u) =>
+    (u.nome || '').toLowerCase().includes(busca) || (u.email || '').toLowerCase().includes(busca));
+
+  $('#eqkTotal').textContent = todos.length;
+  $('#eqkAtivos').textContent = todos.filter((u) => !(u.validade && new Date(u.validade + 'T23:59:59-03:00') < hoje)).length;
+  $('#eqkPendentes').textContent = todos.filter((u) => u.trocar_senha).length;
+
+  if (!filtrados.length) {
+    const vazio = el('div'); vazio.className = 'muted-cell';
+    vazio.style.cssText = 'text-align:center;padding:28px 0;';
+    vazio.textContent = todos.length ? 'Nenhum usuário encontrado pra essa busca.' : 'Nenhum usuário criado ainda.';
+    lista.appendChild(vazio);
+    return;
+  }
+
+  filtrados.forEach((u) => {
     const vencido = u.validade && new Date(u.validade + 'T23:59:59-03:00') < hoje;
-    const tr = el('tr');
-    const sit = el('span', 'pill ' + (vencido ? 'parcial' : 'agendado')); sit.textContent = vencido ? 'expirado' : 'ativo';
-    const senhaTxt = u.trocar_senha ? 'temporária (aguardando 1º acesso)' : '✓ própria (invisível)';
-    const bEd = el('button'); bEd.textContent = 'Editar'; bEd.style.cssText = btnCssTint('cinza');
-    bEd.onclick = () => {
-      EQ_EDIT_ID = u.id;
-      $('#eqNome').value = u.nome; $('#eqEmail').value = u.email; $('#eqCel').value = u.celular || '';
-      $('#eqVal').value = u.validade || '';
-      $('#eqCS').checked = !!u.funcao_cs;
-      $('#eqADM').checked = !!u.funcao_adm;
-      $('#eqSalvar').textContent = 'Salvar alterações';
-      $('#eqCancelar').style.display = '';
-      $('#eqNome').focus();
-    };
-    const bReset = el('button'); bReset.textContent = 'Resetar senha'; bReset.style.cssText = btnCssTint('azul');
-    bReset.onclick = async () => {
-      if (!confirm('Resetar a senha de ' + u.nome + '? A senha atual deixa de funcionar e você recebe uma temporária nova para enviar.')) return;
-      const r = await eqApi({ action: 'reset', id: u.id });
-      if (r.ok && r.senhaTemporaria) mostrarSenhaTemp(u.nome, r.senhaTemporaria);
-      else $('#eqStatus').textContent = r.error || 'Erro ao resetar.';
-      carregarEquipe();
-    };
-    const bDel = el('button'); bDel.textContent = 'Excluir'; bDel.title = 'Excluir usuário'; bDel.style.cssText = btnCssTint('vermelho');
-    bDel.onclick = async () => {
-      if (!confirm('Excluir o acesso de ' + u.nome + '? Essa pessoa não conseguirá mais entrar no painel.')) return;
-      let r = await eqApi({ action: 'delete', id: u.id });
-      // atendente com leads/quadro: a administradora decide o destino ANTES (nada se perde)
-      if (!r.ok && r.precisaDestino) {
-        const manterOpcao = 'Manter como está (quadro fica visível só pra você)';
-        const opcoes = [manterOpcao, ...(ATENDENTES || []).filter((n) => n !== u.nome)];
-        const resp = await promptModal({
-          titulo: 'Leads vinculados a ' + u.nome,
-          sub: u.nome + ' tem ' + (r.leads || 0) + ' lead(s)' + (r.temQuadro ? ' e um quadro Kanban' : '') + ' vinculados. Escolha o que fazer antes de excluir.',
-          campos: [{ id: 'destino', label: 'Transferir para', tipo: 'select', options: opcoes }],
-          textoOk: 'Confirmar e excluir',
-        });
-        if (!resp) { $('#eqStatus').textContent = 'Exclusão cancelada — nada foi alterado.'; carregarEquipe(); return; }
-        const d = resp.destino === manterOpcao ? '(manter)' : resp.destino;
-        r = await eqApi({ action: 'delete', id: u.id, destino: d });
-      }
-      if (!r.ok) $('#eqStatus').textContent = r.error || 'Erro ao excluir.';
-      carregarEquipe();
-      if (KB_CARREGADO) kbCarregar();
-    };
-    const nomeFn = (u.nome || '') + (u.funcao_adm ? ' · ADM' : '') + (u.funcao_cs ? ' · CS' : '');
-    tr.append(td(nomeFn, 'nome'), td(u.email), td(u.celular), td(fmtDataBR(u.validade)), td(senhaTxt), td(sit), td(bEd), td(bReset), td(bDel));
-    tb.appendChild(tr);
+    const card = el('div');
+    card.style.cssText = 'background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:box-shadow .15s,border-color .15s;flex-wrap:wrap;';
+    card.onmouseenter = () => { card.style.borderColor = 'var(--accent)'; card.style.boxShadow = 'var(--shadow)'; };
+    card.onmouseleave = () => { card.style.borderColor = 'var(--line)'; card.style.boxShadow = 'none'; };
+    card.onclick = () => euAbrirDetalhe(u.id);
+
+    const av = el('div'); av.textContent = (u.nome || '?').trim().charAt(0).toUpperCase();
+    av.style.cssText = 'width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;' +
+      (u.eh_dono ? 'background:var(--lime-soft,rgba(0,40,179,.12));color:var(--lime);' : 'background:#f1f1f7;color:var(--text-muted);');
+
+    const info = el('div'); info.style.cssText = 'flex:1;min-width:180px;';
+    const linha1 = el('div'); linha1.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
+    const nomeSpan = el('span'); nomeSpan.textContent = u.nome; nomeSpan.style.cssText = 'font-weight:700;font-size:13.5px;';
+    linha1.appendChild(nomeSpan);
+    if (u.eh_dono) { const b = el('span'); b.textContent = '(dono)'; b.style.cssText = 'font-size:11px;color:var(--lime);font-weight:700;'; linha1.appendChild(b); }
+    if (u.trocar_senha) { const p = el('span', 'pill parcial'); p.textContent = '1º acesso pendente'; linha1.appendChild(p); }
+    info.appendChild(linha1);
+    const emailP = el('div'); emailP.textContent = u.email; emailP.style.cssText = 'font-size:12px;color:var(--text-muted);margin-top:2px;';
+    info.appendChild(emailP);
+
+    const perfilPill = el('span', 'pill ' + (u.funcao_adm ? 'prem' : u.funcao_cs ? 'contato' : 'pad'));
+    perfilPill.textContent = eqPerfilLabel(u);
+    perfilPill.style.cssText += 'flex-shrink:0;';
+
+    const sitPill = el('span', 'pill ' + (vencido ? 'excluida' : 'agendado'));
+    sitPill.textContent = vencido ? 'Expirado' : 'Ativo';
+    sitPill.style.cssText += 'flex-shrink:0;';
+
+    const ultimo = el('div'); ultimo.style.cssText = 'flex-shrink:0;text-align:right;min-width:110px;';
+    const ultLbl = el('div'); ultLbl.textContent = 'Último acesso'; ultLbl.className = 'muted-cell';
+    const ultVal = el('div'); ultVal.textContent = fmtDataHoraBR(eqUltimoAcesso(u.email, logs)); ultVal.style.cssText = 'font-size:12px;font-weight:600;';
+    ultimo.append(ultLbl, ultVal);
+
+    const seta = el('span'); seta.textContent = '›'; seta.style.cssText = 'flex-shrink:0;color:var(--text-muted);font-size:18px;';
+
+    card.append(av, info, perfilPill, sitPill, ultimo, seta);
+    lista.appendChild(card);
   });
-  t.appendChild(tb);
 }
-/* mostra a senha temporária UMA vez, com botão de copiar */
-function mostrarSenhaTemp(nome, senha) {
-  const s = $('#eqStatus');
-  clear(s);
-  s.append('Senha temporária de ' + nome + ': ');
-  const b = el('b'); b.textContent = senha; b.style.cssText = 'font-size:14px;color:var(--accent-dark);';
-  const bc = el('button'); bc.textContent = 'Copiar'; bc.style.cssText = 'margin-left:8px;cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 9px;font-size:12px;';
-  bc.onclick = () => { navigator.clipboard.writeText(senha).then(() => { bc.textContent = '✓ Copiado'; }); };
-  s.append(b, bc, ' — envie para a pessoa; ela cria a própria senha no primeiro acesso. (Esta senha não aparece de novo!)');
+$('#eqBusca').addEventListener('input', () => renderEqLista({ ok: true, users: EQ_USERS_CACHE }, EQ_LOGS_CACHE));
+
+/* ---------- Modal: novo usuário ---------- */
+function eunPerfilSelecionado() { return document.querySelector('input[name="eunPerfil"]:checked').value; }
+function euAbrirNovo() {
+  ['#eunNome', '#eunEmail', '#eunCel', '#eunVal'].forEach((s) => { $(s).value = ''; });
+  document.querySelector('input[name="eunPerfil"][value="op"]').checked = true;
+  $('#eunErr').textContent = '';
+  $('#euNovoForm').style.display = 'grid';
+  $('#euNovoResultado').style.display = 'none';
+  $('#euNovoModal').style.display = 'flex';
+  $('#eunNome').focus();
 }
+function euFecharNovo() { $('#euNovoModal').style.display = 'none'; carregarEquipe(); }
+$('#eqNovoBtn').onclick = euAbrirNovo;
+$('#euNovoFechar').onclick = euFecharNovo;
+$('#euNovoModal').addEventListener('click', (e) => { if (e.target.id === 'euNovoModal') euFecharNovo(); });
+$('#eunSalvar').onclick = async () => {
+  const nome = $('#eunNome').value.trim();
+  const email = $('#eunEmail').value.trim();
+  if (!nome || !email) { $('#eunErr').textContent = 'Nome e e-mail são obrigatórios.'; return; }
+  const perfil = eunPerfilSelecionado();
+  $('#eunErr').textContent = '';
+  $('#eunSalvar').disabled = true; $('#eunSalvar').textContent = 'Criando...';
+  const r = await eqApi({
+    action: 'create', nome, email,
+    celular: $('#eunCel').value.trim(), validade: $('#eunVal').value || null,
+    funcao_adm: perfil === 'adm', funcao_cs: perfil === 'cs',
+  });
+  $('#eunSalvar').disabled = false; $('#eunSalvar').textContent = 'Criar usuário';
+  if (!r.ok) { $('#eunErr').textContent = r.error || 'Erro ao criar usuário.'; return; }
+  $('#euNovoForm').style.display = 'none';
+  $('#euNovoResultado').style.display = 'block';
+  $('#eunResEmail').textContent = email;
+  $('#eunResSenha').textContent = r.senhaTemporaria || '—';
+  $('#eunResCopiar').onclick = () => { navigator.clipboard.writeText(r.senhaTemporaria || '').then(() => { $('#eunResCopiar').textContent = '✓ Copiado'; }); };
+  // funil inteligente: cada usuário novo pode já nascer com o próprio quadro
+  if (confirm('Deseja criar automaticamente um quadro Kanban para ' + nome + '?')) {
+    const rq = await kbApi({ action: 'board_criar', nome, atendente: nome });
+    if (!rq.ok) alert(rq.error || 'Não consegui criar o quadro agora — dá para criar depois no módulo Quadro Kanban.');
+    else if (KB_CARREGADO) kbCarregar();
+  }
+};
+$('#eunResFechar').onclick = euFecharNovo;
+
+/* ---------- Modal: detalhe / editar usuário ---------- */
+function eudPerfilSelecionado() { return document.querySelector('input[name="eudPerfil"]:checked').value; }
+function euDetTrocarAba(aba) {
+  document.querySelectorAll('.euDetAba').forEach((b) => {
+    const ativo = b.dataset.aba === aba;
+    b.style.color = ativo ? 'var(--lime)' : 'var(--text-muted)';
+    b.style.borderBottomColor = ativo ? 'var(--lime)' : 'transparent';
+  });
+  $('#eudAbaDados').style.display = aba === 'dados' ? 'grid' : 'none';
+  $('#eudAbaPerfil').style.display = aba === 'perfil' ? 'block' : 'none';
+}
+document.querySelectorAll('.euDetAba').forEach((b) => { b.onclick = () => euDetTrocarAba(b.dataset.aba); });
+function euAbrirDetalhe(id) {
+  const u = EQ_USERS_CACHE.find((x) => x.id === id);
+  if (!u) return;
+  EQ_DET_ID = id;
+  $('#eudTit').textContent = u.nome;
+  clear($('#eudBadges'));
+  if (u.eh_dono) { const b = el('span', 'pill prem'); b.textContent = 'Dono da conta'; $('#eudBadges').appendChild(b); }
+  const perfilB = el('span', 'pill ' + (u.funcao_adm ? 'prem' : u.funcao_cs ? 'contato' : 'pad')); perfilB.textContent = eqPerfilLabel(u); $('#eudBadges').appendChild(perfilB);
+  if (u.trocar_senha) { const p = el('span', 'pill parcial'); p.textContent = '1º acesso pendente'; $('#eudBadges').appendChild(p); }
+
+  $('#eudNome').value = u.nome || ''; $('#eudEmail').value = u.email || ''; $('#eudCel').value = u.celular || '';
+  $('#eudVal').value = u.validade || '';
+  $('#eudCriadoEm').textContent = 'Criado em ' + fmtDataHoraBR(u.criado_em);
+  $('#eudSenhaStatus').textContent = u.trocar_senha ? 'Temporária — a pessoa ainda não fez o primeiro acesso.' : '✓ Senha própria (invisível pra você).';
+  $('#eudResetar').style.cssText = 'padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;' + btnCssTint('azul');
+  $('#eudErr').textContent = '';
+
+  document.querySelector('input[name="eudPerfil"][value="' + (u.funcao_adm ? 'adm' : u.funcao_cs ? 'cs' : 'op') + '"]').checked = true;
+  $('#eudBlocoExcluir').style.display = u.eh_dono ? 'none' : 'block';
+
+  euDetTrocarAba('dados');
+  $('#euDetModal').style.display = 'flex';
+}
+function euFecharDetalhe() { $('#euDetModal').style.display = 'none'; EQ_DET_ID = null; }
+$('#euDetFechar').onclick = euFecharDetalhe;
+$('#euDetModal').addEventListener('click', (e) => { if (e.target.id === 'euDetModal') euFecharDetalhe(); });
+
+$('#eudSalvar').onclick = async () => {
+  const nome = $('#eudNome').value.trim();
+  const email = $('#eudEmail').value.trim();
+  if (!nome || !email) { $('#eudErr').textContent = 'Nome e e-mail são obrigatórios.'; return; }
+  $('#eudErr').textContent = '';
+  const r = await eqApi({ action: 'update', id: EQ_DET_ID, nome, email, celular: $('#eudCel').value.trim(), validade: $('#eudVal').value || null });
+  if (!r.ok) { $('#eudErr').textContent = r.error || 'Erro ao salvar.'; return; }
+  await carregarEquipe();
+  euFecharDetalhe();
+};
+$('#eudSalvarPerfil').onclick = async () => {
+  const perfil = eudPerfilSelecionado();
+  const r = await eqApi({ action: 'update', id: EQ_DET_ID, funcao_adm: perfil === 'adm', funcao_cs: perfil === 'cs' });
+  if (!r.ok) { alert(r.error || 'Erro ao salvar perfil.'); return; }
+  await carregarEquipe();
+  euFecharDetalhe();
+};
+$('#eudResetar').onclick = async () => {
+  const u = EQ_USERS_CACHE.find((x) => x.id === EQ_DET_ID);
+  if (!u || !confirm('Resetar a senha de ' + u.nome + '? A senha atual deixa de funcionar e você recebe uma temporária nova para enviar.')) return;
+  const r = await eqApi({ action: 'reset', id: EQ_DET_ID });
+  if (!r.ok) { $('#eudErr').textContent = r.error || 'Erro ao resetar.'; return; }
+  $('#eudSenhaStatus').innerHTML = '';
+  const s = $('#eudSenhaStatus');
+  s.append('Nova senha temporária: ');
+  const b = el('b'); b.textContent = r.senhaTemporaria; b.style.cssText = 'font-size:13.5px;color:var(--accent-dark);';
+  const bc = el('button'); bc.textContent = 'Copiar'; bc.style.cssText = 'margin-left:8px;cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 9px;font-size:11.5px;';
+  bc.onclick = () => { navigator.clipboard.writeText(r.senhaTemporaria).then(() => { bc.textContent = '✓ Copiado'; }); };
+  s.append(b, bc);
+  carregarEquipe();
+};
+$('#eudExcluir').onclick = async () => {
+  const u = EQ_USERS_CACHE.find((x) => x.id === EQ_DET_ID);
+  if (!u) return;
+  if (!confirm('Excluir o acesso de ' + u.nome + '? Essa pessoa não conseguirá mais entrar no painel.')) return;
+  let r = await eqApi({ action: 'delete', id: u.id });
+  // usuário com leads/quadro: a administradora decide o destino ANTES (nada se perde)
+  if (!r.ok && r.precisaDestino) {
+    const manterOpcao = 'Manter como está (quadro fica visível só pra você)';
+    const opcoes = [manterOpcao, ...(ATENDENTES || []).filter((n) => n !== u.nome)];
+    const resp = await promptModal({
+      titulo: 'Leads vinculados a ' + u.nome,
+      sub: u.nome + ' tem ' + (r.leads || 0) + ' lead(s)' + (r.temQuadro ? ' e um quadro Kanban' : '') + ' vinculados. Escolha o que fazer antes de excluir.',
+      campos: [{ id: 'destino', label: 'Transferir para', tipo: 'select', options: opcoes }],
+      textoOk: 'Confirmar e excluir',
+    });
+    if (!resp) { euFecharDetalhe(); carregarEquipe(); return; }
+    const d = resp.destino === manterOpcao ? '(manter)' : resp.destino;
+    r = await eqApi({ action: 'delete', id: u.id, destino: d });
+  }
+  if (!r.ok) { $('#eudErr').textContent = r.error || 'Erro ao excluir.'; return; }
+  euFecharDetalhe();
+  carregarEquipe();
+  if (KB_CARREGADO) kbCarregar();
+};
 function renderEqLogs(res) {
   const t = $('#eqLogs'); clear(t);
   if (!res.ok) return;
@@ -5245,43 +5492,6 @@ function renderEqLogs(res) {
   });
   t.appendChild(tb);
 }
-function eqLimparForm() {
-  EQ_EDIT_ID = null;
-  ['#eqNome', '#eqEmail', '#eqCel', '#eqVal'].forEach((s) => { $(s).value = ''; });
-  $('#eqCS').checked = false;
-  $('#eqADM').checked = false;
-  $('#eqSalvar').textContent = 'Adicionar';
-  $('#eqCancelar').style.display = 'none';
-}
-$('#eqCancelar').onclick = eqLimparForm;
-$('#eqSalvar').onclick = async () => {
-  const criando = !EQ_EDIT_ID;
-  const nomeDigitado = $('#eqNome').value.trim();
-  const payload = {
-    action: criando ? 'create' : 'update',
-    id: EQ_EDIT_ID,
-    nome: nomeDigitado, email: $('#eqEmail').value,
-    celular: $('#eqCel').value, validade: $('#eqVal').value || null,
-    funcao_cs: $('#eqCS').checked, funcao_adm: $('#eqADM').checked,
-  };
-  $('#eqStatus').textContent = 'salvando…';
-  const r = await eqApi(payload);
-  if (r.ok) {
-    eqLimparForm();
-    if (criando && r.senhaTemporaria) mostrarSenhaTemp(nomeDigitado, r.senhaTemporaria);
-    else $('#eqStatus').textContent = '✓ salvo';
-    // funil inteligente: cada atendente novo pode já nascer com o próprio quadro
-    if (criando && confirm('Deseja criar automaticamente um quadro Kanban para ' + nomeDigitado + '?')) {
-      const rq = await kbApi({ action: 'board_criar', nome: nomeDigitado, atendente: nomeDigitado });
-      if (!rq.ok) alert(rq.error || 'Não consegui criar o quadro agora — dá para criar depois no módulo Quadro Kanban.');
-      else if (KB_CARREGADO) kbCarregar();
-    }
-    carregarEquipe();
-  } else {
-    $('#eqStatus').textContent = r.error || 'erro ao salvar';
-  }
-};
-
 // ================= ABA AGENDAMENTOS (CAL) =================
 let CAL_BOOKINGS = null;
 let CAL_SCOPE = '';   // '' = todos os eventos; 'funil' = só bookings deste funil (uid presente nos leads)
