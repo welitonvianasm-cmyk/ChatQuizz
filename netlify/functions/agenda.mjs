@@ -25,7 +25,7 @@
  *
  * Este proxy é só pra agenda LOCAL de emergência (quando o embed do Cal.com
  * falha) e pro roteamento por pool de vendedores — recurso não usado pelo
- * roteamento normal do ChatQuizz (que usa o link de Cal.com configurado
+ * roteamento normal do QuizzHub (que usa o link de Cal.com configurado
  * direto no Editor do Quiz → Roteamento). Por isso não depende de nenhum
  * arquivo privado: sem CAL_EMBED_VENDEDORES configurado, a lista de
  * vendedores fica vazia e o resto funciona normalmente.

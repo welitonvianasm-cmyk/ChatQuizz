@@ -1,4 +1,4 @@
-# ChatQuizz
+# QuizzHub
 
 Quiz de captação de leads em formato de chat, com painel (dashboard) para gerenciar os leads captados.
 
