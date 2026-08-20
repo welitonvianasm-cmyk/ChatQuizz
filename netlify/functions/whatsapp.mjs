@@ -11,7 +11,7 @@
  * Env (preencher quando o servidor da Evolution estiver no ar):
  *   EVOLUTION_URL      — ex.: https://sua-evolution-api.com
  *   EVOLUTION_KEY      — apikey global da Evolution
- *   EVOLUTION_INSTANCE — nome da instância (padrão: chatquizz)
+ *   EVOLUTION_INSTANCE — nome da instância (padrão: quizzhub)
  * Sem essas envs, tudo responde configurada:false e o painel cai no WhatsApp Web.
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
@@ -21,7 +21,7 @@ const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const EV_URL = (process.env.EVOLUTION_URL || '').replace(/\/+$/, '');
 const EV_KEY = process.env.EVOLUTION_KEY || '';
-const EV_INST = process.env.EVOLUTION_INSTANCE || 'chatquizz';
+const EV_INST = process.env.EVOLUTION_INSTANCE || 'quizzhub';
 // URL pública do site — Netlify preenche isso automaticamente (URL de produção)
 const SITE_URL = (process.env.URL || '').replace(/\/+$/, '');
 const AVISO_SQL = 'Falta rodar o setup-whatsapp.sql no Supabase (módulo WhatsApp).';

@@ -154,8 +154,8 @@ export default async (req) => {
     if (row.status === 'completo' && respostas) {
       dispararMentoriaHub(contaId, 'lead_qualificado', {
         nome: row.nome, email: row.email, telefone: row.whatsapp, estado: row.uf,
-        canalCaptacao: row.utm_source ? `chatquizz-${row.utm_source}` : 'chatquizz',
-        campanha: row.utm_campaign, conteudoEspecifico: row.utm_content, tags: ['chatquizz'],
+        canalCaptacao: row.utm_source ? `quizzhub-${row.utm_source}` : 'quizzhub',
+        campanha: row.utm_campaign, conteudoEspecifico: row.utm_content, tags: ['quizzhub'],
         chatquizzLeadRef: row.lead_ref,
         qualificadorQuiz: row.qualificador, nivelConscienciaQuiz: row.nivel_consciencia,
         scoreQuiz: row.lead_score, rendaQuiz: row.renda,
