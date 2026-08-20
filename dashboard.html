@@ -1666,10 +1666,10 @@
       <h2>Usuários</h2>
       <div class="sub">Só você (administradora) vê esta área. Ao criar um usuário, o sistema gera uma <b>senha temporária</b> para você enviar à pessoa — no primeiro acesso ela cria a própria senha (que ninguém consegue ver, nem você). A data de validade corta o acesso automaticamente ao vencer (vazia = sem prazo).</div>
 
-      <div style="display:flex;gap:14px;flex-wrap:wrap;margin:14px 0;">
-        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="eqkTotal" style="display:block;font-size:20px;">—</b><span class="muted-cell">Total</span></div>
-        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="eqkAtivos" style="display:block;font-size:20px;">—</b><span class="muted-cell">Ativos</span></div>
-        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="eqkPendentes" style="display:block;font-size:20px;">—</b><span class="muted-cell">Aguardando 1º acesso</span></div>
+      <div class="kpis" style="grid-template-columns:repeat(3,1fr);margin:14px 0;">
+        <div class="kpi"><div class="k-label">Total</div><b class="k-num" id="eqkTotal">—</b></div>
+        <div class="kpi"><div class="k-label">Ativos</div><b class="k-num" id="eqkAtivos">—</b></div>
+        <div class="kpi"><div class="k-label">Aguardando 1º acesso</div><b class="k-num" id="eqkPendentes">—</b></div>
       </div>
 
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
@@ -1698,11 +1698,11 @@
       <h2>Master · Contas</h2>
       <div class="sub">Todas as contas (assinantes) do QuizzHub — criar, editar dados cadastrais, trocar plano/status, ativar domínio próprio e acessar como o cliente pra dar suporte.</div>
 
-      <div style="display:flex;gap:14px;flex-wrap:wrap;margin:14px 0;">
-        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="mkTotal" style="display:block;font-size:20px;">—</b><span class="muted-cell">Contas</span></div>
-        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="mkAtivas" style="display:block;font-size:20px;">—</b><span class="muted-cell">Ativas</span></div>
-        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="mkCompleto" style="display:block;font-size:20px;">—</b><span class="muted-cell">Plano Completo</span></div>
-        <div style="flex:1;min-width:130px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 15px;"><b id="mkLite" style="display:block;font-size:20px;">—</b><span class="muted-cell">Plano Lite</span></div>
+      <div class="kpis" style="grid-template-columns:repeat(4,1fr);margin:14px 0;">
+        <div class="kpi"><div class="k-label">Contas</div><b class="k-num" id="mkTotal">—</b></div>
+        <div class="kpi"><div class="k-label">Ativas</div><b class="k-num" id="mkAtivas">—</b></div>
+        <div class="kpi"><div class="k-label">Plano Completo</div><b class="k-num" id="mkCompleto">—</b></div>
+        <div class="kpi"><div class="k-label">Plano Lite</div><b class="k-num" id="mkLite">—</b></div>
       </div>
 
       <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
@@ -2260,6 +2260,15 @@ function toast(tipo, titulo, msg) {
   setTimeout(() => { div.style.transition = 'opacity .2s'; div.style.opacity = '0'; setTimeout(() => div.remove(), 200); }, 4000);
 }
 
+/* ===== Empty state padrão (ícone + título + descrição) ===== */
+function emptyState(titulo, desc) {
+  const box = el('div', 'empty-state');
+  box.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>';
+  const b = el('b'); b.textContent = titulo; box.appendChild(b);
+  if (desc) { const p = el('p'); p.textContent = desc; box.appendChild(p); }
+  return box;
+}
+
 /* ===== cabeçalho padrão dos cards: ícone SVG na cor da seção ===== */
 const DS_PATHS = {
   grafico: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 13v4"/><path d="M12 9v8"/><path d="M17 5v12"/>',
@@ -2361,7 +2370,7 @@ function podeAcessarLead(r) {
   return IS_ADMIN || !resp || resp === USUARIO;
 }
 function avisarLeadBloqueado(r) {
-  alert('Este lead está vinculado ao atendente ' + String(r.atendente || '').trim()
+  toast('error', 'Aviso', 'Este lead está vinculado ao atendente ' + String(r.atendente || '').trim()
     + '.\n\nO acesso é restrito: somente o responsável ou a administradora podem abrir e alterar este lead.');
 }
 async function salvarLeadCampos(r, campos) {
@@ -2397,7 +2406,7 @@ async function salvarLeadCampos(r, campos) {
     renderAgendaram(); renderPorAtendente(); renderReunioes();
     if (campos.agendamento_status !== undefined) carregarAlertas(false);   // presença pode ter gerado alerta
     if (LM_ATUAL === r) abrirLeadModal(r);   // cartão aberto acompanha a mudança
-  } else alert(res.error || 'Erro ao salvar.');
+  } else toast('error', 'Aviso', res.error || 'Erro ao salvar.');
   return res;
 }
 async function excluirLead(r) {
@@ -2407,7 +2416,7 @@ async function excluirLead(r) {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'excluir', lead_ref: r.lead_ref }),
   }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
-  if (!res.ok) { alert(res.error || 'Erro ao excluir.'); return; }
+  if (!res.ok) { toast('error', 'Aviso', res.error || 'Erro ao excluir.'); return; }
   const i = ALL.indexOf(r); if (i >= 0) ALL.splice(i, 1);
   fecharLeadModal();
   render();
@@ -2734,7 +2743,7 @@ function abrirCalModal(r) {
   if (!podeAcessarLead(r)) { avisarLeadBloqueado(r); return; }
   const rota = ROTEAMENTO_CACHE[r.call_track] || {};
   if (rota.tipo !== 'calcom' || !rota.calLink) {
-    alert('Este lead não tem um qualificador com roteamento Cal.com configurado (Configurações → Editor do Quiz → Roteamento).');
+    toast('error', 'Aviso', 'Este lead não tem um qualificador com roteamento Cal.com configurado (Configurações → Editor do Quiz → Roteamento).');
     return;
   }
   CM_LINK = rota.calLink;
@@ -3046,7 +3055,7 @@ function qeRenderPerguntas(box) {
       row.appendChild(qeSelectNivel(o));
       const bx = el('button', 'acao-btn'); bx.textContent = '✕'; bx.title = 'Remover opção';
       bx.onclick = () => {
-        if (p.opts.length <= 2) { alert('Cada pergunta precisa de pelo menos 2 opções.'); return; }
+        if (p.opts.length <= 2) { toast('error', 'Aviso', 'Cada pergunta precisa de pelo menos 2 opções.'); return; }
         p.opts.splice(oi, 1); qeRenderTudo();
       };
       row.appendChild(bx);
@@ -3105,7 +3114,7 @@ function qeRenderLista(box, chaveLista, temCor) {
     const nome = r.nome;
     const chave = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || ('item' + Date.now());
-    if (lista.some((x) => x.chave === chave)) { alert('Já existe um ' + singular + ' com essa chave.'); return; }
+    if (lista.some((x) => x.chave === chave)) { toast('error', 'Aviso', 'Já existe um ' + singular + ' com essa chave.'); return; }
     const novo = { chave, nome, ordem: lista.length, ativo: true };
     if (temCor) novo.cor = '#22A55E';
     lista.push(novo);
@@ -3323,7 +3332,7 @@ function linksRender() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'editar', slug: l.slug, ativo: cativo.checked }),
       }).then((x) => x.json()).catch(() => ({ ok: false }));
-      if (r.ok) { l.ativo = cativo.checked; } else { cativo.checked = !cativo.checked; alert('Erro ao atualizar.'); }
+      if (r.ok) { l.ativo = cativo.checked; } else { cativo.checked = !cativo.checked; toast('error', 'Aviso', 'Erro ao atualizar.'); }
     };
     lativo.appendChild(cativo);
     const bdel = el('button', 'acao-btn'); bdel.textContent = 'Excluir';
@@ -3333,7 +3342,7 @@ function linksRender() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'excluir', slug: l.slug }),
       }).then((x) => x.json()).catch(() => ({ ok: false }));
-      if (r.ok) linksCarregar(); else alert('Erro ao excluir.');
+      if (r.ok) linksCarregar(); else toast('error', 'Aviso', 'Erro ao excluir.');
     };
     tr.append(td(l.nome), td(linkCel), td(l.utm_source), td(lativo), td(bdel));
     tb.appendChild(tr);
@@ -3682,7 +3691,7 @@ function kbRender() {
         if (motivo === null) { kbRender(); return; }   // desistiu
       }
       const r = await kbApi({ action: 'card_mover', id: cardMovido ? cardMovido.id : 0, col_id: col.id, motivo });
-      if (!r.ok) { alert(r.error || 'Erro ao mover.'); kbCarregar(); return; }
+      if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao mover.'); kbCarregar(); return; }
       // coluna oficial → espelha o Status do lead no painel na hora
       const lead = cardMovido ? byRef.get(cardMovido.lead_ref) : null;
       if (lead && col.tipo && col.tipo !== 'followup') {
@@ -3895,8 +3904,8 @@ function renderKpis(rows) {
     + (agendRows > agendados ? ' · ' + nf(agendRows - agendados) + ' duplicadas ignoradas' : '');
 
   box.append(
-    kpiCard('Total de leads', nf(total), 'entraram no quiz'),
-    kpiCard('Agendaram conversa', nf(agendados), agendSub, { hero: true }),
+    kpiCard('Total de leads', nf(total), 'entraram no quiz', { hero: true }),
+    kpiCard('Agendaram conversa', nf(agendados), agendSub),
     kpiCard('Completaram o quiz', nf(completos), pct(completos, total) + '% do total', { color: 'blue' }),
     kpiCard('Pararam no meio', nf(Math.max(0, total - completos)), 'responderam só uma parte', { color: 'amber' }),
   );
@@ -4776,6 +4785,11 @@ function drawLeads() {
     tr.append(td(ver));
     tb.appendChild(tr);
   });
+  if (!data.length) {
+    const tr = el('tr'); const c = td(''); c.colSpan = cols.length;
+    c.appendChild(emptyState('Nenhum lead encontrado', 'Ajuste os filtros ou a busca pra ver outros resultados.'));
+    tr.appendChild(c); tb.appendChild(tr);
+  }
   t.appendChild(tb);
   desenharPaginador(t, data.length, totalPag);
 }
@@ -4878,14 +4892,14 @@ async function salvarVenda(r, venda) {
     r.venda_json = res.venda_json;
     if (res.equipe_json) r.equipe_json = res.equipe_json;
     renderPosConv(); renderPosAtend(); renderPosFin();
-  } else alert(res.error || 'Erro ao salvar.');
+  } else toast('error', 'Aviso', res.error || 'Erro ao salvar.');
   return res;
 }
 async function marcarRecebido(r) {
-  if (!IS_ADMIN && !IS_CS) { alert('Somente a administradora ou usuários com Função CS podem marcar como Recebido.'); return; }
+  if (!IS_ADMIN && !IS_CS) { toast('error', 'Aviso', 'Somente a administradora ou usuários com Função CS podem marcar como Recebido.'); return; }
   const v = vendaDe(r);
   if (!vendaCompleta(v)) {
-    alert('Antes de marcar como Recebido, complete os dados da venda (CPF/CNPJ, endereço, produto, valor e forma de pagamento).');
+    toast('error', 'Aviso', 'Antes de marcar como Recebido, complete os dados da venda (CPF/CNPJ, endereço, produto, valor e forma de pagamento).');
     abrirVendaModal(r);
     return;
   }
@@ -4898,7 +4912,7 @@ async function marcarRecebido(r) {
     r.venda_json = res.venda_json;
     if (res.equipe_json) r.equipe_json = res.equipe_json;
     renderPosConv(); renderPosFin();
-  } else alert(res.error || 'Erro.');
+  } else toast('error', 'Aviso', res.error || 'Erro.');
 }
 
 /* --- modal Dados da venda --- */
@@ -4962,7 +4976,7 @@ $('#vmNovoProduto').onclick = async () => {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'criar', nome, valor: Number(String(valor).replace(/\./g, '').replace(',', '.')) || 0 }),
   }).then((x) => x.json()).catch(() => ({ ok: false }));
-  if (!r.ok) { alert(r.error || 'Erro ao cadastrar o produto.'); return; }
+  if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao cadastrar o produto.'); return; }
   await carregarProdutos(true);
   vmPreencherProdutos();
   $('#vmProduto').value = r.produto.nome;
@@ -5112,7 +5126,7 @@ function telefoneDe(r) { return String(r.whatsapp || '').replace(/\D/g, ''); }
 function chatDisponivel() { return WA.configurada && WA.estado === 'conectada' && WA.conversas; }
 function abrirConversa(r) {
   const tel = telefoneDe(r);
-  if (!tel) { alert('Este lead não tem WhatsApp cadastrado.'); return; }
+  if (!tel) { toast('error', 'Aviso', 'Este lead não tem WhatsApp cadastrado.'); return; }
   if (chatDisponivel()) abrirChat(tel, r.nome || tel, r);
   else window.open('https://wa.me/' + tel, '_blank', 'noopener');
 }
@@ -5172,7 +5186,7 @@ async function chMandar() {
   if (!texto || !CH.tel) return;
   $('#chInput').value = '';
   const r = await waApi({ action: 'send', telefone: CH.tel, texto, lead_ref: CH.lead ? CH.lead.lead_ref : '' });
-  if (!r.ok) { alert(r.error || 'Erro ao enviar.'); $('#chInput').value = texto; return; }
+  if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao enviar.'); $('#chInput').value = texto; return; }
   carregarChat(true);
 }
 $('#chEnviar').onclick = chMandar;
@@ -5254,7 +5268,7 @@ function renderAutomacoes() {
   AM_LISTA.forEach((a) => {
     const tr = el('tr');
     const sw = el('input'); sw.type = 'checkbox'; sw.checked = !!a.ativa; sw.style.cssText = 'width:16px;height:16px;accent-color:var(--lime);cursor:pointer;';
-    sw.onchange = async () => { const r = await amApi({ action: 'editar', id: a.id, ativa: sw.checked }); if (!r.ok) { alert(r.error || 'Erro.'); sw.checked = !sw.checked; } else a.ativa = sw.checked; };
+    sw.onchange = async () => { const r = await amApi({ action: 'editar', id: a.id, ativa: sw.checked }); if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro.'); sw.checked = !sw.checked; } else a.ativa = sw.checked; };
     const ed = el('button', 'acao-btn'); ed.textContent = 'Editar';
     ed.onclick = () => {
       AM_EDIT = a.id;
@@ -5364,7 +5378,7 @@ $('#leadsOrigemSel').addEventListener('change', (e) => { ORIGEM_FILTER = e.targe
 $('#leadsQualificadorSel').addEventListener('change', (e) => { QUALIFICADOR_FILTER = e.target.value; drawLeads(); });
 $('#agNovoBtn').onclick = () => {
   const link = primeiroCalLinkConfigurado();
-  if (!link) { alert('Nenhum link de Cal.com configurado ainda. Configure em Configurações → Editor do Quiz → Roteamento.'); return; }
+  if (!link) { toast('error', 'Aviso', 'Nenhum link de Cal.com configurado ainda. Configure em Configurações → Editor do Quiz → Roteamento.'); return; }
   window.open(link, '_blank', 'noopener');
 };
 $('#leadsStatusSel').addEventListener('change', (e) => {
@@ -5559,7 +5573,7 @@ $('#eunSalvar').onclick = async () => {
   // funil inteligente: cada usuário novo pode já nascer com o próprio quadro
   if (confirm('Deseja criar automaticamente um quadro Kanban para ' + nome + '?')) {
     const rq = await kbApi({ action: 'board_criar', nome, atendente: nome });
-    if (!rq.ok) alert(rq.error || 'Não consegui criar o quadro agora — dá para criar depois no módulo Quadro Kanban.');
+    if (!rq.ok) toast('error', 'Aviso', rq.error || 'Não consegui criar o quadro agora — dá para criar depois no módulo Quadro Kanban.');
     else if (KB_CARREGADO) kbCarregar();
   }
 };
@@ -5617,7 +5631,7 @@ $('#eudSalvar').onclick = async () => {
 $('#eudSalvarPerfil').onclick = async () => {
   const perfil = eudPerfilSelecionado();
   const r = await eqApi({ action: 'update', id: EQ_DET_ID, funcao_adm: perfil === 'adm', funcao_cs: perfil === 'cs' });
-  if (!r.ok) { alert(r.error || 'Erro ao salvar perfil.'); return; }
+  if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao salvar perfil.'); return; }
   await carregarEquipe();
   euFecharDetalhe();
 };
@@ -5897,13 +5911,13 @@ async function masterSalvarCampo(c, campos, celula) {
 async function masterExcluir(c) {
   if (!confirm('Excluir a conta "' + (c.nome || '') + '"?\n\nOs dados continuam guardados e dá pra restaurar depois — a conta só some das listagens e ninguém mais consegue logar nela.')) return;
   const r = await masterApi({ action: 'excluir', id: c.id });
-  if (!r.ok) { alert(r.error || 'Erro ao excluir.'); return; }
+  if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao excluir.'); return; }
   c.status = 'excluida';
   masterRender();
 }
 async function masterRestaurar(c) {
   const r = await masterApi({ action: 'restaurar', id: c.id });
-  if (!r.ok) { alert(r.error || 'Erro ao restaurar.'); return; }
+  if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao restaurar.'); return; }
   c.status = 'ativa';
   masterRender();
 }
@@ -5911,7 +5925,7 @@ async function masterAlternarDominio(c) {
   const acao = c.dominio_status === 'ativo' ? 'desativar_dominio' : 'ativar_dominio';
   if (acao === 'ativar_dominio' && !confirm('Ativar o domínio "' + c.dominio_proprio + '"?\n\nSó confirme depois de já ter conferido o DNS e adicionado esse domínio em Netlify → Domain management → Add domain alias.')) return;
   const r = await masterApi({ action: acao, id: c.id });
-  if (!r.ok) { alert(r.error || 'Erro ao salvar.'); return; }
+  if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao salvar.'); return; }
   c.dominio_status = acao === 'ativar_dominio' ? 'ativo' : 'pendente';
   masterRender();
 }
