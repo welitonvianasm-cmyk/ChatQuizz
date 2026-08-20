@@ -370,24 +370,24 @@
   .panel h2 .h-ic { width: 30px; height: 30px; }
 
   /* ===== CABEÇALHO COLORIDO DE SEÇÃO (banner por submenu) ===== */
-  .pbanner { --pb-fg: var(--text-1); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-radius: 16px; padding: 16px 22px; margin-bottom: 18px; color: var(--pb-fg); background: linear-gradient(120deg, var(--surface-card-2), var(--bg-sidebar)); border: 1px solid var(--border); }
+  .pbanner { --pb-fg: var(--brand-ink); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-radius: 16px; padding: 16px 22px; margin-bottom: 18px; color: var(--pb-fg); background: var(--brand); border: none; }
   .pbanner-esq { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .pbanner-ic { width: 38px; height: 38px; border-radius: 11px; background: rgba(255, 255, 255, .2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .pbanner-ic { width: 38px; height: 38px; border-radius: 11px; background: rgba(23, 20, 11, .14); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .pbanner-ic svg { width: 20px; height: 20px; stroke: var(--pb-fg); }
   .pbanner-tit { font-size: 15px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; line-height: 1.3; color: var(--pb-fg); }
-  .pbanner-sub { font-size: 12px; font-weight: 500; opacity: .88; margin-top: 2px; color: var(--pb-fg); }
+  .pbanner-sub { font-size: 12px; font-weight: 500; opacity: .78; margin-top: 2px; color: var(--pb-fg); }
   .pbanner-acoes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .pbanner-acoes:empty { display: none; }
   .pbanner-acoes .fbar, .pbanner-acoes .ag-toolbar, .pbanner-acoes .kb-toolbar, .pbanner-acoes .tbl-tools { margin: 0; }
-  .pbanner-acoes input, .pbanner-acoes select, .pbanner-acoes .fmais, .pbanner-acoes .btn { background: rgba(255, 255, 255, .06); border: 1.5px solid var(--border-strong); color: var(--pb-fg); }
-  .pbanner-acoes input::placeholder { color: var(--text-3); }
+  .pbanner-acoes input, .pbanner-acoes select, .pbanner-acoes .fmais, .pbanner-acoes .btn { background: rgba(23, 20, 11, .12); border: 1.5px solid rgba(23, 20, 11, .22); color: var(--pb-fg); }
+  .pbanner-acoes input::placeholder { color: rgba(23, 20, 11, .55); }
   .pbanner-acoes select option { color: #111; }
-  .pbanner-acoes .fmais:hover, .pbanner-acoes .btn:hover { background: rgba(255, 255, 255, .12); border-color: var(--text-3); }
-  .pbanner-acoes .fmais.on { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
-  .pbanner-acoes .muted-cell, .pbanner-acoes b, .pbanner-acoes span { color: var(--pb-fg); opacity: .92; }
-  .pbanner-acoes .seg { background: rgba(255, 255, 255, .06); border-radius: 8px; padding: 2px; }
-  .pbanner-acoes .seg button { color: var(--pb-fg); opacity: .85; background: none; border: none; }
-  .pbanner-acoes .seg button.on { background: var(--brand); color: var(--brand-ink); opacity: 1; }
+  .pbanner-acoes .fmais:hover, .pbanner-acoes .btn:hover { background: rgba(23, 20, 11, .2); border-color: rgba(23, 20, 11, .35); }
+  .pbanner-acoes .fmais.on { background: var(--bg-sidebar); border-color: var(--bg-sidebar); color: var(--brand); }
+  .pbanner-acoes .muted-cell, .pbanner-acoes b, .pbanner-acoes span { color: var(--pb-fg); opacity: .85; }
+  .pbanner-acoes .seg { background: rgba(23, 20, 11, .12); border-radius: 8px; padding: 2px; }
+  .pbanner-acoes .seg button { color: var(--pb-fg); opacity: .75; background: none; border: none; }
+  .pbanner-acoes .seg button.on { background: var(--bg-sidebar); color: var(--brand); opacity: 1; }
   /* filtros bem mais compactos dentro do banner (caixa e fonte menores) */
   .pbanner .pbanner-acoes select, .pbanner .pbanner-acoes .fmais, .pbanner .pbanner-acoes .btn { padding: 6px 10px; font-size: 11.5px; max-width: 160px; }
   .pbanner .pbanner-acoes .fbusca { padding: 6px 10px; font-size: 11.5px; min-width: 150px; }
