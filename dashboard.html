@@ -9,25 +9,41 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  /* ================= DESIGN SYSTEM (18/08/2026) =================
-     Primária:   Azul #0028B3 (ações principais, sidebar, menu ativo, KPIs)
-     Secundária: Roxo claro #A78BFA (só em gráficos/informativos)
-     Sidebar:    sólida na cor primária (#0028B3) · Fundo geral: #F8FAFC · Cards: brancos
-     Ícones sempre em "chip" — quadrado arredondado com fundo pastel da cor + traço sólido
-     ~75% branco · 15% cinzas · 10% cor de destaque (esquema/distribuição inspirados no MentoriaHub)  */
+  /* ================= DESIGN SYSTEM (20/08/2026) — Dark Premium SaaS =================
+     Fundo quase preto (#100B1A) · superfícies roxo-carvão · amarelo neon #F2F862 como
+     cor de marca usada com moderação (ações primárias, destaque único, item ativo).
+     Proporção alvo ~70% escuro · 20% cinza-roxo · 10% amarelo.
+     Ícones estilo Lucide outline (stroke, sem preenchimento).
+     Os nomes de variável antigos (--lime, --card, --bg, --green...) seguem existindo como
+     ALIAS pros tokens novos — todo `var(--nome-antigo)` espalhado pelo arquivo já repinta
+     sozinho pro tema novo sem precisar editar cada uso. */
   :root {
-    --lime: #0028B3; --lime-hover: #001F8A; --lime-soft: rgba(0, 40, 179, .14);
-    --lime-icon: #0028B3;
-    --ink: #1F2937;
-    --accent: #4F8CFF; --accent-dark: #3B75E0; --accent-soft: rgba(79, 140, 255, .12);
+    /* ---- tokens novos ---- */
+    --bg-primary: #100B1A; --bg-secondary: #15121F; --bg-sidebar: #0D0A16;
+    --surface-card: #1B1724; --surface-card-2: #211D2D; --surface-input: #242131; --surface-hover: #2B2738;
+    --border: #3A3548; --border-strong: #4A4558;
+    --text-1: #F7F7F7; --text-2: #A7A4AF; --text-3: #777281; --text-4: #55515F;
+    --brand: #F2F862; --brand-hover: #E6EE31; --brand-light: #F8FC8A; --brand-ink: #17140B;
+    --success-bg: #D8F6CF; --success-text: #286A38;
+    --warning-bg: #F7D774; --warning-text: #7A5B12;
+    --danger-bg: #F49587; --danger-text: #8F3026;
+    --info-bg: #C7C6F5; --info-text: #423C7A;
+    --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 20px; --radius-pill: 999px;
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-7: 32px; --sp-8: 40px; --sp-9: 48px; --sp-10: 64px;
+
+    /* ---- alias (compatibilidade com os ~700 usos existentes de var(--nome-antigo)) ---- */
+    --lime: var(--brand); --lime-hover: var(--brand-hover); --lime-soft: rgba(242, 248, 98, .14);
+    --lime-icon: var(--brand);
+    --ink: var(--text-1);
+    --accent: var(--brand); --accent-dark: var(--brand-hover); --accent-soft: rgba(242, 248, 98, .14);
     --chart: #A78BFA; --chart-dark: #8B5CF6;   /* roxo claro: gráficos e informativos */
-    --bg: #F8FAFC; --card: #ffffff; --line: #E5E7EB; --sidebar: #0028B3;
-    --text: #1F2937; --text-body: #374151; --text-muted: #6B7280; --text-dim: #9CA3AF;
-    --green: #22A55E; --green-soft: #dcfce7; --amber: #F59E0B; --amber-soft: #FEF3C7;
-    --blue: #4F8CFF; --blue-soft: #E3EDFF; --red: #FF5A5F; --red-soft: #FFE7E8;
+    --bg: var(--bg-primary); --card: var(--surface-card); --line: var(--border); --sidebar: var(--bg-sidebar);
+    --text: var(--text-1); --text-body: var(--text-2); --text-muted: var(--text-3); --text-dim: var(--text-4);
+    --green: #4ADE80; --green-soft: rgba(74, 222, 128, .16); --amber: #F5A623; --amber-soft: rgba(245, 166, 35, .16);
+    --blue: #8B85F0; --blue-soft: rgba(139, 133, 240, .16); --red: #F2735E; --red-soft: rgba(242, 115, 94, .16);
     --chart-soft: rgba(167, 139, 250, .16);
-    --shadow: 0 1px 2px rgba(17, 24, 39, .05), 0 6px 18px rgba(17, 24, 39, .04);
-    --shadow-md: 0 4px 10px rgba(17, 24, 39, .07), 0 12px 32px rgba(17, 24, 39, .07);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .24);
+    --shadow-md: 0 6px 20px rgba(0, 0, 0, .34), 0 12px 32px rgba(0, 0, 0, .28);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -47,24 +63,24 @@
   #gate { position: fixed; inset: 0; z-index: 100; display: flex; overflow: hidden; }
   .gl-esq {
     flex: 1 1 56%; min-width: 0; position: relative; overflow: hidden;
-    background: linear-gradient(160deg, #f6f9ff, #eaf0fb);
+    background: linear-gradient(160deg, var(--bg-secondary), var(--bg-primary));
     display: flex; flex-direction: column; justify-content: center;
     padding: 48px clamp(28px, 6vw, 90px);
   }
   .gl-esq::before, .gl-esq::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
-  .gl-esq::before { width: 340px; height: 340px; top: -130px; right: -110px; background: rgba(0, 40, 179, .07); }
-  .gl-esq::after { width: 260px; height: 260px; bottom: -110px; left: -70px; background: rgba(0, 40, 179, .05); }
+  .gl-esq::before { width: 340px; height: 340px; top: -130px; right: -110px; background: rgba(242, 248, 98, .06); }
+  .gl-esq::after { width: 260px; height: 260px; bottom: -110px; left: -70px; background: rgba(242, 248, 98, .04); }
   .gl-marca { display: flex; align-items: center; gap: 12px; margin-bottom: 44px; position: relative; z-index: 1; }
-  .gl-marca .logo { width: 44px; height: 44px; border-radius: 12px; background: var(--lime); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 19px; flex-shrink: 0; }
+  .gl-marca .logo { width: 44px; height: 44px; border-radius: 12px; background: var(--brand); color: var(--brand-ink); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 19px; flex-shrink: 0; }
   .gl-marca b { font-size: 20px; font-weight: 800; color: var(--ink); }
   .gl-marca b span { color: var(--lime); }
   .gl-titulo { font-size: clamp(26px, 3.4vw, 38px); font-weight: 800; color: var(--ink); line-height: 1.18; margin-bottom: 14px; position: relative; z-index: 1; max-width: 480px; }
   .gl-titulo span { color: var(--lime); }
   .gl-sub { font-size: 14.5px; color: var(--text-muted); margin-bottom: 30px; position: relative; z-index: 1; max-width: 420px; }
   .gl-icones { display: flex; gap: 10px; flex-wrap: wrap; position: relative; z-index: 1; }
-  .gl-icones span { width: 40px; height: 40px; border-radius: 50%; background: #fff; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; color: var(--lime); flex-shrink: 0; }
+  .gl-icones span { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-card-2); box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; color: var(--brand); flex-shrink: 0; }
   .gl-icones svg { width: 18px; height: 18px; }
-  .gl-dir { flex: 0 0 44%; min-width: 320px; display: flex; align-items: center; justify-content: center; padding: 40px 24px; background: linear-gradient(135deg, #0028B3, #001A73); }
+  .gl-dir { flex: 0 0 44%; min-width: 320px; display: flex; align-items: center; justify-content: center; padding: 40px 24px; background: linear-gradient(135deg, var(--bg-sidebar), var(--bg-primary)); }
   .gl-card { background: var(--card); border-radius: 18px; box-shadow: var(--shadow-md); padding: 36px 32px; width: 100%; max-width: 380px; }
   .gl-card h1 { font-size: 21px; font-weight: 800; margin-bottom: 4px; text-align: left; }
   .gl-lead { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; text-align: left; }
@@ -74,11 +90,11 @@
     width: 100%; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg);
     font-size: 14.5px; outline: none; transition: border-color .15s, background .15s;
   }
-  .gl-card input:focus { border-color: var(--accent); background: #fff; }
-  .gl-ver { position: absolute; right: 13px; top: 34px; font-size: 11.5px; font-weight: 700; color: var(--lime); cursor: pointer; -webkit-user-select: none; user-select: none; }
+  .gl-card input:focus { border-color: var(--accent); background: var(--surface-input); }
+  .gl-ver { position: absolute; right: 13px; top: 34px; font-size: 11.5px; font-weight: 700; color: var(--brand); cursor: pointer; -webkit-user-select: none; user-select: none; }
   .gl-card button {
     width: 100%; padding: 13px; border: none; border-radius: 11px; cursor: pointer;
-    background: var(--lime); color: #fff; font-size: 15px; font-weight: 700; margin-top: 6px;
+    background: var(--lime); color: var(--brand-ink); font-size: 15px; font-weight: 700; margin-top: 6px;
   }
   .gl-card button:hover { background: var(--lime-hover); }
   @media (max-width: 860px) {
@@ -92,7 +108,7 @@
     padding: 32px 28px; width: 100%; max-width: 360px; text-align: center;
   }
   .gate-logo {
-    width: 52px; height: 52px; border-radius: 13px; background: #16161e; color: #fff;
+    width: 52px; height: 52px; border-radius: 13px; background: var(--brand); color: var(--brand-ink);
     display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
     font-weight: 800; font-size: 19px; letter-spacing: .02em;
   }
@@ -101,11 +117,12 @@
   .gate-card input {
     width: 100%; padding: 13px 15px; border: 1.5px solid var(--line); border-radius: 11px;
     font-size: 15px; outline: none; transition: border-color .15s; margin-bottom: 12px;
+    background: var(--surface-input); color: var(--text);
   }
   .gate-card input:focus { border-color: var(--accent); }
   .gate-card button {
     width: 100%; padding: 13px; border: none; border-radius: 11px; cursor: pointer;
-    background: var(--lime); color: #fff; font-size: 15px; font-weight: 700;
+    background: var(--lime); color: var(--brand-ink); font-size: 15px; font-weight: 700;
   }
   .gate-card button:hover { background: var(--lime-hover); }
   .gate-err { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 16px; }
@@ -121,14 +138,47 @@
     border: none; background: transparent; padding: 8px 12px; cursor: pointer; font-size: 12.5px;
     color: var(--text-muted); font-weight: 600; transition: all .12s;
   }
-  .seg button.on { background: var(--lime); color: #fff; }
+  .seg button.on { background: var(--lime); color: var(--brand-ink); }
   .btn {
     border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 13px;
     cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text);
     transition: all .12s; display: inline-flex; align-items: center; gap: 6px;
   }
-  .btn:hover { background: var(--bg); border-color: var(--text-dim); box-shadow: var(--shadow); }
+  .btn:hover { background: var(--surface-hover); border-color: var(--border-strong); box-shadow: var(--shadow); }
   .updated { font-size: 11.5px; color: var(--text-dim); width: 100%; margin-top: -8px; }
+
+  /* ===== VOCABULÁRIO DE COMPONENTES (botões, campo, badges) ===== */
+  .btn-primary, .btn-secondary, .btn-ghost, .btn-danger {
+    border-radius: var(--radius-md); padding: 9px 16px; cursor: pointer; font-size: 13px; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid transparent; line-height: 1.2;
+  }
+  .btn-primary { background: var(--brand); color: var(--brand-ink); }
+  .btn-primary:hover { background: var(--brand-hover); }
+  .btn-secondary { background: var(--surface-card-2); color: var(--text-1); border-color: var(--border); }
+  .btn-secondary:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+  .btn-ghost { background: transparent; color: var(--text-2); border-color: transparent; }
+  .btn-ghost:hover { background: var(--surface-hover); color: var(--text-1); }
+  .btn-danger { background: transparent; color: var(--danger-bg); border-color: var(--border); }
+  .btn-danger:hover { background: rgba(244, 149, 135, .12); border-color: var(--danger-bg); }
+  .btn-primary svg, .btn-secondary svg, .btn-ghost svg, .btn-danger svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .btn-primary:disabled, .btn-secondary:disabled, .btn-ghost:disabled, .btn-danger:disabled { opacity: .45; cursor: not-allowed; }
+
+  .field {
+    width: 100%; margin-top: 5px; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 13.5px; background: var(--surface-input); color: var(--text-1); outline: none;
+  }
+  .field::placeholder { color: var(--text-4); }
+  .field:focus { border-color: var(--brand); }
+  .field:disabled { opacity: .5; cursor: not-allowed; }
+
+  .badge-success, .badge-warning, .badge-danger, .badge-info {
+    display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: var(--radius-pill);
+    font-size: 11px; font-weight: 700;
+  }
+  .badge-success { background: var(--success-bg); color: var(--success-text); }
+  .badge-warning { background: var(--warning-bg); color: var(--warning-text); }
+  .badge-danger { background: var(--danger-bg); color: var(--danger-text); }
+  .badge-info { background: var(--info-bg); color: var(--info-text); }
 
   /* elementos escondidos pela navegação SEMPRE somem (vence display:grid etc.) */
   [hidden] { display: none !important; }
@@ -137,56 +187,77 @@
   .layout { display: block; }
   .sidenav {
     position: fixed; top: 0; left: 0; bottom: 0; width: 225px; z-index: 40;
-    background: var(--sidebar); border: none; border-radius: 0; box-shadow: var(--shadow-md);
+    background: var(--sidebar); border: none; border-right: 1px solid var(--border); border-radius: 0; box-shadow: var(--shadow-md);
     display: flex; flex-direction: column; overflow: hidden;
+    transition: width .18s ease;
   }
-  .sidenav-topo { flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,.15); }
-  .sidenav-topo .logo { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,.92); color: var(--lime); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
-  .sidenav-topo b { color: #fff; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sidenav-corpo { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 7px; }
-  .sidenav-rodape { flex-shrink: 0; padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.15); }
+  .sidenav-topo { flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 18px 16px; border-bottom: 1px solid var(--border); position: relative; }
+  .sidenav-topo .logo { width: 34px; height: 34px; border-radius: 10px; background: var(--brand); color: var(--brand-ink); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+  .sidenav-topo b { color: var(--text-1); font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidenav-corpo { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px; display: flex; flex-direction: column; gap: 7px; }
+  .sidenav-rodape { flex-shrink: 0; padding: 12px 14px; border-top: 1px solid var(--border); }
   .sidenav-user { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
-  .sidenav-user .uavatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,.18); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .sidenav-user .uavatar { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-hover); color: var(--text-1); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
   .sidenav-user div { overflow: hidden; }
-  .sidenav-user b { display: block; color: #fff; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sidenav-user small { display: block; color: rgba(255,255,255,.65); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sidenav-sair { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 9px; border-radius: 10px; border: none; background: none; color: rgba(255,255,255,.8); font-size: 12.5px; font-weight: 600; cursor: pointer; }
-  .sidenav-sair:hover { background: rgba(255,255,255,.14); color: #fff; }
+  .sidenav-user b { display: block; color: var(--text-1); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidenav-user small { display: block; color: var(--text-3); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidenav-sair { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 9px; border-radius: 10px; border: none; background: none; color: var(--text-2); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .sidenav-sair:hover { background: var(--surface-hover); color: var(--text-1); }
   .sidenav-sair svg { width: 15px; height: 15px; flex-shrink: 0; }
-  .maincol { margin-left: 225px; padding: 10px clamp(20px, 3vw, 48px) 60px; }
-  .sidenav button { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: none; background: none; padding: 10px 11px; border-radius: 10px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.78); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sidenav button svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .85; }
-  .sidenav button:hover { background: rgba(255, 255, 255, .12); color: #fff; }
-  .sidenav button.on { background: rgba(255, 255, 255, .22); color: #fff; font-weight: 700; }
+  .maincol { margin-left: 225px; padding: 10px clamp(20px, 3vw, 48px) 60px; transition: margin-left .18s ease; }
+  .sidenav button { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: none; background: none; padding: 10px 11px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--text-2); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidenav button svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .85; stroke: currentColor; }
+  .sidenav button:hover { background: var(--surface-hover); color: var(--text-1); }
+  .sidenav button.on { background: var(--brand); color: var(--brand-ink); font-weight: 700; }
   .sidenav button.on svg { opacity: 1; }
   /* grupo de topo (Home/Gestão/Agenda/...): maiúsculas, negrito, fonte maior */
-  .nav-menu-btn { font-size: 13.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: rgba(255,255,255,.62); margin-top: 4px; }
-  .nav-menu-btn:hover { color: #fff; }
-  .nav-menu-btn.aberto { color: #fff; }
+  .nav-menu-btn { font-size: 13.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--text-3); margin-top: 4px; }
+  .nav-menu-btn:hover { color: var(--text-1); }
+  .nav-menu-btn.aberto { color: var(--text-1); }
   .nav-chevron { margin-left: auto; font-size: 10px; opacity: .6; flex-shrink: 0; }
   .nav-sub { display: flex; flex-direction: column; gap: 4px; padding: 4px 0 8px; }
   .nav-sub button:not(.nav-menu-btn) { padding-left: 27px; font-size: 12.5px; }
   /* 2º nível dentro de Configurações (ex: Editor do Quiz): expansível, mas sem o estilo maiúsculo do topo */
   .nav-sub .nav-menu-btn { font-size: 12.5px; font-weight: 700; letter-spacing: 0; text-transform: none; padding-left: 27px; margin-top: 0; }
   .nav-sub .nav-sub button:not(.nav-menu-btn) { padding-left: 44px; }
-  .acao-btn { cursor: pointer; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 4px 9px; font-size: 12px; color: var(--text-body); }
-  .acao-btn:hover { background: var(--bg); border-color: var(--text-dim); }
+
+  /* ---- modo recolhido (só ícones) ---- */
+  #sidebarToggle {
+    position: absolute; right: -12px; top: 22px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--surface-card-2); border: 1px solid var(--border); color: var(--text-2);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 41;
+  }
+  #sidebarToggle:hover { background: var(--surface-hover); color: var(--text-1); }
+  #sidebarToggle svg { width: 13px; height: 13px; transition: transform .18s ease; }
+  body.sb-collapsed .sidenav { width: 68px; }
+  body.sb-collapsed .maincol, body.sb-collapsed .topbar, body.sb-collapsed #impersonarBar { margin-left: 68px; }
+  body.sb-collapsed .sidenav-topo { padding: 18px 0; justify-content: center; }
+  body.sb-collapsed .sidenav-topo b, body.sb-collapsed .nav-label, body.sb-collapsed .nav-chevron,
+  body.sb-collapsed .sidenav-user div, body.sb-collapsed .sidenav-sair span { display: none; }
+  body.sb-collapsed .sidenav button { justify-content: center; padding: 10px 0; }
+  body.sb-collapsed .sidenav-user { justify-content: center; }
+  body.sb-collapsed .sidenav-sair { justify-content: center; }
+  body.sb-collapsed .nav-sub button:not(.nav-menu-btn), body.sb-collapsed .nav-sub .nav-sub button:not(.nav-menu-btn) { padding-left: 0; }
+  body.sb-collapsed #sidebarToggle svg { transform: rotate(180deg); }
+
+  .acao-btn { cursor: pointer; border: 1px solid var(--line); background: var(--surface-card-2); border-radius: 8px; padding: 4px 9px; font-size: 12px; color: var(--text-body); }
+  .acao-btn:hover { background: var(--surface-hover); border-color: var(--border-strong); }
   .pager { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 0 4px; }
-  .pager-btn { cursor: pointer; border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--accent); }
+  .pager-btn { cursor: pointer; border: 1px solid var(--line); background: var(--surface-card-2); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--brand); }
   .pager-btn:hover:not(:disabled) { background: var(--accent-soft); }
   .pager-btn:disabled { opacity: .35; cursor: default; }
-  .pager-info { font-size: 12.5px; color: #667; }
+  .pager-info { font-size: 12.5px; color: var(--text-3); }
   #cmSlot iframe { border: 0; display: block; width: 100%; }
   /* barra única de filtros (Leads Agendados + Leads) */
   .fbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
-  .fbar select, .fbar .fmais { padding: 9px 11px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; background: #fff; color: var(--text); max-width: 190px; }
+  .fbar select, .fbar .fmais { padding: 9px 11px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--surface-input); color: var(--text); max-width: 190px; }
   .fbar select:hover, .fbar .fmais:hover { border-color: var(--accent); }
-  .fbar .fbusca { flex: 1; min-width: 200px; padding: 10px 13px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 13.5px; }
+  .fbar .fbusca { flex: 1; min-width: 200px; padding: 10px 13px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 13.5px; background: var(--surface-input); color: var(--text); }
   .fbar .fmais.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); }
-  .fextra { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 10px; padding: 10px; background: #f7f7fb; border-radius: 10px; }
-  .fextra select { padding: 8px 11px; border: 1.5px solid var(--line); border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; background: #fff; max-width: 190px; }
+  .fextra { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 10px; padding: 10px; background: var(--surface-card-2); border-radius: 10px; }
+  .fextra select { padding: 8px 11px; border: 1.5px solid var(--line); border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--surface-input); color: var(--text); max-width: 190px; }
   .fdatas { display: none; gap: 6px; align-items: center; font-size: 13px; font-weight: 600; flex-wrap: wrap; }
-  .fdatas input { padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 9px; font-size: 13px; }
+  .fdatas input { padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 9px; font-size: 13px; background: var(--surface-input); color: var(--text); }
   /* grade de cards da tela "Conexões" — cada card é um resumo clicável, o
      formulário de configuração de verdade vive num popup (#modalConexao*) */
   .conexoes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; }
@@ -194,12 +265,12 @@
   .conexao-tile:hover { box-shadow: var(--shadow-md); }
   .ct-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
   .ct-topo .ic-chip { width: 40px; height: 40px; border-radius: 12px; }
-  .conexao-tile h3 { font-size: 14.5px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+  .conexao-tile h3 { font-size: 14.5px; font-weight: 700; color: var(--text-1); margin-bottom: 4px; }
   .ct-desc { font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px; }
   .ct-lista { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; flex: 1; }
   .ct-lista li { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-body); }
   .ct-lista li b { color: var(--green); font-weight: 800; }
-  .ct-btn { width: 100%; padding: 10px; border: none; border-radius: 10px; background: var(--lime); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; margin-top: auto; }
+  .ct-btn { width: 100%; padding: 10px; border: none; border-radius: 10px; background: var(--lime); color: var(--brand-ink); font-weight: 700; font-size: 13px; cursor: pointer; margin-top: auto; }
   .ct-btn:hover { background: var(--lime-hover); }
 
   /* ===== AGENDA — calendário ===== */
@@ -212,16 +283,16 @@
   .ag-cell.hoje { border: 2px solid var(--accent); }
   .ag-cell.sel { background: var(--accent-soft); }
   .ag-cell .dnum { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
-  .ag-card { background: var(--accent-soft); color: var(--accent-dark); border-radius: 6px; padding: 2px 6px; font-size: 11px; font-weight: 600; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ag-card { background: var(--accent-soft); color: var(--brand); border-radius: 6px; padding: 2px 6px; font-size: 11px; font-weight: 600; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ag-card.concluido { background: var(--green-soft); color: var(--green); }
-  .ag-card.cancelado { background: #fee2e2; color: var(--red); text-decoration: line-through; }
+  .ag-card.cancelado { background: var(--red-soft); color: var(--red); text-decoration: line-through; }
   .ag-mais { font-size: 11px; font-weight: 700; color: var(--accent-dark); }
 
   /* ===== KANBAN ===== */
   .kb-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 14px; }
   .kb-cols { display: flex; gap: 12px; align-items: stretch; overflow-x: auto; padding-bottom: 10px; }
   /* altura FIXA e igual pra todas as colunas (~10 cards); só o miolo rola */
-  .kb-col { min-width: 250px; max-width: 250px; height: clamp(500px, 68vh, 740px); display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px; flex-shrink: 0; }
+  .kb-col { min-width: 250px; max-width: 250px; height: clamp(500px, 68vh, 740px); display: flex; flex-direction: column; background: var(--bg-secondary); border: 1px solid var(--line); border-radius: 12px; padding: 10px; flex-shrink: 0; }
   .kb-col-head { display: flex; align-items: center; gap: 7px; margin-bottom: 9px; }
   .kb-col-head b { font-size: 13.5px; flex: 1; }
   .kb-col-head .n { font-size: 11.5px; color: var(--text-muted); font-weight: 700; }
@@ -230,7 +301,7 @@
   .kb-body::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
   .kb-body.drag { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: 8px; }
   .kb-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; cursor: grab; box-shadow: var(--shadow); position: relative; }
-  .kb-card:hover { box-shadow: var(--shadow-md); border-color: rgba(79, 140, 255, .45); }
+  .kb-card:hover { box-shadow: var(--shadow-md); border-color: rgba(242, 248, 98, .4); }
   .kb-card:active { transform: scale(.98); }
   .kb-card b { font-size: 13px; display: block; margin-bottom: 2px; }
   .kb-card small { font-size: 11.5px; color: var(--text-muted); display: block; }
@@ -248,10 +319,10 @@
   .kb-swatches { display: flex; gap: 5px; flex-wrap: wrap; padding: 6px 9px 8px; }
   .kb-swatch { width: 22px; height: 22px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; }
   .kb-swatch:hover { border-color: var(--text); }
-  .kb-conversar { display: inline-block; margin-top: 6px; background: var(--green); color: #fff; font-size: 11.5px; font-weight: 700; padding: 4px 9px; border-radius: 7px; text-decoration: none; }
+  .kb-conversar { display: inline-block; margin-top: 6px; background: var(--success-bg); color: var(--success-text); font-size: 11.5px; font-weight: 700; padding: 4px 9px; border-radius: 7px; text-decoration: none; }
   .kb-cols { cursor: grab; }
   .kb-cols.pan { cursor: grabbing; user-select: none; }
-  .kb-busca { width: 100%; margin-top: 6px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 12.5px; }
+  .kb-busca { width: 100%; margin-top: 6px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 12.5px; background: var(--surface-input); color: var(--text); }
   .kb-res { display: flex; flex-direction: column; gap: 4px; margin-top: 5px; }
   .kb-res button { text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: 7px; padding: 6px 8px; font-size: 12px; cursor: pointer; }
   .kb-res button:hover { background: var(--accent-soft); }
@@ -278,8 +349,9 @@
   .kpi .k-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 6px; }
   .kpi { transition: box-shadow .18s ease, transform .18s ease; }
   .kpi:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-  .kpi.hero { background: linear-gradient(140deg, var(--lime), #1E4BD8); border: none; }
-  .kpi.hero .k-label, .kpi.hero .k-num, .kpi.hero .k-sub { color: #fff; }
+  /* card "hero" — só o KPI de Total de Leads usa isso (destaque único, amarelo sólido) */
+  .kpi.hero { background: var(--brand); border: none; }
+  .kpi.hero .k-label, .kpi.hero .k-num, .kpi.hero .k-sub { color: var(--brand-ink); }
   .kpi.hero .k-sub { opacity: .72; }
   .kpi .k-num.green { color: var(--green); }
   .kpi .k-num.blue { color: var(--blue); }
@@ -298,7 +370,7 @@
   .panel h2 .h-ic { width: 30px; height: 30px; }
 
   /* ===== CABEÇALHO COLORIDO DE SEÇÃO (banner por submenu) ===== */
-  .pbanner { --pb-fg: #fff; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-radius: 16px; padding: 16px 22px; margin-bottom: 18px; color: var(--pb-fg); background: linear-gradient(120deg, #0028B3, #001A73); }
+  .pbanner { --pb-fg: var(--text-1); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-radius: 16px; padding: 16px 22px; margin-bottom: 18px; color: var(--pb-fg); background: linear-gradient(120deg, var(--surface-card-2), var(--bg-sidebar)); border: 1px solid var(--border); }
   .pbanner-esq { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .pbanner-ic { width: 38px; height: 38px; border-radius: 11px; background: rgba(255, 255, 255, .2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .pbanner-ic svg { width: 20px; height: 20px; stroke: var(--pb-fg); }
@@ -307,15 +379,15 @@
   .pbanner-acoes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .pbanner-acoes:empty { display: none; }
   .pbanner-acoes .fbar, .pbanner-acoes .ag-toolbar, .pbanner-acoes .kb-toolbar, .pbanner-acoes .tbl-tools { margin: 0; }
-  .pbanner-acoes input, .pbanner-acoes select, .pbanner-acoes .fmais, .pbanner-acoes .btn { background: rgba(255, 255, 255, .16); border: 1.5px solid rgba(255, 255, 255, .38); color: var(--pb-fg); }
-  .pbanner-acoes input::placeholder { color: rgba(255, 255, 255, .78); }
+  .pbanner-acoes input, .pbanner-acoes select, .pbanner-acoes .fmais, .pbanner-acoes .btn { background: rgba(255, 255, 255, .06); border: 1.5px solid var(--border-strong); color: var(--pb-fg); }
+  .pbanner-acoes input::placeholder { color: var(--text-3); }
   .pbanner-acoes select option { color: #111; }
-  .pbanner-acoes .fmais:hover, .pbanner-acoes .btn:hover { background: rgba(255, 255, 255, .28); border-color: rgba(255, 255, 255, .6); }
-  .pbanner-acoes .fmais.on { background: #fff; border-color: #fff; color: var(--ink); }
+  .pbanner-acoes .fmais:hover, .pbanner-acoes .btn:hover { background: rgba(255, 255, 255, .12); border-color: var(--text-3); }
+  .pbanner-acoes .fmais.on { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
   .pbanner-acoes .muted-cell, .pbanner-acoes b, .pbanner-acoes span { color: var(--pb-fg); opacity: .92; }
-  .pbanner-acoes .seg { background: rgba(255, 255, 255, .16); border-radius: 8px; padding: 2px; }
+  .pbanner-acoes .seg { background: rgba(255, 255, 255, .06); border-radius: 8px; padding: 2px; }
   .pbanner-acoes .seg button { color: var(--pb-fg); opacity: .85; background: none; border: none; }
-  .pbanner-acoes .seg button.on { background: #fff; color: var(--ink); opacity: 1; }
+  .pbanner-acoes .seg button.on { background: var(--brand); color: var(--brand-ink); opacity: 1; }
   /* filtros bem mais compactos dentro do banner (caixa e fonte menores) */
   .pbanner .pbanner-acoes select, .pbanner .pbanner-acoes .fmais, .pbanner .pbanner-acoes .btn { padding: 6px 10px; font-size: 11.5px; max-width: 160px; }
   .pbanner .pbanner-acoes .fbusca { padding: 6px 10px; font-size: 11.5px; min-width: 150px; }
@@ -329,14 +401,14 @@
   .fs-name { font-size: 13px; font-weight: 600; }
   .fs-vals { font-size: 12px; color: var(--text-muted); }
   .fs-vals b { color: var(--text); }
-  .fs-track { height: 26px; background: rgba(167, 139, 250, .14); border-radius: 8px; overflow: hidden; }
+  .fs-track { height: 26px; background: var(--surface-card-2); border-radius: 8px; overflow: hidden; }
   .fs-fill { height: 100%; background: linear-gradient(90deg, var(--chart), var(--chart-dark)); border-radius: 8px; transition: width .5s cubic-bezier(.22,1,.36,1); min-width: 2px; }
   .fs-drop { font-size: 11px; color: var(--red); margin-top: 3px; }
 
   /* ===== BAR CHART ===== */
   .bc-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 10px; margin-bottom: 9px; }
   .bc-label { font-size: 12.5px; color: var(--text); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bc-track { height: 20px; background: #f1f1f7; border-radius: 6px; overflow: hidden; position: relative; }
+  .bc-track { height: 20px; background: var(--surface-card-2); border-radius: 6px; overflow: hidden; position: relative; }
   .bc-fill { height: 100%; background: var(--accent-soft); border-radius: 6px; position: relative; transition: width .5s; min-width: 2px; }
   .bc-won { position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, var(--chart), var(--chart-dark)); border-radius: 6px; }
   .bc-val { font-size: 12px; color: var(--text-muted); font-weight: 600; white-space: nowrap; min-width: 78px; text-align: right; }
@@ -350,35 +422,35 @@
   .stack { height: 30px; border-radius: 9px; overflow: hidden; display: flex; margin: 6px 0 4px; }
   .stack > div { height: 100%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 700; transition: width .5s; }
   .seg-prem { background: linear-gradient(90deg, var(--chart), var(--chart-dark)); }
-  .seg-aud { background: linear-gradient(90deg, #2563eb, #1e40af); }
-  .seg-pad { background: #c9cad6; }
+  .seg-aud { background: linear-gradient(90deg, var(--blue), #6B63D6); }
+  .seg-pad { background: var(--border-strong); }
   .trilha-stats { display: flex; gap: 10px; margin-top: 14px; }
-  .ts-card { flex: 1; background: #f7f7fb; border-radius: 11px; padding: 12px; }
-  .ts-card .n { font-size: 21px; font-weight: 800; }
+  .ts-card { flex: 1; background: var(--surface-card-2); border-radius: 11px; padding: 12px; }
+  .ts-card .n { font-size: 21px; font-weight: 800; color: var(--text-1); }
   .ts-card .l { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
   .ts-card.prem .n { color: var(--chart-dark); }
-  .ts-card.aud .n { color: #1e40af; }
+  .ts-card.aud .n { color: var(--blue); }
 
   /* ===== TABLES (cabeçalho fixo + hover) ===== */
   .tbl-wrap { overflow: auto; max-height: 72vh; border-radius: 10px; }
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  th { color: var(--text-muted); font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; background: #F9FAFB; z-index: 2; }
+  th { color: var(--text-muted); font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; background: var(--surface-card-2); z-index: 2; }
   td.nome { font-weight: 600; }
-  tbody tr:hover td { background: #F8FAFC; }
+  tbody tr:hover td { background: var(--surface-hover); }
   .pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
-  .pill.parcial { background: #f1f1f7; color: var(--text-muted); }
+  .pill.parcial { background: var(--surface-card-2); color: var(--text-muted); }
   .pill.contato { background: var(--blue-soft); color: var(--blue); }
   .pill.completo { background: var(--amber-soft); color: var(--amber); }
   .pill.agendado { background: var(--green-soft); color: var(--green); }
-  .pill.prem { background: var(--accent-soft); color: var(--accent-dark); }
-  .pill.aud { background: #dbeafe; color: #1e40af; }
-  .pill.pad { background: #f1f1f7; color: var(--text-muted); }
-  .pill.excluida { background: #fee2e2; color: var(--red); }
+  .pill.prem { background: var(--accent-soft); color: var(--brand); }
+  .pill.aud { background: var(--blue-soft); color: var(--blue); }
+  .pill.pad { background: var(--surface-card-2); color: var(--text-muted); }
+  .pill.excluida { background: var(--red-soft); color: var(--red); }
   .tbl-tools { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
   .tbl-tools input {
     flex: 1; min-width: 180px; padding: 9px 13px; border: 1.5px solid var(--line); border-radius: 10px;
-    font-size: 13px; outline: none;
+    font-size: 13px; outline: none; background: var(--surface-input); color: var(--text);
   }
   .tbl-tools input:focus { border-color: var(--accent); }
   .muted-cell { color: var(--text-dim); }
@@ -388,6 +460,16 @@
     .grid2 { grid-template-columns: 1fr; }
     .bc-row { grid-template-columns: 100px 1fr auto; }
   }
+  @media (max-width: 919px) and (min-width: 641px) {
+    /* tablet: sidebar sempre recolhida (só ícones) pra sobrar mais espaço de conteúdo */
+    .sidenav { width: 68px; }
+    .maincol, .topbar, #impersonarBar { margin-left: 68px; }
+    .sidenav-topo b, .nav-label, .nav-chevron, .sidenav-user div, .sidenav-sair span { display: none; }
+    .sidenav button { justify-content: center; padding: 10px 0; }
+    .sidenav-user, .sidenav-sair { justify-content: center; }
+    #sidebarToggle { display: none; }
+    .tbl-wrap { overflow-x: auto; }
+  }
 
   /* ===== CABEÇALHO (busca global + usuário) ===== */
   .topsearch { display: flex; align-items: center; gap: 7px; background: var(--card); border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 12px; flex: 0 1 250px; min-width: 170px; margin-right: auto; }
@@ -395,20 +477,55 @@
   .topsearch svg { width: 15px; height: 15px; color: var(--text-dim); flex-shrink: 0; }
   .topsearch input { border: none; outline: none; font-size: 13px; width: 100%; background: transparent; color: var(--text); }
   .topsearch:focus-within { border-color: var(--accent); }
-  .uavatar { width: 29px; height: 29px; border-radius: 50%; background: var(--lime); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
+  .uavatar { width: 29px; height: 29px; border-radius: 50%; background: var(--lime); color: var(--brand-ink); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
   .btn svg, .acao-btn svg { width: 15px; height: 15px; vertical-align: -3px; }
 
-  /* ===== MODAIS — abertura suave ===== */
+  /* ===== MODAIS — abertura suave + card/overlay unificados ===== */
   @keyframes dsPop { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
-  #leadModal > div, #calModal > div, #vendaModal > div, #alertModal > div, #diaModal > div { animation: dsPop .18s ease; }
+  #leadModal > div, #calModal > div, #vendaModal > div, #alertModal > div, #diaModal > div,
+  #novoLeadModal > div, #masterContaModal > div, #euNovoModal > div, #euDetModal > div, #chatModal > div,
+  #modalConexaoPlano > div, #modalConexaoDominio > div, #modalConexaoWhatsapp > div, #modalConexaoCalcom > div,
+  #modalConexaoMentoriaHub > div, #promptModal > div { animation: dsPop .18s ease; }
   #sinoLista { animation: dsPop .15s ease; }
+  #chatModal { background: rgba(9, 7, 15, .6) !important; }
+  .modal-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(9, 7, 15, .6); display: flex; align-items: center; justify-content: center; }
+  .modal-card { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); animation: dsPop .18s ease; }
+
+  /* ===== TOAST ===== */
+  #toastHost { position: fixed; right: 20px; bottom: 20px; z-index: 200; display: flex; flex-direction: column; gap: 10px; }
+  .toast { display: flex; align-items: flex-start; gap: 10px; min-width: 260px; max-width: 340px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--surface-card-2); border: 1px solid var(--border-strong); box-shadow: var(--shadow-md); color: var(--text-1); animation: dsPop .18s ease; }
+  .toast svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+  .toast b { display: block; font-size: 13px; font-weight: 700; }
+  .toast p { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+  .toast.success svg { color: var(--success-bg); }
+  .toast.warning svg { color: var(--warning-bg); }
+  .toast.error svg { color: var(--danger-bg); }
+  .toast.info svg { color: var(--info-bg); }
+
+  /* ===== SKELETON LOADING ===== */
+  @keyframes skPulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+  .sk { background: var(--surface-hover); border-radius: var(--radius-sm); animation: skPulse 1.3s ease-in-out infinite; }
+  .sk-line { height: 12px; margin-bottom: 8px; }
+  .sk-kpi { height: 82px; border-radius: var(--radius-lg); }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 20px; color: var(--text-3); }
+  .empty-state svg { width: 34px; height: 34px; margin-bottom: 10px; opacity: .7; }
+  .empty-state b { font-size: 13.5px; color: var(--text-2); margin-bottom: 4px; }
+  .empty-state p { font-size: 12.5px; max-width: 260px; }
 
   /* ===== RESPONSIVO (notebook / tablet / celular) ===== */
+  #sbBackdrop { display: none; }
   @media (max-width: 640px) {
-    /* tela pequena: sidebar sai do modo fixo tela-cheia e empilha em cima do conteúdo */
-    .sidenav { position: static; width: 100%; height: auto; }
+    /* tela pequena: sidebar vira um drawer que desliza por cima do conteúdo, aberto pelo hambúrguer */
+    .sidenav { position: fixed; width: 240px; height: 100%; transform: translateX(-100%); transition: transform .2s ease; z-index: 95; }
+    body.sb-mobile-open .sidenav { transform: translateX(0); }
+    body.sb-mobile-open #sbBackdrop { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: 94; }
+    #sidebarToggle { display: none; }
+    #sbHamburguer { display: flex !important; }
     .maincol { margin-left: 0; padding: 12px 10px 40px; }
     .topbar { gap: 8px; margin-left: 0; padding: 12px 10px 0; }
+    #impersonarBar { margin-left: 0 !important; }
     .topsearch { flex: 1 1 100%; order: 5; }
     .fbar select, .fbar .fmais { max-width: none; flex: 1 1 45%; }
     .kpis { grid-template-columns: 1fr 1fr; gap: 9px; }
@@ -417,7 +534,10 @@
     .kb-col { min-width: 82vw; max-width: 82vw; }
     .pbanner { padding: 13px 16px; border-radius: 13px; }
     .pbanner-tit { font-size: 13px; }
+    .tbl-wrap { overflow-x: auto; }
   }
+  #sbHamburguer { display: none; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: var(--card); cursor: pointer; color: var(--text); flex-shrink: 0; }
+  #sbHamburguer svg { width: 17px; height: 17px; }
 </style>
 </head>
 <body>
@@ -463,7 +583,7 @@
   <!-- PRIMEIRO ACESSO: definir a própria senha -->
   <div id="gate2" style="display:none;position:fixed;inset:0;z-index:60;background:var(--bg);align-items:center;justify-content:center;">
     <div class="gate-card">
-      <div class="gate-logo" style="background:var(--sidebar);">S</div>
+      <div class="gate-logo">S</div>
       <h1>Crie a sua senha</h1>
       <p>Este é seu primeiro acesso (ou sua senha foi resetada). Escolha uma senha só sua — nem a administradora consegue vê-la.</p>
       <input id="gate2-s1" type="password" placeholder="Nova senha (mín. 6 caracteres)" autocomplete="new-password" />
@@ -476,7 +596,7 @@
   <!-- ESCOLHA DE PLANO: primeiro acesso do assinante (dá pra trocar depois em Configurações) -->
   <div id="gate3" style="display:none;position:fixed;inset:0;z-index:60;background:var(--bg);align-items:center;justify-content:center;padding:20px;">
     <div style="background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:32px 28px;width:100%;max-width:640px;text-align:center;">
-      <div class="gate-logo" style="background:var(--sidebar);margin:0 auto 16px;">Q</div>
+      <div class="gate-logo" style="margin:0 auto 16px;">Q</div>
       <h1 style="font-size:18px;margin-bottom:4px;">Escolha o seu plano</h1>
       <p style="color:var(--text-muted);font-size:13px;margin-bottom:24px;">Você pode trocar de plano quando quiser, nas Configurações.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;text-align:left;">
@@ -536,11 +656,11 @@
       </div>
       <div class="sub" style="margin:0 0 12px;">Pode salvar mesmo incompleto — mas o CS só consegue marcar <b>Recebido</b> com tudo preenchido.</div>
       <div style="display:grid;gap:10px;">
-        <label style="font-size:11.5px;font-weight:700;">CPF ou CNPJ<input id="vmCpf" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="000.000.000-00"></label>
-        <label style="font-size:11.5px;font-weight:700;">Endereço completo<input id="vmEnd" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Rua, número, bairro, cidade/UF, CEP"></label>
+        <label style="font-size:11.5px;font-weight:700;">CPF ou CNPJ<input id="vmCpf" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="000.000.000-00"></label>
+        <label style="font-size:11.5px;font-weight:700;">Endereço completo<input id="vmEnd" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Rua, número, bairro, cidade/UF, CEP"></label>
         <div style="display:grid;grid-template-columns:2fr 1fr auto;gap:8px;align-items:end;">
-          <label style="font-size:11.5px;font-weight:700;">Produto<select id="vmProduto" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;"><option value="">— escolher —</option></select></label>
-          <label style="font-size:11.5px;font-weight:700;">Valor (R$)<input id="vmValor" type="number" min="0" step="0.01" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
+          <label style="font-size:11.5px;font-weight:700;">Produto<select id="vmProduto" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— escolher —</option></select></label>
+          <label style="font-size:11.5px;font-weight:700;">Valor (R$)<input id="vmValor" type="number" min="0" step="0.01" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
           <button class="acao-btn" id="vmNovoProduto" title="Cadastrar novo produto" style="padding:9px 12px;">+ Novo</button>
         </div>
         <div>
@@ -548,10 +668,10 @@
           <div id="vmPags" style="display:grid;gap:6px;"></div>
           <button class="acao-btn" id="vmAddPag" style="margin-top:6px;">+ Adicionar forma de pagamento</button>
         </div>
-        <label style="font-size:11.5px;font-weight:700;">Responsável CS<select id="vmCs" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;"><option value="">— definir depois —</option></select></label>
+        <label style="font-size:11.5px;font-weight:700;">Responsável CS<select id="vmCs" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— definir depois —</option></select></label>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
-        <button id="vmSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Salvar dados</button>
+        <button id="vmSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar dados</button>
         <span class="muted-cell" id="vmStatus"></span>
       </div>
     </div>
@@ -566,19 +686,19 @@
       </div>
       <div class="sub" style="margin:0 0 12px;">Cadastro manual — o lead entra direto na lista de Leads e, se você já vincular um atendente, cai automaticamente na coluna <b>Atribuído</b> do quadro dele.</div>
       <div style="display:grid;gap:10px;">
-        <label style="font-size:11.5px;font-weight:700;">Nome<span style="color:var(--red);">*</span><input id="nlNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Nome completo"></label>
+        <label style="font-size:11.5px;font-weight:700;">Nome<span style="color:var(--red);">*</span><input id="nlNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Nome completo"></label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <label style="font-size:11.5px;font-weight:700;">WhatsApp<input id="nlWhats" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="(11) 99999-9999"></label>
-          <label style="font-size:11.5px;font-weight:700;">E-mail<input id="nlEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="nome@email.com"></label>
+          <label style="font-size:11.5px;font-weight:700;">WhatsApp<input id="nlWhats" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="(11) 99999-9999"></label>
+          <label style="font-size:11.5px;font-weight:700;">E-mail<input id="nlEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="nome@email.com"></label>
         </div>
         <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;">
-          <label style="font-size:11.5px;font-weight:700;">Estado (UF)<input id="nlUf" maxlength="2" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;text-transform:uppercase;" placeholder="SP"></label>
-          <label style="font-size:11.5px;font-weight:700;">Renda familiar<input id="nlRenda" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Ex: Entre R$ 5.000,00 e R$ 10.000,00"></label>
+          <label style="font-size:11.5px;font-weight:700;">Estado (UF)<input id="nlUf" maxlength="2" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;text-transform:uppercase;background:var(--surface-input);color:var(--text);" placeholder="SP"></label>
+          <label style="font-size:11.5px;font-weight:700;">Renda familiar<input id="nlRenda" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Ex: Entre R$ 5.000,00 e R$ 10.000,00"></label>
         </div>
-        <label style="font-size:11.5px;font-weight:700;">Atendente responsável<select id="nlAtendente" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;"><option value="">— sem responsável —</option></select></label>
+        <label style="font-size:11.5px;font-weight:700;">Atendente responsável<select id="nlAtendente" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— sem responsável —</option></select></label>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
-        <button id="nlSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Cadastrar lead</button>
+        <button id="nlSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Cadastrar lead</button>
         <span class="muted-cell" id="nlStatus"></span>
       </div>
     </div>
@@ -598,27 +718,27 @@
       </div>
 
       <div style="display:grid;gap:10px;">
-        <label style="font-size:11.5px;font-weight:700;">Nome da conta / razão social<input id="mcNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Ex: Clínica Bella"></label>
+        <label style="font-size:11.5px;font-weight:700;">Nome da conta / razão social<input id="mcNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Ex: Clínica Bella"></label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <label style="font-size:11.5px;font-weight:700;" id="mcDocLbl">CPF<input id="mcDocumento" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="000.000.000-00"></label>
-          <label style="font-size:11.5px;font-weight:700;">Telefone<input id="mcTelefone" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="(11) 99999-9999"></label>
+          <label style="font-size:11.5px;font-weight:700;" id="mcDocLbl">CPF<input id="mcDocumento" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="000.000.000-00"></label>
+          <label style="font-size:11.5px;font-weight:700;">Telefone<input id="mcTelefone" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="(11) 99999-9999"></label>
         </div>
         <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;">
-          <label style="font-size:11.5px;font-weight:700;">CEP<input id="mcCep" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="00000-000"></label>
-          <label style="font-size:11.5px;font-weight:700;">Endereço (rua e número)<input id="mcEndereco" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Rua Exemplo, 123"></label>
+          <label style="font-size:11.5px;font-weight:700;">CEP<input id="mcCep" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="00000-000"></label>
+          <label style="font-size:11.5px;font-weight:700;">Endereço (rua e número)<input id="mcEndereco" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Rua Exemplo, 123"></label>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 70px;gap:8px;">
-          <label style="font-size:11.5px;font-weight:700;">Bairro<input id="mcBairro" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
-          <label style="font-size:11.5px;font-weight:700;">Cidade<input id="mcCidade" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
-          <label style="font-size:11.5px;font-weight:700;">UF<input id="mcUf" maxlength="2" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;text-transform:uppercase;" placeholder="SP"></label>
+          <label style="font-size:11.5px;font-weight:700;">Bairro<input id="mcBairro" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+          <label style="font-size:11.5px;font-weight:700;">Cidade<input id="mcCidade" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+          <label style="font-size:11.5px;font-weight:700;">UF<input id="mcUf" maxlength="2" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;text-transform:uppercase;background:var(--surface-input);color:var(--text);" placeholder="SP"></label>
         </div>
-        <label style="font-size:11.5px;font-weight:700;">Plano<select id="mcPlano" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;"><option value="lite">Lite</option><option value="completo">Completo</option></select></label>
+        <label style="font-size:11.5px;font-weight:700;">Plano<select id="mcPlano" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="lite">Lite</option><option value="completo">Completo</option></select></label>
 
         <div id="mcBlocoNovaConta">
-          <label style="font-size:11.5px;font-weight:700;">Subdomínio (opcional — gerado automaticamente se deixar em branco)<input id="mcSubdominio" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="clinica-bella"></label>
+          <label style="font-size:11.5px;font-weight:700;">Subdomínio (opcional — gerado automaticamente se deixar em branco)<input id="mcSubdominio" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="clinica-bella"></label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
-            <label style="font-size:11.5px;font-weight:700;">Nome do responsável<input id="mcDonoNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Nome de quem vai logar"></label>
-            <label style="font-size:11.5px;font-weight:700;">E-mail do responsável (login)<input id="mcDonoEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="responsavel@email.com"></label>
+            <label style="font-size:11.5px;font-weight:700;">Nome do responsável<input id="mcDonoNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Nome de quem vai logar"></label>
+            <label style="font-size:11.5px;font-weight:700;">E-mail do responsável (login)<input id="mcDonoEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="responsavel@email.com"></label>
           </div>
         </div>
       </div>
@@ -627,7 +747,7 @@
       <div id="mcCredencial" style="display:none;background:var(--lime-soft,rgba(0,40,179,.1));border-radius:10px;padding:12px 14px;margin-top:10px;font-size:13px;"></div>
 
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
-        <button id="mcSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Salvar</button>
+        <button id="mcSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar</button>
       </div>
     </div>
   </div>
@@ -642,11 +762,11 @@
 
       <div id="euNovoForm" style="display:grid;gap:10px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <label style="font-size:11.5px;font-weight:700;">Nome completo *<input id="eunNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Maria da Silva"></label>
-          <label style="font-size:11.5px;font-weight:700;">Celular<input id="eunCel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="(11) 99999-9999"></label>
+          <label style="font-size:11.5px;font-weight:700;">Nome completo *<input id="eunNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Maria da Silva"></label>
+          <label style="font-size:11.5px;font-weight:700;">Celular<input id="eunCel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="(11) 99999-9999"></label>
         </div>
-        <label style="font-size:11.5px;font-weight:700;">E-mail *<input id="eunEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="maria@email.com"></label>
-        <label style="font-size:11.5px;font-weight:700;">Validade do acesso (vazio = sem prazo)<input id="eunVal" type="date" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
+        <label style="font-size:11.5px;font-weight:700;">E-mail *<input id="eunEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="maria@email.com"></label>
+        <label style="font-size:11.5px;font-weight:700;">Validade do acesso (vazio = sem prazo)<input id="eunVal" type="date" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
 
         <div>
           <label style="font-size:11.5px;font-weight:700;display:block;margin-bottom:6px;">Perfil</label>
@@ -659,19 +779,19 @@
         </div>
 
         <div class="muted-cell" id="eunErr" style="color:var(--red);"></div>
-        <button id="eunSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Criar usuário</button>
+        <button id="eunSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Criar usuário</button>
       </div>
 
       <div id="euNovoResultado" style="display:none;">
         <div style="background:var(--green-soft);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--green);margin-bottom:12px;">Usuário criado! Envie o acesso abaixo pra pessoa — ela cria a própria senha no primeiro login.</div>
-        <label style="font-size:11.5px;font-weight:700;">E-mail de acesso<div id="eunResEmail" style="margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-family:monospace;background:#fafafa;"></div></label>
+        <label style="font-size:11.5px;font-weight:700;">E-mail de acesso<div id="eunResEmail" style="margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-family:monospace;background:var(--surface-card-2);color:var(--text);"></div></label>
         <label style="font-size:11.5px;font-weight:700;display:block;margin-top:10px;">Senha temporária
           <div style="display:flex;gap:8px;margin-top:4px;">
-            <div id="eunResSenha" style="flex:1;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-family:monospace;background:#fafafa;"></div>
-            <button id="eunResCopiar" style="padding:9px 14px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap;">Copiar</button>
+            <div id="eunResSenha" style="flex:1;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-family:monospace;background:var(--surface-card-2);color:var(--text);"></div>
+            <button id="eunResCopiar" style="padding:9px 14px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap;">Copiar</button>
           </div>
         </label>
-        <button id="eunResFechar" style="margin-top:16px;width:100%;padding:10px 18px;border:1.5px solid var(--line);border-radius:9px;background:#fff;font-weight:600;font-size:13px;cursor:pointer;">Fechar</button>
+        <button id="eunResFechar" style="margin-top:16px;width:100%;padding:10px 18px;border:1.5px solid var(--line);border-radius:9px;background:var(--surface-card-2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;">Fechar</button>
       </div>
     </div>
   </div>
@@ -692,11 +812,11 @@
 
       <div id="eudAbaDados" style="display:grid;gap:10px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <label style="font-size:11.5px;font-weight:700;">Nome completo<input id="eudNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
-          <label style="font-size:11.5px;font-weight:700;">Celular<input id="eudCel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
+          <label style="font-size:11.5px;font-weight:700;">Nome completo<input id="eudNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+          <label style="font-size:11.5px;font-weight:700;">Celular<input id="eudCel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
         </div>
-        <label style="font-size:11.5px;font-weight:700;">E-mail<input id="eudEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
-        <label style="font-size:11.5px;font-weight:700;">Validade do acesso<input id="eudVal" type="date" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
+        <label style="font-size:11.5px;font-weight:700;">E-mail<input id="eudEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+        <label style="font-size:11.5px;font-weight:700;">Validade do acesso<input id="eudVal" type="date" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
         <div class="muted-cell" id="eudCriadoEm"></div>
 
         <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px;">
@@ -706,7 +826,7 @@
         </div>
 
         <div class="muted-cell" id="eudErr" style="color:var(--red);"></div>
-        <button id="eudSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Salvar alterações</button>
+        <button id="eudSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar alterações</button>
       </div>
 
       <div id="eudAbaPerfil" style="display:none;">
@@ -717,7 +837,7 @@
           <label style="display:flex;align-items:center;gap:6px;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;" id="eudPerfilOpOp"><input type="radio" name="eudPerfil" value="op" style="accent-color:var(--accent);">Operacional</label>
         </div>
         <p class="muted-cell" style="margin-top:6px;">Administrador tem privilégios completos. Customer Success recebe leads convertidos no Pós-Venda. Operacional não tem nenhuma das duas funções.</p>
-        <button id="eudSalvarPerfil" style="margin-top:12px;padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Salvar perfil</button>
+        <button id="eudSalvarPerfil" style="margin-top:12px;padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar perfil</button>
 
         <div style="border-top:1px solid var(--line);margin-top:18px;padding-top:14px;" id="eudBlocoExcluir">
           <p style="font-size:11.5px;font-weight:700;margin:0 0 8px;color:var(--red);">Zona de risco</p>
@@ -739,10 +859,10 @@
         <button class="acao-btn" id="chVerLead" title="Abrir o Cartão do Lead" style="display:none;">Ver Lead</button>
         <button class="acao-btn" id="chFechar" title="Fechar">✕</button>
       </div>
-      <div id="chMsgs" style="flex:1;overflow-y:auto;padding:14px;background:#F1F5F9;display:flex;flex-direction:column;gap:6px;"></div>
+      <div id="chMsgs" style="flex:1;overflow-y:auto;padding:14px;background:var(--bg-secondary);display:flex;flex-direction:column;gap:6px;"></div>
       <div style="display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:var(--card);">
-        <input id="chInput" placeholder="Escreva uma mensagem..." style="flex:1;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;">
-        <button id="chEnviar" title="Enviar" style="padding:0 16px;border:none;border-radius:10px;background:var(--lime);color:#fff;font-weight:700;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+        <input id="chInput" placeholder="Escreva uma mensagem..." style="flex:1;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--surface-input);color:var(--text);">
+        <button id="chEnviar" title="Enviar" style="padding:0 16px;border:none;border-radius:10px;background:var(--lime);color:var(--brand-ink);font-weight:700;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
       </div>
     </div>
   </div>
@@ -789,7 +909,7 @@
         <b>Situação:</b> <span id="domEstado" class="pill parcial">—</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <input type="text" id="domInput" placeholder="quiz.suaempresa.com.br" style="flex:1;min-width:220px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
+        <input type="text" id="domInput" placeholder="quiz.suaempresa.com.br" style="flex:1;min-width:220px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);">
         <button class="btn" id="domBtnSalvar">Salvar</button>
         <button class="btn" id="domBtnRemover" style="display:none;">Remover</button>
       </div>
@@ -845,7 +965,7 @@
         <b>Situação:</b> <span id="calEstado" class="pill parcial">verificando…</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <input type="password" id="calApiKey" placeholder="Cole a chave da API do Cal.com" style="flex:1;min-width:240px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
+        <input type="password" id="calApiKey" placeholder="Cole a chave da API do Cal.com" style="flex:1;min-width:240px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);">
         <button class="btn" id="calBtnSalvar">Salvar</button>
         <button class="btn" id="calBtnRemover" style="display:none;">Remover</button>
       </div>
@@ -864,8 +984,8 @@
         <b>Situação:</b> <span id="mhEstado" class="pill parcial">verificando…</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <input type="text" id="mhUrl" placeholder="URL do webhook (ex: https://.../webhooks/chatquizz)" style="flex:1;min-width:240px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
-        <input type="password" id="mhSecret" placeholder="Segredo compartilhado" style="flex:1;min-width:200px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
+        <input type="text" id="mhUrl" placeholder="URL do webhook (ex: https://.../webhooks/chatquizz)" style="flex:1;min-width:240px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);">
+        <input type="password" id="mhSecret" placeholder="Segredo compartilhado" style="flex:1;min-width:200px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);">
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
         <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;cursor:pointer;"><input type="checkbox" id="mhAtivo" checked style="width:15px;height:15px;">Ativo</label>
@@ -885,20 +1005,21 @@
       <div id="pmCampos" style="display:grid;gap:12px;"></div>
       <div class="muted-cell" id="pmErro" style="margin-top:8px;color:var(--red);min-height:15px;"></div>
       <div style="display:flex;gap:8px;margin-top:16px;">
-        <button id="pmCancelar" style="flex:1;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-weight:600;font-size:13px;cursor:pointer;">Cancelar</button>
-        <button id="pmOk" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--lime);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">Confirmar</button>
+        <button id="pmCancelar" style="flex:1;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface-card-2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;">Cancelar</button>
+        <button id="pmOk" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">Confirmar</button>
       </div>
     </div>
   </div>
 
   <!-- DASHBOARD -->
   <div id="app">
-    <div id="impersonarBar" hidden style="margin-left:225px;padding:10px clamp(20px,3vw,48px);background:#FEF3C7;color:#92400E;font-size:13px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <div id="impersonarBar" hidden style="margin-left:225px;padding:10px clamp(20px,3vw,48px);background:var(--warning-bg);color:var(--warning-text);font-size:13px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <span>⚠ Você está vendo como: <b id="impersonarNome">—</b></span>
       <span style="flex:1"></span>
-      <button id="btnSairImpersonar" style="padding:7px 14px;border:none;border-radius:8px;background:#92400E;color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;">Voltar pro meu painel</button>
+      <button id="btnSairImpersonar" style="padding:7px 14px;border:none;border-radius:8px;background:var(--warning-text);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;">Voltar pro meu painel</button>
     </div>
     <div class="topbar">
+      <button id="sbHamburguer" type="button" title="Abrir menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg></button>
       <div class="topsearch" title="Pesquisa global de leads (nome, telefone ou e-mail)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="buscaGlobal" placeholder="Buscar lead em todo o CRM...">
@@ -927,10 +1048,12 @@
     </div>
 
     <div class="layout">
+      <div id="sbBackdrop"></div>
       <aside class="sidenav" id="sidenav">
         <div class="sidenav-topo">
           <div class="logo">Q</div>
           <b>ChatQuizz CRM</b>
+          <button id="sidebarToggle" type="button" title="Recolher/expandir menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
         </div>
         <div class="sidenav-corpo">
         <div class="nav-menu">
@@ -1029,7 +1152,7 @@
         <h2>Priorizar closer (trilha premium)</h2>
         <div class="sub">(Recurso do funil original com time de vendedores — oculto por padrão. Reativa quando houver equipe.)</div>
       </div>
-      <select id="priorSelect" style="margin-left:auto;padding:10px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-weight:600;min-width:230px;cursor:pointer;">
+      <select id="priorSelect" style="margin-left:auto;padding:10px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-weight:600;min-width:230px;cursor:pointer;background:var(--surface-input);color:var(--text);">
         <option value="">Automático (sorteio)</option>
       </select>
       <span class="muted-cell" id="priorStatus" style="min-width:120px;"></span>
@@ -1272,8 +1395,8 @@
       <div class="sub">Mensagens automáticas 100% editáveis (nada fixo no código). O gatilho <b>"1 hora antes da reunião"</b> usa os agendamentos reais do módulo Reuniões: configure uma vez e vale para todas as reuniões futuras, sempre sincronizado com remarcações e cancelamentos.</div>
       <div style="display:grid;gap:10px;max-width:640px;margin-bottom:6px;">
         <div style="display:grid;grid-template-columns:2fr 1.6fr;gap:8px;">
-          <label style="font-size:11.5px;font-weight:700;">Nome da automação<input id="amNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Lembrete do Encontro"></label>
-          <label style="font-size:11.5px;font-weight:700;">Gatilho<select id="amGatilho" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;">
+          <label style="font-size:11.5px;font-weight:700;">Nome da automação<input id="amNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Lembrete do Encontro"></label>
+          <label style="font-size:11.5px;font-weight:700;">Gatilho<select id="amGatilho" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);">
             <option value="reuniao_1h">1 hora antes da reunião</option>
             <option value="manual">Somente manual</option>
           </select></label>
@@ -1286,10 +1409,10 @@
             <button class="acao-btn" data-v="{{horario}}">{{horario}}</button>
             <button class="acao-btn" data-v="{{link_reuniao}}">{{link_reuniao}}</button>
           </div>
-          <textarea id="amMsg" rows="4" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;resize:vertical;" placeholder="Oi {{nome}}! Nosso Encontro é hoje às {{horario}} 💚 Te espero aqui: {{link_reuniao}}"></textarea>
+          <textarea id="amMsg" rows="4" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;resize:vertical;background:var(--surface-input);color:var(--text);" placeholder="Oi {{nome}}! Nosso Encontro é hoje às {{horario}} 💚 Te espero aqui: {{link_reuniao}}"></textarea>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button id="amSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Salvar automação</button>
+          <button id="amSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar automação</button>
           <button class="btn" id="amCancelar" style="display:none;">Cancelar edição</button>
           <span class="muted-cell" id="amStatus"></span>
         </div>
@@ -1304,13 +1427,13 @@
       <div style="display:grid;gap:10px;max-width:640px;margin-bottom:6px;">
         <div>
           <div style="font-size:11.5px;font-weight:700;margin-bottom:4px;">Contatos</div>
-          <input id="dpBuscaLead" style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Busque um lead por nome ou telefone e clique para adicionar...">
+          <input id="dpBuscaLead" style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Busque um lead por nome ou telefone e clique para adicionar...">
           <div id="dpSugestoes" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;"></div>
           <div id="dpEscolhidos" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:340px;">
-          <label style="font-size:11.5px;font-weight:700;">Data<input id="dpData" type="date" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
-          <label style="font-size:11.5px;font-weight:700;">Horário<input id="dpHora" type="time" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;"></label>
+          <label style="font-size:11.5px;font-weight:700;">Data<input id="dpData" type="date" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+          <label style="font-size:11.5px;font-weight:700;">Horário<input id="dpHora" type="time" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
         </div>
         <div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;" id="dpVars">
@@ -1319,10 +1442,10 @@
             <button class="acao-btn" data-v="{{horario}}">{{horario}}</button>
             <button class="acao-btn" data-v="{{link_reuniao}}">{{link_reuniao}}</button>
           </div>
-          <textarea id="dpMsg" rows="3" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;resize:vertical;" placeholder="Mensagem a enviar..."></textarea>
+          <textarea id="dpMsg" rows="3" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;resize:vertical;background:var(--surface-input);color:var(--text);" placeholder="Mensagem a enviar..."></textarea>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button id="dpAgendar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Agendar disparo</button>
+          <button id="dpAgendar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Agendar disparo</button>
           <span class="muted-cell" id="dpStatus"></span>
         </div>
       </div>
@@ -1408,8 +1531,8 @@
       <h2>Quadro (Funil)</h2>
       <div class="sub">Organize os leads em colunas e <b>arraste os cartões</b> entre elas. Crie quantos quadros (funis) precisar.</div>
       <div class="kb-toolbar" data-pbanner="quadro">
-        <select id="kbBoardSel" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;min-width:200px;"></select>
-        <button id="kbNovoLead" style="padding:9px 14px;border:none;border-radius:9px;background:#fff;color:var(--lime);font-weight:700;font-size:13px;cursor:pointer;">+ Novo Lead</button>
+        <select id="kbBoardSel" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;min-width:200px;background:var(--surface-input);color:var(--text);"></select>
+        <button id="kbNovoLead" style="padding:9px 14px;border:none;border-radius:9px;background:var(--brand);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">+ Novo Lead</button>
         <button class="btn" id="kbNovoQuadro">+ Novo Quadro</button>
         <button class="btn" id="kbNovaCol">+ Nova Coluna</button>
         <button class="btn" id="kbVinculo" title="Trocar o atendente responsável pelo quadro (só administradora)">Responsável</button>
@@ -1521,7 +1644,7 @@
         <button class="btn" id="qeNova">+ Nova pergunta</button>
         <span style="flex:1"></span>
         <button class="btn" id="qeRestaurar">Restaurar padrão</button>
-        <button id="qePublicar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;">Publicar</button>
+        <button id="qePublicar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Publicar</button>
       </div>
       <div class="muted-cell" id="qeStatus" style="margin-top:8px;"></div>
     </div>
@@ -1531,8 +1654,8 @@
       <h2>Links de Rastreio</h2>
       <div class="sub">Crie um link curto por origem (Instagram, Facebook, um grupo de WhatsApp...) — quem entra no quiz por ele já chega marcado com essa origem no painel. Pode criar quantos quiser, ou nenhum.</div>
       <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;align-items:end;">
-        <label style="font-size:11.5px;font-weight:600;">Nome<input id="lkNome" style="width:220px;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;" placeholder="Ex: Instagram Bio"></label>
-        <button id="lkCriar" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">+ Criar link</button>
+        <label style="font-size:11.5px;font-weight:600;">Nome<input id="lkNome" style="width:220px;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Ex: Instagram Bio"></label>
+        <button id="lkCriar" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">+ Criar link</button>
       </div>
       <span class="muted-cell" id="lkStatus"></span>
       <div class="tbl-wrap"><table id="lkTable"></table></div>
@@ -1550,8 +1673,8 @@
       </div>
 
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
-        <input id="eqBusca" placeholder="Buscar por nome ou e-mail..." style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;">
-        <button id="eqNovoBtn" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">+ Novo Usuário</button>
+        <input id="eqBusca" placeholder="Buscar por nome ou e-mail..." style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);">
+        <button id="eqNovoBtn" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">+ Novo Usuário</button>
       </div>
       <span class="muted-cell" id="eqStatus"></span>
       <div id="eqLista" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
@@ -1583,7 +1706,7 @@
       </div>
 
       <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-        <button id="mNovaContaBtn" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">+ Nova conta</button>
+        <button id="mNovaContaBtn" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">+ Nova conta</button>
       </div>
       <span class="muted-cell" id="masterStatus"></span>
       <div class="tbl-wrap"><table id="masterTable"></table></div>
@@ -2090,6 +2213,53 @@ document.querySelectorAll('.panel h2, #alertModal h2').forEach((h) => {
   if (n && n.nodeType === 3) n.nodeValue = n.nodeValue.replace(/^[^\p{L}\p{N}]+\s*/u, '');
 });
 
+/* ===== Sidebar: modo recolhido (só ícones) + drawer mobile ===== */
+document.querySelectorAll('#sidenav button').forEach((b) => {
+  // pega o texto solto depois do <svg> e embrulha num <span class="nav-label">
+  // pra poder esconder só o texto no modo recolhido, sem tocar no ícone
+  const txt = Array.from(b.childNodes).find((n) => n.nodeType === 3 && n.nodeValue.trim());
+  if (!txt) return;
+  const span = document.createElement('span');
+  span.className = 'nav-label';
+  span.textContent = txt.nodeValue.trim();
+  txt.replaceWith(span);
+});
+(function () {
+  const SB_KEY = 'ds_sidebar_collapsed';
+  if (localStorage.getItem(SB_KEY) === '1') document.body.classList.add('sb-collapsed');
+  const toggle = $('#sidebarToggle');
+  if (toggle) toggle.onclick = () => {
+    const on = document.body.classList.toggle('sb-collapsed');
+    localStorage.setItem(SB_KEY, on ? '1' : '0');
+  };
+  const hamb = $('#sbHamburguer');
+  const backdrop = $('#sbBackdrop');
+  if (hamb) hamb.onclick = () => document.body.classList.add('sb-mobile-open');
+  if (backdrop) backdrop.onclick = () => document.body.classList.remove('sb-mobile-open');
+  $('#sidenav').addEventListener('click', (e) => {
+    if (e.target.closest('button[data-sec]')) document.body.classList.remove('sb-mobile-open');
+  });
+})();
+
+/* ===== Toast (substitui alert() nativo por um popup não-bloqueante) ===== */
+const TOAST_ICONS = {
+  success: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>',
+  warning: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  error: '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+};
+function toast(tipo, titulo, msg) {
+  let host = $('#toastHost');
+  if (!host) { host = document.createElement('div'); host.id = 'toastHost'; document.body.appendChild(host); }
+  const div = document.createElement('div');
+  div.className = 'toast ' + (tipo || 'info');
+  div.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${TOAST_ICONS[tipo] || TOAST_ICONS.info}</svg><div><b></b>${msg ? '<p></p>' : ''}</div>`;
+  div.querySelector('b').textContent = titulo || '';
+  if (msg) div.querySelector('p').textContent = msg;
+  host.appendChild(div);
+  setTimeout(() => { div.style.transition = 'opacity .2s'; div.style.opacity = '0'; setTimeout(() => div.remove(), 200); }, 4000);
+}
+
 /* ===== cabeçalho padrão dos cards: ícone SVG na cor da seção ===== */
 const DS_PATHS = {
   grafico: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 13v4"/><path d="M12 9v8"/><path d="M17 5v12"/>',
@@ -2105,8 +2275,8 @@ const DS_PATHS = {
   kanban: '<path d="M6 5v11"/><path d="M12 5v6"/><path d="M18 5v14"/>',
   lista: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
 };
-const DS_CORES = { azul: '#4F8CFF', verde: '#2ECC71', laranja: '#F59E0B', lima: 'var(--lime-icon)', cinza: '#6B7280', roxo: '#A78BFA' };
-const DS_CORES_SOFT = { azul: 'var(--blue-soft)', verde: 'var(--green-soft)', laranja: 'var(--amber-soft)', lima: 'var(--lime-soft)', cinza: '#F1F1F7', roxo: 'var(--chart-soft)' };
+const DS_CORES = { azul: 'var(--blue)', verde: 'var(--green)', laranja: 'var(--amber)', lima: 'var(--lime-icon)', cinza: 'var(--text-muted)', roxo: '#A78BFA' };
+const DS_CORES_SOFT = { azul: 'var(--blue-soft)', verde: 'var(--green-soft)', laranja: 'var(--amber-soft)', lima: 'var(--lime-soft)', cinza: 'var(--surface-card-2)', roxo: 'var(--chart-soft)' };
 const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verde · Vendas laranja · Usuários lima · Config cinza · gráficos roxo claro) */
   pFunil: ['grafico', 'roxo'], pRenda: ['carteira', 'verde'], pNicho: ['grafico', 'roxo'],
   pIdadeAreas: ['grafico', 'roxo'], pDiaUF: ['grafico', 'roxo'], pOrigemUtm: ['grafico', 'roxo'], pDestino: ['envio', 'azul'],
@@ -2121,11 +2291,11 @@ const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verd
 /* botões de ação secundária com "tinta" da cor (fundo pastel + borda + texto combinando) —
    usado em ações de linha de tabela (Master, Equipe) pra dar hierarquia sem virar botão sólido */
 const BTN_TINTS = {
-  lima: 'border:1px solid rgba(0,40,179,.35);background:var(--lime-soft);color:var(--lime);',
-  azul: 'border:1px solid rgba(79,140,255,.4);background:var(--blue-soft);color:var(--accent-dark);',
-  verde: 'border:1px solid rgba(34,165,94,.35);background:var(--green-soft);color:var(--green);',
-  vermelho: 'border:1px solid rgba(255,90,95,.4);background:var(--red-soft);color:var(--red);',
-  cinza: 'border:1px solid var(--line);background:#fff;color:var(--ink);',
+  lima: 'border:1px solid rgba(242,248,98,.35);background:var(--lime-soft);color:var(--lime);',
+  azul: 'border:1px solid rgba(139,133,240,.4);background:var(--blue-soft);color:var(--blue);',
+  verde: 'border:1px solid rgba(74,222,128,.35);background:var(--green-soft);color:var(--green);',
+  vermelho: 'border:1px solid rgba(242,115,94,.4);background:var(--red-soft);color:var(--red);',
+  cinza: 'border:1px solid var(--line);background:var(--surface-card-2);color:var(--ink);',
 };
 function btnCssTint(cor) { return 'cursor:pointer;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;white-space:nowrap;' + (BTN_TINTS[cor] || BTN_TINTS.cinza); }
 function montarIconeChip(ic, cor, tamanho) {
@@ -2436,19 +2606,19 @@ function abrirLeadModal(r) {
   const ag = el('button');
   ag.textContent = 'Agendar';
   ag.title = 'Abre a agenda do Cal.com aqui dentro, já no nome deste lead — a confirmação é registrada no painel na hora';
-  ag.style.cssText = 'background:var(--lime);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:9px;border:0;cursor:pointer;';
+  ag.style.cssText = 'background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13px;padding:9px 16px;border-radius:9px;border:0;cursor:pointer;';
   ag.onclick = () => abrirCalModal(r);
   acoes.appendChild(ag);
   if (!r.resultado) {
     const conv = el('button');
     conv.textContent = '✓ Convertido';
     conv.title = 'Marcar este lead como CONVERTIDO (sai dos ativos)';
-    conv.style.cssText = 'background:#fff;color:var(--green);border:1.5px solid var(--green);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
+    conv.style.cssText = 'background:var(--surface-card-2);color:var(--green);border:1.5px solid var(--green);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
     conv.onclick = () => { if (confirm('Marcar ' + (r.nome || 'este lead') + ' como CONVERTIDO?')) salvarLeadCampos(r, { resultado: 'convertido' }); };
     const perd = el('button');
     perd.textContent = '✕ Perdido';
     perd.title = 'Marcar este lead como PERDIDO (sai dos ativos)';
-    perd.style.cssText = 'background:#fff;color:var(--amber);border:1.5px solid var(--amber);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
+    perd.style.cssText = 'background:var(--surface-card-2);color:var(--amber);border:1.5px solid var(--amber);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
     perd.onclick = async () => {
       const m = await perguntarMotivoPerda();
       if (m === null) return;
@@ -2459,13 +2629,13 @@ function abrirLeadModal(r) {
     const rea = el('button');
     rea.textContent = 'Reativar lead';
     rea.title = 'Voltar este lead para os ativos (só administradora)';
-    rea.style.cssText = 'background:#fff;color:var(--accent-dark);border:1.5px solid var(--accent);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
+    rea.style.cssText = 'background:var(--surface-card-2);color:var(--accent-dark);border:1.5px solid var(--accent);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
     rea.onclick = () => { if (confirm('Reativar ' + (r.nome || 'este lead') + '? Ele volta para os Leads Ativos.')) salvarLeadCampos(r, { resultado: '' }); };
     acoes.appendChild(rea);
   }
   const bx = el('button');
   bx.textContent = 'Excluir lead';
-  bx.style.cssText = 'background:#fff;color:var(--red);border:1.5px solid var(--red);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;margin-left:auto;';
+  bx.style.cssText = 'background:var(--surface-card-2);color:var(--red);border:1.5px solid var(--red);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;margin-left:auto;';
   bx.onclick = () => excluirLead(r);
   acoes.appendChild(bx);
   c.appendChild(acoes);
@@ -2523,7 +2693,7 @@ function abrirLeadModal(r) {
   bAdd.onclick = () => { LM_DRAFT.campos.push({ k: '', v: '' }); abrirLeadModal(r); };
   const bSalvar = el('button');
   bSalvar.textContent = 'Salvar anotações';
-  bSalvar.style.cssText = 'background:var(--lime);color:#fff;border:none;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:9px;cursor:pointer;';
+  bSalvar.style.cssText = 'background:var(--lime);color:var(--brand-ink);border:none;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:9px;cursor:pointer;';
   bSalvar.onclick = () => salvarLeadCampos(r, { obs: LM_DRAFT.obs, campos_extras: LM_DRAFT.campos });
   rodape.append(bAdd, bSalvar);
   c.appendChild(rodape);
@@ -2995,7 +3165,7 @@ function qeRenderRoteamento(box) {
     } else if (rota.tipo === 'whatsapp') {
       if (!QE_WA_CONECTADO) {
         const aviso = el('div', 'muted-cell');
-        aviso.style.cssText = 'color:#B45309;font-weight:600;margin-bottom:6px;';
+        aviso.style.cssText = 'color:var(--amber);font-weight:600;margin-bottom:6px;';
         aviso.textContent = '⚠ O WhatsApp ainda não está conectado (aba Conexões) — conecte antes de publicar, senão o lead só vê a mensagem passiva, sem envio automático.';
         card.appendChild(aviso);
       }
@@ -3083,7 +3253,7 @@ function qeRenderAparencia(box) {
 
   const btnRow = el('div'); btnRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:6px;';
   const btnSalvar = el('button'); btnSalvar.textContent = 'Salvar aparência';
-  btnSalvar.style.cssText = 'padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;';
+  btnSalvar.style.cssText = 'padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;';
   const status = el('span', 'muted-cell'); status.style.marginLeft = '4px';
   btnSalvar.onclick = async () => {
     status.textContent = 'salvando…';
@@ -4303,7 +4473,7 @@ function promptModal({ titulo, sub, campos, textoOk }) {
       let campo;
       if (c.tipo === 'select') {
         campo = el('select');
-        campo.style.cssText = 'width:100%;margin-top:5px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;background:#fff;cursor:pointer;';
+        campo.style.cssText = 'width:100%;margin-top:5px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;background:var(--surface-input);color:var(--text);cursor:pointer;';
         (c.options || []).forEach((op) => { const o = el('option'); o.value = op; o.textContent = op; campo.appendChild(o); });
       } else {
         campo = el('input'); campo.type = c.tipoInput || 'text';
@@ -4982,8 +5152,8 @@ async function carregarChat(primeira) {
     const dt = new Date(m.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     b.style.cssText = 'max-width:78%;padding:8px 11px;border-radius:12px;font-size:13.5px;line-height:1.4;box-shadow:var(--shadow);'
       + (m.direcao === 'out'
-        ? 'align-self:flex-end;background:var(--lime-soft);border:1px solid #b9c6ec;'
-        : 'align-self:flex-start;background:#fff;border:1px solid var(--line);');
+        ? 'align-self:flex-end;background:var(--lime-soft);border:1px solid rgba(242,248,98,.35);'
+        : 'align-self:flex-start;background:var(--surface-card-2);border:1px solid var(--line);');
     const tx = el('div'); tx.textContent = m.texto;
     const hs = el('div'); hs.textContent = (m.direcao === 'out' && m.quem ? m.quem + ' · ' : '') + dt;
     hs.style.cssText = 'font-size:10.5px;color:var(--text-dim);margin-top:3px;text-align:right;';
@@ -5045,7 +5215,7 @@ function renderInbox() {
     dir.appendChild(hr);
     if (c.nao_lidas) {
       const bd = el('span'); bd.textContent = c.nao_lidas;
-      bd.style.cssText = 'display:inline-block;margin-top:3px;background:var(--lime);color:#fff;font-size:11px;font-weight:800;border-radius:99px;padding:1px 8px;';
+      bd.style.cssText = 'display:inline-block;margin-top:3px;background:var(--lime);color:var(--brand-ink);font-size:11px;font-weight:800;border-radius:99px;padding:1px 8px;';
       dir.appendChild(bd);
     }
     row.append(av, meio, dir);
@@ -5119,7 +5289,7 @@ function dpRenderEscolhidos() {
   const box = $('#dpEscolhidos'); clear(box);
   DP_CONTATOS.forEach((c, i) => {
     const chip = el('span');
-    chip.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:var(--lime-soft);border:1px solid #b9c6ec;border-radius:99px;padding:4px 11px;font-size:12.5px;font-weight:600;';
+    chip.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:var(--lime-soft);border:1px solid rgba(242,248,98,.35);border-radius:99px;padding:4px 11px;font-size:12.5px;font-weight:600;';
     chip.append(c.nome || c.telefone);
     const x = el('button'); x.textContent = '✕'; x.style.cssText = 'border:none;background:none;cursor:pointer;font-size:11px;color:var(--text-muted);';
     x.onclick = () => { DP_CONTATOS.splice(i, 1); dpRenderEscolhidos(); };
@@ -5319,7 +5489,7 @@ function renderEqLista(res, logs) {
 
     const av = el('div'); av.textContent = (u.nome || '?').trim().charAt(0).toUpperCase();
     av.style.cssText = 'width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;' +
-      (u.eh_dono ? 'background:var(--lime-soft,rgba(0,40,179,.12));color:var(--lime);' : 'background:#f1f1f7;color:var(--text-muted);');
+      (u.eh_dono ? 'background:var(--lime-soft,rgba(0,40,179,.12));color:var(--lime);' : 'background:var(--surface-card-2);color:var(--text-muted);');
 
     const info = el('div'); info.style.cssText = 'flex:1;min-width:180px;';
     const linha1 = el('div'); linha1.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
@@ -5460,7 +5630,7 @@ $('#eudResetar').onclick = async () => {
   const s = $('#eudSenhaStatus');
   s.append('Nova senha temporária: ');
   const b = el('b'); b.textContent = r.senhaTemporaria; b.style.cssText = 'font-size:13.5px;color:var(--accent-dark);';
-  const bc = el('button'); bc.textContent = 'Copiar'; bc.style.cssText = 'margin-left:8px;cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 9px;font-size:11.5px;';
+  const bc = el('button'); bc.textContent = 'Copiar'; bc.style.cssText = 'margin-left:8px;cursor:pointer;border:1px solid var(--line);background:var(--surface-card-2);color:var(--text);border-radius:7px;padding:3px 9px;font-size:11.5px;';
   bc.onclick = () => { navigator.clipboard.writeText(r.senhaTemporaria).then(() => { bc.textContent = '✓ Copiado'; }); };
   s.append(b, bc);
   carregarEquipe();
