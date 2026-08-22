@@ -6,7 +6,10 @@
  *   { token, action:'editar', id, nome?, gatilho?, mensagem?, ativa? }  (admin)
  *   { token, action:'excluir', id }                               (admin)
  *
- * Gatilhos: 'reuniao_1h' (lembrete 1h antes da reunião) | 'manual'.
+ * Gatilhos: 'reuniao_1h' (lembrete 1h antes da reunião) | 'lead_vip' (alerta
+ * de lead prioritário, dispara quando o qualificador computado do lead bate
+ * com `qualificador_alvo`; a mensagem vai pro número de staff em `destino`,
+ * não pro lead) | 'manual'.
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
 
@@ -14,7 +17,7 @@ const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const AVISO_SQL = 'Falta rodar o setup-whatsapp.sql no Supabase (módulo WhatsApp).';
-const GATILHOS = ['manual', 'reuniao_1h'];
+const GATILHOS = ['manual', 'reuniao_1h', 'lead_vip'];
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
@@ -32,9 +35,12 @@ export default async (req) => {
     const id = Number(body.id) || 0;
 
     if (a === 'listar') {
-      const r = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&select=id,nome,gatilho,mensagem,ativa,criado_em&order=criado_em.asc`, { headers: H });
+      const r = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&select=id,nome,gatilho,mensagem,ativa,destino,qualificador_alvo,criado_em&order=criado_em.asc`, { headers: H });
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
-      return json({ ok: true, automacoes: await r.json() });
+      let automacoes = await r.json();
+      // número de staff é dado sensível — só a administradora vê de verdade
+      if (!auth.admin) automacoes = automacoes.map((am) => ({ ...am, destino: am.destino ? '••••••' : '' }));
+      return json({ ok: true, automacoes });
     }
 
     if (!auth.admin) return json({ ok: false, error: 'Somente a administradora gerencia as automações.' });
@@ -50,6 +56,8 @@ export default async (req) => {
         if (!GATILHOS.includes(patch.gatilho)) return json({ ok: false, error: 'gatilho inválido' });
       }
       if ('mensagem' in body || a === 'criar') patch.mensagem = String(body.mensagem || '').slice(0, 3000);
+      if ('destino' in body) patch.destino = String(body.destino || '').replace(/\D/g, '').slice(0, 20);
+      if ('qualificador_alvo' in body) patch.qualificador_alvo = String(body.qualificador_alvo || '').trim().slice(0, 40);
       if ('ativa' in body) patch.ativa = !!body.ativa;
       if (a === 'criar') patch.conta_id = contaId;
       const r = a === 'criar'

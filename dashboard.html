@@ -1542,8 +1542,13 @@
           <label style="font-size:11.5px;font-weight:700;">Nome da automação<input id="amNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Lembrete do Encontro"></label>
           <label style="font-size:11.5px;font-weight:700;">Gatilho<select id="amGatilho" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);">
             <option value="reuniao_1h">1 hora antes da reunião</option>
+            <option value="lead_vip">Lead prioritário (qualificador)</option>
             <option value="manual">Somente manual</option>
           </select></label>
+        </div>
+        <div id="amVipCampos" style="display:none;grid-template-columns:1.4fr 1fr;gap:8px;">
+          <label style="font-size:11.5px;font-weight:700;">Qualificador que dispara o alerta<select id="amQualAlvo" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"></select></label>
+          <label style="font-size:11.5px;font-weight:700;">Avisar este WhatsApp (equipe)<input id="amDestino" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="55DDDNÚMERO"></label>
         </div>
         <div>
           <div style="font-size:11.5px;font-weight:700;margin-bottom:4px;">Mensagem <span class="muted-cell" style="font-weight:400;">(clique numa variável para inserir onde o cursor estiver)</span></div>
@@ -5797,7 +5802,7 @@ function renderAutomacoes() {
   const t = $('#amTabela'); if (!t) return; clear(t);
   t.appendChild(tableHead(['Automação', 'Gatilho', 'Mensagem', 'Ativa', '', '']));
   const tb = el('tbody');
-  const GAT = { reuniao_1h: '1 hora antes da reunião', manual: 'Somente manual' };
+  const GAT = { reuniao_1h: '1 hora antes da reunião', lead_vip: 'Lead prioritário', manual: 'Somente manual' };
   AM_LISTA.forEach((a) => {
     const tr = el('tr');
     const sw = el('input'); sw.type = 'checkbox'; sw.checked = !!a.ativa; sw.style.cssText = 'width:16px;height:16px;accent-color:var(--lime);cursor:pointer;';
@@ -5806,6 +5811,8 @@ function renderAutomacoes() {
     ed.onclick = () => {
       AM_EDIT = a.id;
       $('#amNome').value = a.nome; $('#amGatilho').value = a.gatilho; $('#amMsg').value = a.mensagem;
+      $('#amQualAlvo').value = a.qualificador_alvo || ''; $('#amDestino').value = a.destino || '';
+      amAtualizarCamposVip();
       $('#amSalvar').textContent = 'Salvar alterações'; $('#amCancelar').style.display = '';
       $('#amNome').focus();
     };
@@ -5818,10 +5825,32 @@ function renderAutomacoes() {
   if (!AM_LISTA.length) { const tr = el('tr'); const c = td('Nenhuma automação ainda. Crie a primeira acima, sugestão: o lembrete de 1 hora antes da reunião.'); c.colSpan = 6; c.className = 'muted-cell'; tr.appendChild(c); tb.appendChild(tr); }
   t.appendChild(tb);
 }
-function amLimpar() { AM_EDIT = null; $('#amNome').value = ''; $('#amMsg').value = ''; $('#amGatilho').value = 'reuniao_1h'; $('#amSalvar').textContent = 'Salvar automação'; $('#amCancelar').style.display = 'none'; }
+/* mostra/esconde os campos exclusivos do gatilho "lead_vip" (qualificador +
+   número de staff) e mantém o select de qualificadores sempre atualizado */
+function amAtualizarCamposVip() {
+  const ehVip = $('#amGatilho').value === 'lead_vip';
+  $('#amVipCampos').style.display = ehVip ? 'grid' : 'none';
+  if (!ehVip) return;
+  const sel = $('#amQualAlvo'); const atual = sel.value;
+  clear(sel);
+  const ph = el('option'); ph.value = ''; ph.textContent = 'Escolha um qualificador…'; sel.appendChild(ph);
+  qualificadoresOuFallback().forEach((q) => {
+    const o = el('option'); o.value = q.chave; o.textContent = q.nome || q.chave; sel.appendChild(o);
+  });
+  if ([...sel.options].some((o) => o.value === atual)) sel.value = atual;
+}
+$('#amGatilho').addEventListener('change', amAtualizarCamposVip);
+function amLimpar() {
+  AM_EDIT = null; $('#amNome').value = ''; $('#amMsg').value = ''; $('#amGatilho').value = 'reuniao_1h';
+  $('#amQualAlvo').value = ''; $('#amDestino').value = ''; amAtualizarCamposVip();
+  $('#amSalvar').textContent = 'Salvar automação'; $('#amCancelar').style.display = 'none';
+}
 $('#amCancelar').onclick = amLimpar;
 $('#amSalvar').onclick = async () => {
-  const payload = { action: AM_EDIT ? 'editar' : 'criar', id: AM_EDIT, nome: $('#amNome').value, gatilho: $('#amGatilho').value, mensagem: $('#amMsg').value };
+  const payload = {
+    action: AM_EDIT ? 'editar' : 'criar', id: AM_EDIT, nome: $('#amNome').value, gatilho: $('#amGatilho').value, mensagem: $('#amMsg').value,
+    qualificador_alvo: $('#amQualAlvo').value, destino: $('#amDestino').value,
+  };
   $('#amStatus').textContent = 'salvando…';
   const r = await amApi(payload);
   $('#amStatus').textContent = r.ok ? '✓ salvo' : (r.error || 'erro');

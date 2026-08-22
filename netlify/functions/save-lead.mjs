@@ -26,6 +26,7 @@
 import { votar, interpolar, carregarConfigPublicada } from '../_quiz.mjs';
 import { dispararMentoriaHub } from '../_conexoes.mjs';
 import { resolverContaPorHost } from '../_tenant.mjs';
+import { enviarWhats } from './whatsapp.mjs';
 
 const SUPABASE_URL = (process.env.SUPABASE_DIAG_URL || 'https://aktktxizmpwckvxbdjzf.supabase.co').replace(/\/+$/, '');
 const TABLE = 'diag_instagram_leads';
@@ -174,6 +175,7 @@ export default async (req) => {
           utm_medium: row.utm_medium, utm_term: row.utm_term, fbclid: row.fbclid, referrer: row.referrer,
         },
       });
+      try { await avaliarAlertaVip(SUPABASE_URL, H, contaId, row.lead_ref, row.nome, row.qualificador); } catch (e) { console.error('alerta-vip:', e?.message || e); }
     }
     /* Agendamento confirmado pelo embed do Cal.com dentro do próprio quiz —
        reflete na Agenda/Reuniões do MentoriaHub (mesmo chatquizzLeadRef do
@@ -191,6 +193,46 @@ export default async (req) => {
     return json({ error: err.message }, 500);
   }
 };
+
+/* Alerta de lead prioritário: dispara quando o qualificador computado do
+   lead bate com o `qualificador_alvo` de uma automação 'lead_vip' ativa
+   daquela conta — generalização do gatilho por "renda alta" do
+   quiz-suavitatis pra funcionar com qualquer qualificador configurado
+   (o QuizzHub é multi-tenant/multi-nicho, não tem uma renda-padrão fixa).
+   Idempotente (alerta_vip_enviado): nunca dispara 2x pro mesmo lead. */
+async function avaliarAlertaVip(SB_URL, H, contaId, lead_ref, nome, qualificador) {
+  if (!qualificador) return;
+  const ra = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&gatilho=eq.lead_vip&ativa=eq.true&qualificador_alvo=eq.${encodeURIComponent(qualificador)}&select=mensagem,destino&limit=1`, { headers: H });
+  const autom = ra.ok ? (await ra.json())[0] : null;
+  if (!autom || !autom.destino) return;   // sem automação ativa pra esse qualificador (ou sem número configurado) = nada dispara
+
+  const rc = await fetch(`${SB_URL}/rest/v1/${TABLE}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(lead_ref)}&select=alerta_vip_enviado&limit=1`, { headers: H });
+  const atual = rc.ok ? (await rc.json())[0] : null;
+  if (!atual || atual.alerta_vip_enviado) return;
+
+  await fetch(`${SB_URL}/rest/v1/${TABLE}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(lead_ref)}`, {
+    method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify({ alerta_vip_enviado: true }),
+  });
+
+  try {
+    await fetch(`${SB_URL}/rest/v1/alertas`, {
+      method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        conta_id: contaId, lead_ref, lead_nome: nome, atendente: '', tipo: 'lead_vip',
+        descricao: 'Novo lead prioritário (qualificador: ' + qualificador + '), acabou de entrar.',
+        data_hora: new Date().toISOString(), status: 'pendente',
+      }),
+    });
+  } catch { /* melhor-esforço */ }
+
+  try {
+    const texto = String(autom.mensagem || '🚨 Novo lead prioritário: {{nome}}')
+      .replaceAll('{{nome}}', nome || '(sem nome)').replaceAll('{{qualificador}}', qualificador);
+    // sem lead_ref de propósito: essa mensagem vai pro STAFF, não pro lead —
+    // se passasse o lead_ref, marcaria (errado) o lead como já atendido
+    await enviarWhats(contaId, autom.destino, texto, 'Automação');
+  } catch { /* melhor-esforço */ }
+}
 
 function cors() {
   return {
