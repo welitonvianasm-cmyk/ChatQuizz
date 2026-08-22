@@ -372,6 +372,21 @@
   .kpi .k-num.green { color: var(--green); }
   .kpi .k-num.blue { color: var(--blue); }
   .kpi .k-num.amber { color: var(--amber); }
+  /* linha de destaque: 1º card (Total de Leads) em 2 linhas de altura,
+     número gigante; o resto (#kpisRestante) fica numa grade de 2 colunas
+     logo abaixo — mesma organização adotada no quiz-suavitatis (projeto
+     irmão), só que usando as cores do QuizzHub (tokens já existentes). */
+  .kpis-hero { grid-template-columns: 1.6fr repeat(3, 1fr); }
+  .kpis-hero .kpi.k-featured {
+    grid-row: 1 / 3; grid-column: 1; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; text-align: center; padding: 26px 22px;
+  }
+  .kpis-hero .kpi.k-featured .k-label { font-size: 14px; }
+  .kpis-hero .kpi.k-featured .k-num { font-size: 72px; margin: 6px 0 4px; }
+  .kpis-hero .kpi.k-featured .k-sub { font-size: 13px; }
+  .kpis-2col { grid-template-columns: 1fr 1fr; }
+  #kpis { grid-template-columns: 1.6fr repeat(3, 1fr); }
+  #kpisRestante { grid-template-columns: 1fr 1fr; }
 
   /* ===== SECTIONS / GRID ===== */
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
@@ -476,6 +491,11 @@
     .kpis { grid-template-columns: repeat(2, 1fr); }
     .grid2 { grid-template-columns: 1fr; }
     .bc-row { grid-template-columns: 100px 1fr auto; }
+    /* hero (1.6fr + 3x1fr) não cabe em tela estreita — cai pra grade normal de 2 colunas */
+    #kpis, #kpisRestante { grid-template-columns: repeat(2, 1fr); }
+    .kpis-hero .kpi.k-featured { grid-row: auto; grid-column: auto; padding: 15px 16px; }
+    .kpis-hero .kpi.k-featured .k-num { font-size: 27px; margin: 0; }
+    .kpis-hero .kpi.k-featured .k-label, .kpis-hero .kpi.k-featured .k-sub { font-size: inherit; }
   }
   @media (max-width: 919px) and (min-width: 641px) {
     /* tablet: sidebar sempre recolhida (só ícones) pra sobrar mais espaço de conteúdo */
@@ -546,6 +566,7 @@
     .topsearch { flex: 1 1 100%; order: 5; }
     .fbar select, .fbar .fmais { max-width: none; flex: 1 1 45%; }
     .kpis { grid-template-columns: 1fr 1fr; gap: 9px; }
+    #kpis, #kpisRestante { grid-template-columns: 1fr 1fr; gap: 9px; }
     .kpi .k-num { font-size: 22px; }
     .panel { padding: 14px; border-radius: 13px; }
     .kb-col { min-width: 82vw; max-width: 82vw; }
@@ -1178,7 +1199,14 @@
     </div>
 
     <div id="tabFunil">
-    <div class="kpis" id="kpis"></div>
+    <div class="kpis kpis-hero" id="kpis"></div>
+    <div class="kpis kpis-2col" id="kpisRestante"></div>
+
+    <div class="panel" id="pAgendaram" hidden>
+      <h2>Agendaram conversas</h2>
+      <div class="sub">Resumo dos Encontros marcados pelo quiz</div>
+      <div class="kpis" id="agStats" style="margin-bottom:0;"></div>
+    </div>
 
     <div class="panel" style="display:none;align-items:center;gap:14px;flex-wrap:wrap;">
       <div>
@@ -1191,37 +1219,38 @@
       <span class="muted-cell" id="priorStatus" style="min-width:120px;"></span>
     </div>
 
-    <div class="panel" id="pFunil">
-      <h2>Funil de conversão</h2>
-      <div class="sub">Cada etapa conta quem chegou nela <i>ou além</i>, o lead avança de forma acumulada.</div>
-      <div id="funnel"></div>
-    </div>
-
     <!-- (o quadro "Destino dos agendamentos" mudou para Agenda → Dashboard) -->
 
-    <div class="panel" id="pRenda" hidden>
-      <h2>Renda familiar mensal</h2>
-      <div class="sub">Total por faixa de renda · <b>clique numa faixa</b> para ver todos os leads dela (clique de novo para recolher)</div>
-      <div id="renda"></div>
+    <div class="grid2" id="pFunil">
+      <div class="panel grid2-item">
+        <h2>Funil de conversão</h2>
+        <div class="sub">Cada etapa conta quem chegou nela <i>ou além</i>, o lead avança de forma acumulada.</div>
+        <div id="funnel"></div>
+      </div>
+      <div class="panel grid2-item" id="pRenda">
+        <h2>Renda familiar mensal</h2>
+        <div class="sub">Total por faixa de renda · <b>clique numa faixa</b> para ver todos os leads dela (clique de novo para recolher)</div>
+        <div id="renda"></div>
+      </div>
     </div>
 
-    <div class="panel" id="pNicho">
-      <h2>Como se sentem cuidando</h2>
-      <div class="sub">Resposta da pergunta 2 · barra escura = quantas agendaram conversa</div>
-      <div id="nicho"></div>
-    </div>
-
-    <div class="grid2" id="pIdadeAreas">
+    <div class="grid2" id="pNicho">
+      <div class="panel grid2-item">
+        <h2>Como se sentem cuidando</h2>
+        <div class="sub">Resposta da pergunta 2 · barra escura = quantas agendaram conversa</div>
+        <div id="nicho"></div>
+      </div>
       <div class="panel grid2-item">
         <h2>Faixa etária</h2>
         <div class="sub">Idade informada no quiz</div>
         <div id="seguidores"></div>
       </div>
-      <div class="panel grid2-item" style="grid-column:1/-1">
-        <h2>Áreas da vida mais afetadas</h2>
-        <div class="sub"><b>Clique numa área</b> para ver todos os leads que a marcaram (clique de novo para recolher). Como a pergunta aceita várias escolhas, a mesma lead pode aparecer em mais de uma área.</div>
-        <div id="desafio"></div>
-      </div>
+    </div>
+
+    <div class="panel" id="pIdadeAreas">
+      <h2>Áreas da vida mais afetadas</h2>
+      <div class="sub"><b>Clique numa área</b> para ver todos os leads que a marcaram (clique de novo para recolher). Como a pergunta aceita várias escolhas, a mesma lead pode aparecer em mais de uma área.</div>
+      <div id="desafio"></div>
     </div>
 
     <div class="grid2" id="pDiaUF">
@@ -1527,12 +1556,6 @@
         <div class="sub">Comunidade · WhatsApp, conforme as faixas de renda publicadas no quiz (Configurações → Quiz)</div>
         <div id="trilha"></div>
       </div>
-    </div>
-
-    <div class="panel" id="pAgendaram" hidden>
-      <h2>Agendaram conversas</h2>
-      <div class="sub">Resumo dos Encontros marcados pelo quiz</div>
-      <div class="kpis" id="agStats" style="margin-bottom:0;"></div>
     </div>
 
     <div class="panel" id="pPorAtendente" hidden>
@@ -2109,7 +2132,7 @@ function render() {
 const SECTIONS = {
   /* Visão Geral concentra TODOS os quadros analíticos; cada módulo fica
      só com o seu card essencial */
-  geral: ['#kpis', '#pFunil', '#pRenda', '#pNicho', '#pIdadeAreas', '#pDiaUF', '#pOrigemUtm', '#pDestino', '#pAgendaram', '#pPorAtendente'],
+  geral: ['#kpis', '#kpisRestante', '#pAgendaram', '#pFunil', '#pNicho', '#pIdadeAreas', '#pDiaUF', '#pOrigemUtm', '#pDestino', '#pPorAtendente'],
   agendaDash: ['#pAgendaDash'],      // só o Calendário
   agendados: ['#pUpcoming'],         // só Leads Agendados
   reunioes: ['#pReunioes'],          // reuniões por data + presença
@@ -4074,7 +4097,7 @@ $('#nlSalvar').onclick = async () => {
 })();
 
 function kpiCard(label, num, sub, opts = {}) {
-  const c = el('div', 'kpi' + (opts.hero ? ' hero' : ''));
+  const c = el('div', 'kpi' + (opts.hero ? ' hero' : '') + (opts.featured ? ' k-featured' : ''));
   const l = el('div', 'k-label'); l.textContent = label;
   const n = el('div', 'k-num' + (opts.color ? ' ' + opts.color : '')); n.textContent = num;
   c.append(l, n);
@@ -4083,6 +4106,10 @@ function kpiCard(label, num, sub, opts = {}) {
 }
 function renderKpis(rows) {
   const box = $('#kpis'); clear(box);
+  // #kpisRestante concentra os cards secundários (2 colunas), destacando só
+  // o de "Total de leads" na linha de cima — mesma organização do quiz-suavitatis
+  const restante = $('#kpisRestante'); if (restante) clear(restante);
+  const destino = restante || box;
   const total = rows.length;
   const reached = (s) => rows.filter((r) => (STATUS_ORD[r.status] || 1) >= STATUS_ORD[s] || (s === 'agendado' && r.agendado)).length;
   const completos = reached('completo');
@@ -4096,7 +4123,7 @@ function renderKpis(rows) {
     + (agendRows > agendados ? ' · ' + nf(agendRows - agendados) + ' duplicadas ignoradas' : '');
 
   box.append(
-    kpiCard('Total de leads', nf(total), 'entraram no quiz', { hero: true }),
+    kpiCard('Total de leads', nf(total), 'entraram no quiz', { hero: true, featured: true }),
     kpiCard('Agendaram conversa', nf(agendados), agendSub),
     kpiCard('Completaram o quiz', nf(completos), pct(completos, total) + '% do total', { color: 'blue' }),
     kpiCard('Pararam no meio', nf(Math.max(0, total - completos)), 'responderam só uma parte', { color: 'amber' }),
@@ -4105,11 +4132,11 @@ function renderKpis(rows) {
   qualificadoresOuFallback().forEach((q) => {
     const n = rows.filter((r) => r.call_track === q.chave).length;
     const nAgend = pessoasAgendadas(rows.filter((r) => r.call_track === q.chave));
-    box.appendChild(kpiCard(q.nome || q.chave, nf(n), nAgend + ' agendaram', { color: 'green' }));
+    destino.appendChild(kpiCard(q.nome || q.chave, nf(n), nAgend + ' agendaram', { color: 'green' }));
   });
-  box.appendChild(kpiCard('Conversas futuras', nf(futuras), 'a partir de agora'));
+  destino.appendChild(kpiCard('Conversas futuras', nf(futuras), 'a partir de agora'));
   // monitor do bug latente: lead marcou agendado mas sem booking_uid (Cal falhou / modo local)
-  if (semBooking) box.append(kpiCard('Sem código do Cal', nf(semBooking), 'agendaram pelo chat, mas o código de confirmação não foi salvo. Confira na sua agenda do Google/Cal se estão lá', { color: 'amber' }));
+  if (semBooking) destino.append(kpiCard('Sem código do Cal', nf(semBooking), 'agendaram pelo chat, mas o código de confirmação não foi salvo. Confira na sua agenda do Google/Cal se estão lá', { color: 'amber' }));
 }
 
 function renderFunnel(rows) {
