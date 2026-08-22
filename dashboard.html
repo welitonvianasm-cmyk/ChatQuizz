@@ -802,11 +802,20 @@
       </div>
       <div class="sub" id="naAviso" style="margin:0 0 12px;"></div>
       <div style="display:grid;gap:10px;">
-        <label style="font-size:11.5px;font-weight:700;">Nome<span style="color:var(--red);">*</span><input id="naNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Nome completo"></label>
+        <div>
+          <label style="font-size:11.5px;font-weight:700;">Nome<span style="color:var(--red);">*</span><input id="naNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Busque um lead já cadastrado ou digite um nome novo" autocomplete="off"></label>
+          <div id="naSugestoes" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;"></div>
+          <div id="naVinculo" style="display:none;align-items:center;gap:8px;margin-top:6px;background:var(--accent-soft);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;">
+            <span id="naVinculoTexto" style="flex:1;"></span>
+            <button class="acao-btn" id="naVinculoLimpar" type="button">Trocar</button>
+          </div>
+          <div class="muted-cell" id="naNovoAviso" style="margin-top:4px;font-size:12px;"></div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <label style="font-size:11.5px;font-weight:700;">WhatsApp<input id="naWhats" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="(11) 99999-9999"></label>
           <label style="font-size:11.5px;font-weight:700;">E-mail<input id="naEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="nome@email.com"></label>
         </div>
+        <label style="font-size:11.5px;font-weight:700;">Atendente responsável<select id="naAtendente" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— sem responsável —</option></select></label>
         <label style="font-size:11.5px;font-weight:700;">Dia e horário<span style="color:var(--red);">*</span><input id="naData" type="datetime-local" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
@@ -6219,8 +6228,16 @@ function abrirNovoAgendamentoCalcom() {
   if (!link) { toast('error', 'Aviso', 'Nenhum link de Cal.com configurado ainda. Configure em Configurações → Editor do Quiz → Roteamento.'); return; }
   window.open(link, '_blank', 'noopener');
 }
+let NA_LEAD_SELECIONADO = null;   // lead existente escolhido na busca (null = vai criar um novo)
 function abrirNovoAgendamentoBasico(googleOk) {
+  NA_LEAD_SELECIONADO = null;
   $('#naNome').value = ''; $('#naWhats').value = ''; $('#naEmail').value = ''; $('#naData').value = ''; $('#naStatus').textContent = '';
+  $('#naWhats').disabled = false; $('#naEmail').disabled = false;
+  clear($('#naSugestoes')); $('#naVinculo').style.display = 'none'; $('#naNovoAviso').textContent = '';
+  const sel = $('#naAtendente'); clear(sel);
+  const o0 = el('option'); o0.value = ''; o0.textContent = '— sem responsável —'; sel.appendChild(o0);
+  (ATENDENTES || []).forEach((n) => { const o = el('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
+  if (!IS_ADMIN && USUARIO) sel.value = USUARIO;
   $('#naAviso').textContent = googleOk
     ? 'Esse agendamento cria um evento na Google Agenda conectada, com sala do Meet automática.'
     : 'Nenhuma agenda externa conectada — o agendamento fica só aqui no sistema.';
@@ -6230,26 +6247,76 @@ function abrirNovoAgendamentoBasico(googleOk) {
 function fecharNovoAgendamento() { $('#novoAgendamentoModal').style.display = 'none'; }
 $('#naFechar').onclick = fecharNovoAgendamento;
 $('#novoAgendamentoModal').addEventListener('click', (e) => { if (e.target === $('#novoAgendamentoModal')) fecharNovoAgendamento(); });
+/* busca de lead já cadastrado (mesmo padrão do campo de contatos dos
+   Disparos Agendados) — achou e escolheu, vincula o agendamento a ele
+   em vez de criar um lead duplicado; senão, segue como cadastro novo. */
+function naSelecionarLead(l) {
+  NA_LEAD_SELECIONADO = l;
+  $('#naNome').value = l.nome || '';
+  $('#naWhats').value = l.whatsapp || '';
+  $('#naEmail').value = l.email || '';
+  $('#naWhats').disabled = true; $('#naEmail').disabled = true;
+  $('#naAtendente').value = l.atendente || '';
+  clear($('#naSugestoes')); $('#naNovoAviso').textContent = '';
+  $('#naVinculoTexto').textContent = 'Vinculando ao lead já cadastrado: ' + (l.nome || l.whatsapp || '(sem nome)');
+  $('#naVinculo').style.display = 'flex';
+}
+$('#naVinculoLimpar').onclick = () => {
+  NA_LEAD_SELECIONADO = null;
+  $('#naWhats').disabled = false; $('#naEmail').disabled = false;
+  $('#naNome').value = ''; $('#naWhats').value = ''; $('#naEmail').value = '';
+  $('#naVinculo').style.display = 'none';
+  $('#naNome').focus();
+};
+$('#naNome').addEventListener('input', (e) => {
+  if (NA_LEAD_SELECIONADO) return;   // já vinculado — só some a busca depois de "Trocar"
+  const q = e.target.value.trim().toLowerCase();
+  const box = $('#naSugestoes'); clear(box);
+  if (q.length < 2) { $('#naNovoAviso').textContent = ''; return; }
+  const achados = ALL.filter((l) => [l.nome, l.whatsapp, l.email].some((v) => String(v || '').toLowerCase().includes(q))).slice(0, 6);
+  achados.forEach((l) => {
+    const b = el('button', 'acao-btn'); b.type = 'button';
+    b.textContent = (l.nome || '(sem nome)') + (l.whatsapp ? ' · ' + l.whatsapp : '');
+    b.style.cssText = 'text-align:left;';
+    b.onclick = () => naSelecionarLead(l);
+    box.appendChild(b);
+  });
+  $('#naNovoAviso').textContent = achados.length ? '' : 'Nenhum lead encontrado — um lead novo vai ser criado com esse nome.';
+});
 $('#naSalvar').onclick = async () => {
   const nome = $('#naNome').value.trim();
   const dataVal = $('#naData').value;
   if (!nome) { $('#naStatus').textContent = 'Informe o nome.'; $('#naNome').focus(); return; }
   if (!dataVal) { $('#naStatus').textContent = 'Escolha o dia e horário.'; $('#naData').focus(); return; }
   const token = localStorage.getItem(TKEY) || '';
-  $('#naStatus').textContent = 'criando…';
-  const rc = await fetch('/api/lead-admin', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, action: 'criar', lead: { nome, whatsapp: $('#naWhats').value.trim(), email: $('#naEmail').value.trim() } }),
-  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
-  if (!rc.ok) { $('#naStatus').textContent = rc.error || 'Erro ao criar o lead.'; return; }
-  const leadRef = rc.lead && rc.lead.lead_ref;
-  $('#naStatus').textContent = 'agendando…';
+  const atendente = $('#naAtendente').value;
   const iso = new Date(dataVal).toISOString();
+  let leadRef;
+
+  if (!NA_LEAD_SELECIONADO) {
+    $('#naStatus').textContent = 'criando…';
+    const rc = await fetch('/api/lead-admin', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, action: 'criar', lead: { nome, whatsapp: $('#naWhats').value.trim(), email: $('#naEmail').value.trim(), atendente } }),
+    }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+    if (!rc.ok) { $('#naStatus').textContent = rc.error || 'Erro ao criar o lead.'; return; }
+    leadRef = rc.lead && rc.lead.lead_ref;
+  } else {
+    leadRef = NA_LEAD_SELECIONADO.lead_ref;
+  }
+
+  $('#naStatus').textContent = 'agendando…';
   const ra = await fetch('/api/lead-admin', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, action: 'agendar', lead_ref: leadRef, agendamento_em: iso }),
   }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
-  if (!ra.ok) { $('#naStatus').textContent = ra.error || 'Lead criado, mas houve erro ao agendar.'; return; }
+  if (!ra.ok) { $('#naStatus').textContent = ra.error || 'Erro ao agendar.'; return; }
+
+  // lead já existia com outro responsável? atualiza só se a administradora trocou no formulário
+  if (NA_LEAD_SELECIONADO && atendente !== (NA_LEAD_SELECIONADO.atendente || '')) {
+    await salvarLeadCampos(NA_LEAD_SELECIONADO, { atendente });
+  }
+
   toast('success', 'Agendado!', nome + ' foi agendado(a) com sucesso.');
   fecharNovoAgendamento();
   await refresh();
