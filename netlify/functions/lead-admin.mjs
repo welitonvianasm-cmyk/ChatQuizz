@@ -212,7 +212,7 @@ export default async (req) => {
       eq.historico.unshift({ t: new Date().toISOString(), quem: quem2, txt: 'Agendou pelo painel: ' + quando });
       eq.historico = eq.historico.slice(0, 60);
 
-      const patch = { agendado: true, status: 'agendado', agendamento_em: emISO, agendamento_status: '', etapa: 'agendado', updated_at: new Date().toISOString() };
+      const patch = { agendado: true, status: 'agendado', agendamento_em: emISO, agendamento_status: '', agendamento_origem: 'manual', etapa: 'agendado', updated_at: new Date().toISOString() };
       if (uid) patch.booking_uid = uid;
       if (temColunaEquipe) patch.equipe_json = JSON.stringify(eq);
       const gravar = () => fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, {
@@ -220,7 +220,7 @@ export default async (req) => {
       });
       let rg = await gravar();
       // colunas do CRM podem não existir → grava o essencial mesmo assim
-      if (!rg.ok) { delete patch.equipe_json; delete patch.agendamento_status; delete patch.etapa; temColunaEquipe = false; rg = await gravar(); }
+      if (!rg.ok) { delete patch.equipe_json; delete patch.agendamento_status; delete patch.etapa; delete patch.agendamento_origem; temColunaEquipe = false; rg = await gravar(); }
       if (rg.ok) await moverNoKanban(contaId, ref, atendenteLead, 'agendado');   // o funil acompanha
       if (rg.ok) dispararMentoriaHub(contaId, 'agendamento_confirmado', {
         chatquizzLeadRef: ref, agendamentoEm: emISO, linkReuniao: '', bookingUid: uid,
@@ -285,14 +285,14 @@ export default async (req) => {
       eq2.historico.unshift({ t: new Date().toISOString(), quem: quem3, txt: 'Remarcou pelo painel: ' + quandoAntes + ' → ' + quandoDepois + (viaCalcom ? ' (Cal.com)' : '') });
       eq2.historico = eq2.historico.slice(0, 60);
 
-      const patch2 = { agendamento_em: emISO2, agendamento_status: '', updated_at: new Date().toISOString() };
+      const patch2 = { agendamento_em: emISO2, agendamento_status: '', agendamento_origem: 'manual', updated_at: new Date().toISOString() };
       if (viaCalcom) patch2.booking_uid = novoUid;
       if (temColunaEquipe2) patch2.equipe_json = JSON.stringify(eq2);
       const gravar2 = () => fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, {
         method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch2),
       });
       let rg2 = await gravar2();
-      if (!rg2.ok) { delete patch2.equipe_json; delete patch2.agendamento_status; temColunaEquipe2 = false; rg2 = await gravar2(); }
+      if (!rg2.ok) { delete patch2.equipe_json; delete patch2.agendamento_status; delete patch2.agendamento_origem; temColunaEquipe2 = false; rg2 = await gravar2(); }
       if (!rg2.ok) return json({ ok: false, error: viaCalcom ? 'A reunião foi remarcada no Cal.com, mas não consegui salvar aqui no painel — confira manualmente.' : 'Erro ao salvar.' });
       await cancelarLembretesPendentes(refUrl);
       dispararMentoriaHub(contaId, 'agendamento_reagendado', {

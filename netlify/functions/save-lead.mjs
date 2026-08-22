@@ -84,10 +84,20 @@ export default async (req) => {
       qualificado: typeof b.qualificado === 'boolean' ? b.qualificado : null,
       call_track: txt(b.call_track, 12),
       vendedor: txt(b.vendedor, 60),
-      agendado: b.agendado === true,
-      agendamento_em: b.agendamento_em || null,
-      booking_uid: txt(b.booking_uid, 80),
-      video_url: txt(b.video_url, 300),
+      /* agendamento: só entra no objeto quando ESTE save é sobre um
+         agendamento de verdade (b.agendado===true, mandado pelo front no
+         momento da confirmação) — senão um autosave comum (lead reabrindo
+         o quiz depois) sobrescreve pra false/vazio um agendamento manual
+         que a equipe já tinha feito pelo painel (a reunião continua
+         existindo no Cal.com, só o espelho no CRM "esquecia" que tinha
+         sido agendada). */
+      ...(b.agendado === true ? {
+        agendado: true,
+        agendamento_em: b.agendamento_em || null,
+        booking_uid: txt(b.booking_uid, 80),
+        video_url: txt(b.video_url, 300),
+        agendamento_origem: 'auto',
+      } : {}),
       utm_source: txt(b.utm_source, 200),
       utm_medium: txt(b.utm_medium, 200),
       utm_campaign: txt(b.utm_campaign, 200),
