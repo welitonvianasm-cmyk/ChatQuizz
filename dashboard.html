@@ -552,7 +552,7 @@
   /* ===== MODAIS — abertura suave + card/overlay unificados ===== */
   @keyframes dsPop { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
   #leadModal > div, #calModal > div, #vendaModal > div, #alertModal > div, #diaModal > div,
-  #novoLeadModal > div, #remarcarModal > div, #masterContaModal > div, #euNovoModal > div, #euDetModal > div, #chatModal > div,
+  #novoLeadModal > div, #novoAgendamentoModal > div, #remarcarModal > div, #masterContaModal > div, #euNovoModal > div, #euDetModal > div, #chatModal > div,
   #modalConexaoPlano > div, #modalConexaoDominio > div, #modalConexaoWhatsapp > div, #modalConexaoCalcom > div,
   #modalConexaoMentoriaHub > div, #modalConexaoGoogleAgenda > div, #promptModal > div { animation: dsPop .18s ease; }
   #sinoLista { animation: dsPop .15s ease; }
@@ -788,6 +788,30 @@
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
         <button id="nlSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Cadastrar lead</button>
         <span class="muted-cell" id="nlStatus"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOVO AGENDAMENTO sem lead existente (Google Agenda ou direto no sistema —
+       Cal.com continua abrindo o link direto, sem passar por este formulário) -->
+  <div id="novoAgendamentoModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:480px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;">Novo agendamento</h2>
+        <button class="acao-btn" id="naFechar" title="Fechar">✕</button>
+      </div>
+      <div class="sub" id="naAviso" style="margin:0 0 12px;"></div>
+      <div style="display:grid;gap:10px;">
+        <label style="font-size:11.5px;font-weight:700;">Nome<span style="color:var(--red);">*</span><input id="naNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Nome completo"></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label style="font-size:11.5px;font-weight:700;">WhatsApp<input id="naWhats" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="(11) 99999-9999"></label>
+          <label style="font-size:11.5px;font-weight:700;">E-mail<input id="naEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="nome@email.com"></label>
+        </div>
+        <label style="font-size:11.5px;font-weight:700;">Dia e horário<span style="color:var(--red);">*</span><input id="naData" type="datetime-local" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
+        <button id="naSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Agendar</button>
+        <span class="muted-cell" id="naStatus"></span>
       </div>
     </div>
   </div>
@@ -1685,6 +1709,7 @@
         <button data-rt="pendentes" class="on">Reuniões do Dia (Pendentes)</button>
         <button data-rt="compareceu">✓ Compareceu</button>
         <button data-rt="nao_compareceu">✕ Não Compareceu</button>
+        <button data-rt="google">Google Agenda</button>
       </div>
       <div class="ag-toolbar" data-pbanner="reunioes" style="margin:0 0 12px;">
         <button class="btn" id="rePrev">‹</button>
@@ -3795,6 +3820,8 @@ function renderReunioes() {
   }
   $('#reTitulo').textContent = capAg(AG_FMT_MES.format(RE_MES));
 
+  if (RE_TAB === 'google') { renderReunioesGoogle(); return; }
+
   const mesK = diaBRT(RE_MES).slice(0, 7);   // yyyy-mm do mês em exibição
   const rs = ALL.filter((r) => r.agendado && r.agendamento_em && reTabDe(r) === RE_TAB &&
     diaBRT(new Date(r.agendamento_em)).slice(0, 7) === mesK);
@@ -3847,6 +3874,104 @@ function renderReunioes() {
     if (alvo) { alvo.style.outline = '2px solid var(--accent)'; setTimeout(() => alvo.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80); }
     RE_FOCO = null;
   }
+}
+/* ===== REUNIÕES → GOOGLE AGENDA — o que foi marcado DIRETO na Google
+   Agenda conectada, sem passar pelo Cal.com nem pelo painel. Mesmo
+   padrão do MentoriaHub: busca os eventos crus do mês e filtra os que
+   já têm google_event_id vinculado a algum lead nosso — o que sobra é
+   "de fora". Só leitura (sem compareceu/não compareceu, não é um lead). */
+let RE_GOOGLE_CACHE = {};   // { 'yyyy-mm': eventos[] }
+async function renderReunioesGoogle() {
+  const box = $('#reLista');
+  const statusR = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'status' }),
+  }).then((x) => x.json()).catch(() => null);
+  if (!statusR || !statusR.ok || !statusR.google || !statusR.google.conectado) {
+    $('#reResumo').textContent = '';
+    const e = el('div', 'muted-cell'); e.textContent = 'Conecte o Google Agenda em Configurações → Conexões pra ver aqui os agendamentos feitos direto lá.'; e.style.padding = '8px 0';
+    box.appendChild(e);
+    return;
+  }
+
+  const mesK = diaBRT(RE_MES).slice(0, 7);
+  let eventos = RE_GOOGLE_CACHE[mesK];
+  if (!eventos) {
+    const [ano, mes] = mesK.split('-').map(Number);
+    const r = await fetch('/api/google-bookings', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', mes, ano }),
+    }).then((x) => x.json()).catch(() => ({ ok: false }));
+    eventos = (r.ok && r.eventos) || [];
+    RE_GOOGLE_CACHE[mesK] = eventos;
+  }
+
+  const vinculados = new Set(ALL.map((r) => r.google_event_id).filter(Boolean));
+  const soltos = eventos.filter((e) => !vinculados.has(e.id));
+
+  if (!soltos.length) {
+    $('#reResumo').textContent = '';
+    const e = el('div', 'muted-cell'); e.textContent = 'Nenhum agendamento feito direto na Google Agenda neste mês.'; e.style.padding = '8px 0';
+    box.appendChild(e);
+    return;
+  }
+  $('#reResumo').textContent = nf(soltos.length) + ' evento(s) direto na Google Agenda';
+
+  const porDia = new Map();
+  soltos.forEach((e) => { const k = diaBRT(new Date(e.inicio)); if (!porDia.has(k)) porDia.set(k, []); porDia.get(k).push(e); });
+  const dias = [...porDia.keys()].sort();
+  const hojeK = diaBRT(new Date());
+  const max = Math.max(...dias.map((k) => porDia.get(k).length), 1);
+
+  dias.forEach((k) => {
+    const doDia = porDia.get(k);
+    const chave = 'g-' + k;
+    const wrap = el('div', 'renda-g');
+    if (k === hojeK) wrap.style.borderColor = 'var(--accent)';
+
+    const head = el('div', 'renda-g-head');
+    const bar = el('i', 'renda-g-bar'); bar.style.width = (doDia.length / max * 100) + '%';
+    const seta = el('span', 'renda-g-seta'); seta.textContent = RE_ABERTAS.has(chave) ? '▾' : '▸';
+    const lab = el('span', 'renda-g-lab');
+    lab.textContent = capAg(AG_FMT_DIA.format(new Date(k + 'T12:00:00-03:00'))) + (k === hojeK ? ' · HOJE' : '');
+    const num = el('span', 'renda-g-num');
+    const b1 = el('b'); b1.textContent = nf(doDia.length);
+    num.append(b1, ' evento(s)');
+    head.append(bar, seta, lab, num);
+
+    const det = el('div', 'renda-g-det');
+    det.hidden = !RE_ABERTAS.has(chave);
+    if (!det.hidden) montarTabelaReuniaoGoogle(det, doDia);
+
+    head.onclick = () => {
+      if (RE_ABERTAS.has(chave)) { RE_ABERTAS.delete(chave); det.hidden = true; seta.textContent = '▸'; }
+      else {
+        RE_ABERTAS.add(chave);
+        if (!det.firstChild) montarTabelaReuniaoGoogle(det, doDia);
+        det.hidden = false; seta.textContent = '▾';
+      }
+    };
+
+    wrap.append(head, det);
+    box.appendChild(wrap);
+  });
+}
+function montarTabelaReuniaoGoogle(det, eventos) {
+  clear(det);
+  const t = el('table');
+  t.appendChild(tableHead(['Hora', 'Título', 'Link']));
+  const tb = el('tbody');
+  eventos.sort((a, b) => new Date(a.inicio) - new Date(b.inicio)).forEach((e) => {
+    const tr = el('tr');
+    const hora = isNaN(new Date(e.inicio)) ? '—' : new Date(e.inicio).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+    let linkCell = '—';
+    if (e.linkReuniao) { const a = el('a'); a.href = e.linkReuniao; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Abrir ↗'; linkCell = a; }
+    tr.append(td(hora), td(e.titulo, 'nome'), td(linkCell));
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+  const w = el('div', 'tbl-wrap'); w.appendChild(t);
+  det.appendChild(w);
 }
 $('#reTabs').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
@@ -6061,11 +6186,76 @@ function utmCell(r) {
 $('#search').addEventListener('input', drawLeads);
 $('#leadsOrigemSel').addEventListener('change', (e) => { ORIGEM_FILTER = e.target.value; drawLeads(); });
 $('#leadsQualificadorSel').addEventListener('change', (e) => { QUALIFICADOR_FILTER = e.target.value; drawLeads(); });
-$('#agNovoBtn').onclick = () => {
+/* ===== NOVO AGENDAMENTO (sem lead escolhido ainda) =====
+   Cal.com continua sendo só um link externo (não dá pra saber o
+   qualificador antes de existir o lead); Google Agenda/"direto no
+   sistema" reaproveitam action:'criar' + action:'agendar' que já
+   existem — a sincronização com o Google (se conectada) já acontece
+   sozinha dentro do 'agendar', não tem nada novo a fazer aqui. */
+async function abrirNovoAgendamento() {
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'status' }),
+  }).then((x) => x.json()).catch(() => null);
+  const calOk = !!(r && r.ok && r.calcom && r.calcom.conectado);
+  const googleOk = !!(r && r.ok && r.google && r.google.conectado);
+
+  if (calOk && googleOk) {
+    const escolha = await promptModal({
+      titulo: 'Novo agendamento', sub: 'Qual sistema usar pra marcar?',
+      campos: [{ id: 'metodo', label: 'Método', tipo: 'select', options: ['Cal.com', 'Google Agenda'] }],
+      textoOk: 'Continuar',
+    });
+    if (!escolha) return;
+    if (escolha.metodo === 'Cal.com') { abrirNovoAgendamentoCalcom(); return; }
+    abrirNovoAgendamentoBasico(googleOk);
+    return;
+  }
+  if (calOk) { abrirNovoAgendamentoCalcom(); return; }
+  abrirNovoAgendamentoBasico(googleOk);   // só Google conectado, ou nenhum dos dois (agenda direto no sistema)
+}
+function abrirNovoAgendamentoCalcom() {
   const link = primeiroCalLinkConfigurado();
   if (!link) { toast('error', 'Aviso', 'Nenhum link de Cal.com configurado ainda. Configure em Configurações → Editor do Quiz → Roteamento.'); return; }
   window.open(link, '_blank', 'noopener');
+}
+function abrirNovoAgendamentoBasico(googleOk) {
+  $('#naNome').value = ''; $('#naWhats').value = ''; $('#naEmail').value = ''; $('#naData').value = ''; $('#naStatus').textContent = '';
+  $('#naAviso').textContent = googleOk
+    ? 'Esse agendamento cria um evento na Google Agenda conectada, com sala do Meet automática.'
+    : 'Nenhuma agenda externa conectada — o agendamento fica só aqui no sistema.';
+  $('#novoAgendamentoModal').style.display = 'flex';
+  $('#naNome').focus();
+}
+function fecharNovoAgendamento() { $('#novoAgendamentoModal').style.display = 'none'; }
+$('#naFechar').onclick = fecharNovoAgendamento;
+$('#novoAgendamentoModal').addEventListener('click', (e) => { if (e.target === $('#novoAgendamentoModal')) fecharNovoAgendamento(); });
+$('#naSalvar').onclick = async () => {
+  const nome = $('#naNome').value.trim();
+  const dataVal = $('#naData').value;
+  if (!nome) { $('#naStatus').textContent = 'Informe o nome.'; $('#naNome').focus(); return; }
+  if (!dataVal) { $('#naStatus').textContent = 'Escolha o dia e horário.'; $('#naData').focus(); return; }
+  const token = localStorage.getItem(TKEY) || '';
+  $('#naStatus').textContent = 'criando…';
+  const rc = await fetch('/api/lead-admin', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, action: 'criar', lead: { nome, whatsapp: $('#naWhats').value.trim(), email: $('#naEmail').value.trim() } }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  if (!rc.ok) { $('#naStatus').textContent = rc.error || 'Erro ao criar o lead.'; return; }
+  const leadRef = rc.lead && rc.lead.lead_ref;
+  $('#naStatus').textContent = 'agendando…';
+  const iso = new Date(dataVal).toISOString();
+  const ra = await fetch('/api/lead-admin', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, action: 'agendar', lead_ref: leadRef, agendamento_em: iso }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  if (!ra.ok) { $('#naStatus').textContent = ra.error || 'Lead criado, mas houve erro ao agendar.'; return; }
+  toast('success', 'Agendado!', nome + ' foi agendado(a) com sucesso.');
+  fecharNovoAgendamento();
+  await refresh();
+  renderAgendaCal(); renderAgDia();
 };
+$('#agNovoBtn').onclick = abrirNovoAgendamento;
 $('#leadsStatusSel').addEventListener('change', (e) => {
   const v = e.target.value;
   // Convertido/Perdido são "abas" internas (colunas próprias); os demais filtram os ativos

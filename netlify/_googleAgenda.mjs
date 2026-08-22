@@ -112,6 +112,35 @@ export async function removerEventoGoogle(contaId, googleEventId) {
   }
 }
 
+/* lista os eventos crus do mês (mes: 1-12) — usado pela aba "Reuniões →
+   Google Agenda" pra mostrar o que foi marcado DIRETO na Google Agenda,
+   sem passar pelo Cal.com nem pelo painel (o filtro de "já é nosso" —
+   por google_event_id — é feito por quem chama, aqui só devolve a lista
+   crua). Mesma janela/parâmetros usados no MentoriaHub (1 mês por vez,
+   sem paginação — 250 eventos/página do Google já cobre um mês normal). */
+export async function listarEventosGoogle(contaId, mes, ano) {
+  try {
+    const client = await obterClienteGoogle(contaId);
+    if (!client) return [];
+    const conexao = await lerConexaoGoogleAgenda(contaId);
+    const calendarId = conexao.calendarId || 'primary';
+    const calendar = google.calendar({ version: 'v3', auth: client });
+    const timeMin = new Date(ano, mes - 1, 1).toISOString();
+    const timeMax = new Date(ano, mes, 0, 23, 59, 59).toISOString();
+    const { data } = await calendar.events.list({ calendarId, timeMin, timeMax, singleEvents: true, orderBy: 'startTime' });
+    return (data.items || []).map((e) => ({
+      id: e.id,
+      titulo: e.summary || '(sem título)',
+      inicio: e.start?.dateTime || e.start?.date || '',
+      fim: e.end?.dateTime || e.end?.date || '',
+      linkReuniao: e.hangoutLink || e.location || '',
+    }));
+  } catch (e) {
+    console.warn('[google-agenda] listarEventos falhou (seguindo normal):', e?.message || e);
+    return [];
+  }
+}
+
 /* lista os calendários da conta Google conectada, pra administradora
    escolher em qual gravar (painel → Conexões → Google Agenda). */
 export async function listarCalendariosGoogle(contaId) {
