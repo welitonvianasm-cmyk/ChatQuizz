@@ -360,15 +360,27 @@
     background: var(--card); border-radius: 15px; padding: 16px 16px 15px; box-shadow: var(--shadow);
     border: 1px solid var(--line); position: relative; overflow: hidden;
   }
+  .kpi .k-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; min-height: 34px; }
+  .kpi .k-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .kpi .k-icon svg { width: 17px; height: 17px; }
+  .kpi .k-trend { display: inline-flex; align-items: center; gap: 2px; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+  .kpi .k-trend.up { background: var(--green-soft); color: var(--green); }
+  .kpi .k-trend.down { background: var(--red-soft); color: var(--red); }
+  .kpi .k-trend.novo { background: var(--accent-soft); color: var(--accent-dark); }
   .kpi .k-label { font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-bottom: 7px; display: flex; align-items: center; gap: 5px; }
   .kpi .k-num { font-size: 27px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
   .kpi .k-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 6px; }
   .kpi { transition: box-shadow .18s ease, transform .18s ease; }
   .kpi:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .kpi.clickable { cursor: pointer; }
+  .kpi.clickable:hover { border-color: var(--accent); }
   /* card "hero" — só o KPI de Total de Leads usa isso (destaque único, amarelo sólido) */
   .kpi.hero { background: var(--brand); border: none; }
   .kpi.hero .k-label, .kpi.hero .k-num, .kpi.hero .k-sub { color: var(--brand-ink); }
   .kpi.hero .k-sub { opacity: .72; }
+  .kpi.hero .k-icon { background: rgba(0, 0, 0, .12); }
+  .kpi.hero .k-trend.up { background: rgba(74, 222, 128, .3); }
+  .kpi.hero .k-trend.down { background: rgba(242, 115, 94, .3); }
   .kpi .k-num.green { color: var(--green); }
   .kpi .k-num.blue { color: var(--blue); }
   .kpi .k-num.amber { color: var(--amber); }
@@ -381,6 +393,9 @@
     grid-row: 1 / 3; grid-column: 1; display: flex; flex-direction: column;
     justify-content: center; align-items: center; text-align: center; padding: 26px 22px;
   }
+  /* ícone/selo saem do fluxo do flex (fixos no topo) pra não empurrar o
+     número — o resto (label/número/sub) centraliza sozinho no espaço que sobra */
+  .kpis-hero .kpi.k-featured .k-top { position: absolute; top: 18px; left: 22px; right: 22px; width: auto; margin-bottom: 0; }
   .kpis-hero .kpi.k-featured .k-label { font-size: 14px; }
   .kpis-hero .kpi.k-featured .k-num { font-size: 72px; margin: 6px 0 4px; }
   .kpis-hero .kpi.k-featured .k-sub { font-size: 13px; }
@@ -510,6 +525,7 @@
     /* hero (1.6fr + 3x1fr) não cabe em tela estreita — cai pra grade normal de 2 colunas */
     #kpis, #kpisRestante { grid-template-columns: repeat(2, 1fr); }
     .kpis-hero .kpi.k-featured { grid-row: auto; grid-column: auto; padding: 15px 16px; }
+    .kpis-hero .kpi.k-featured .k-top { position: static; margin-bottom: 12px; }
     .kpis-hero .kpi.k-featured .k-num { font-size: 27px; margin: 0; }
     .kpis-hero .kpi.k-featured .k-label, .kpis-hero .kpi.k-featured .k-sub { font-size: inherit; }
   }
@@ -675,6 +691,24 @@
       <div id="alertModalLista"></div>
       <div style="display:flex;justify-content:flex-end;margin-top:12px;">
         <button class="acao-btn" id="alertModalDepois">Ver depois</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETALHE DE UM CARD DE KPI (clique no card) -->
+  <div id="kpiModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:4px;">
+        <div style="flex:1;">
+          <h2 id="kmTitulo" style="margin:0 0 3px;font-size:18px;"></h2>
+          <div class="sub" id="kmSub"></div>
+        </div>
+        <button class="acao-btn" id="kmFechar" title="Fechar">✕</button>
+      </div>
+      <div id="kmStats" style="display:flex;gap:22px;flex-wrap:wrap;margin:16px 0 6px;"></div>
+      <div id="kmTabelaWrap">
+        <div class="sub" id="kmTabelaToggle" style="font-weight:700;margin:14px 0 6px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;"></div>
+        <div id="kmTabela" hidden></div>
       </div>
     </div>
   </div>
@@ -2125,6 +2159,19 @@ function inRange(lead) {
   const cutoff = inicioHojeBRT() - (RANGE - 1) * 864e5;
   return created >= cutoff;
 }
+// janela imediatamente ANTERIOR ao filtro atual, mesma duração — base dos
+// selos de tendência (↗/↘) dos KPIs. "Tudo" (RANGE=0) não tem "antes" → null.
+function periodoAnterior() {
+  if (!RANGE) return null;
+  const iniAtual = inicioHojeBRT() - (RANGE - 1) * 864e5;
+  return { ini: iniAtual - RANGE * 864e5, fim: iniAtual };
+}
+function inPeriodoAnterior(lead) {
+  const jan = periodoAnterior();
+  if (!jan) return false;
+  const t = new Date(lead.created_at).getTime();
+  return t >= jan.ini && t < jan.fim;
+}
 // filtro de data da aba Cal: por DATA DO AGENDAMENTO (created), "últimos N dias"
 // — igual ao funil (Hoje = agendados hoje, 7d = agendados nos últimos 7 dias).
 function inRangeCal(b) {
@@ -2150,10 +2197,11 @@ const pessoasAgendadas = (rows) => new Set(
 
 function render() {
   const rows = ALL.filter(inRange);
+  const rowsAnteriores = periodoAnterior() ? ALL.filter(inPeriodoAnterior) : null;
   $('#updated').textContent = 'Atualizado ' + new Date().toLocaleString('pt-BR') +
     ' · ' + nf(ALL.length) + ' leads no total' + (RANGE ? ' · exibindo ' + nf(rows.length) + ' no período' : '');
 
-  renderKpis(rows);
+  renderKpis(rows, rowsAnteriores);
   renderFunnel(rows);
   renderVendedores(rows);
   renderTrilha(rows);
@@ -4145,47 +4193,137 @@ $('#nlSalvar').onclick = async () => {
 })();
 
 function kpiCard(label, num, sub, opts = {}) {
-  const c = el('div', 'kpi' + (opts.hero ? ' hero' : '') + (opts.featured ? ' k-featured' : ''));
+  const c = el('div', 'kpi' + (opts.hero ? ' hero' : '') + (opts.featured ? ' k-featured' : '') + (opts.leads ? ' clickable' : ''));
+  if (opts.icone || opts.tendencia) {
+    const top = el('div', 'k-top');
+    if (opts.icone) {
+      const cor = DS_CORES[opts.cor || 'azul'];
+      const badge = el('div', 'k-icon');
+      if (!opts.hero) badge.style.background = 'color-mix(in srgb, ' + cor + ' 16%, transparent)';
+      badge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="' + (opts.hero ? 'var(--brand-ink)' : cor) + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (DS_PATHS[opts.icone] || '') + '</svg>';
+      top.appendChild(badge);
+    } else top.appendChild(el('span'));
+    if (opts.tendencia !== undefined) top.appendChild(tendenciaPill(opts.tendencia));
+    c.appendChild(top);
+  }
   const l = el('div', 'k-label'); l.textContent = label;
   const n = el('div', 'k-num' + (opts.color ? ' ' + opts.color : '')); n.textContent = num;
   c.append(l, n);
   if (sub) { const s = el('div', 'k-sub'); s.textContent = sub; c.appendChild(s); }
+  if (opts.leads) c.onclick = () => abrirKpiModal({ label, num, sub, tendencia: opts.tendencia, leads: opts.leads, detalhes: opts.detalhes });
   return c;
 }
-function renderKpis(rows) {
+/* selo de tendência (↗/↘ + %) — compara rows atuais × período anterior
+   equivalente. `calc` roda nos dois conjuntos; `favoravel` diz se subir é
+   bom ('alta', maioria dos KPIs) ou ruim ('baixa': Pararam no meio). */
+function tendenciaDe(calc, rows, rowsAnteriores, favoravel = 'alta') {
+  if (!rowsAnteriores) return null;
+  return { atual: calc(rows), anterior: calc(rowsAnteriores), favoravel };
+}
+function tendenciaPill(t) {
+  const p = el('span', 'k-trend');
+  if (!t || t.atual == null) { p.classList.add('novo'); p.textContent = '—'; return p; }
+  if (!t.anterior) {
+    if (!t.atual) { p.classList.add('novo'); p.textContent = '—'; return p; }
+    p.classList.add(t.favoravel === 'alta' ? 'up' : 'down');
+    p.textContent = '↗ novo';
+    return p;
+  }
+  const delta = Math.round(((t.atual - t.anterior) / t.anterior) * 100);
+  const subiu = delta > 0;
+  const bom = delta === 0 ? null : (subiu ? t.favoravel === 'alta' : t.favoravel === 'baixa');
+  p.classList.add(bom == null ? 'novo' : (bom ? 'up' : 'down'));
+  const seta = delta > 0 ? '↗' : delta < 0 ? '↘' : '→';
+  p.textContent = seta + ' ' + Math.abs(delta) + '%';
+  return p;
+}
+function calcCompletos(rows) { return rows.filter((r) => (STATUS_ORD[r.status] || 1) >= STATUS_ORD.completo).length; }
+function calcPararam(rows) { return rows.length - calcCompletos(rows); }
+function calcFuturas(rows) {
+  return pessoasAgendadas(rows.filter((r) => r.agendamento_em && new Date(r.agendamento_em).getTime() > Date.now()));
+}
+function renderKpis(rows, rowsAnteriores) {
   const box = $('#kpis'); clear(box);
   // #kpisRestante concentra os cards secundários (2 colunas), destacando só
   // o de "Total de leads" na linha de cima — mesma organização do quiz-suavitatis
   const restante = $('#kpisRestante'); if (restante) clear(restante);
   const destino = restante || box;
   const total = rows.length;
-  const reached = (s) => rows.filter((r) => (STATUS_ORD[r.status] || 1) >= STATUS_ORD[s] || (s === 'agendado' && r.agendado)).length;
-  const completos = reached('completo');
+  const completos = calcCompletos(rows);
   const agendados = pessoasAgendadas(rows);                                    // pessoas distintas c/ booking confirmado
   const agendRows = rows.filter((r) => r.agendado).length;                     // linhas marcadas (inclui restart/duplicata)
-  const semBooking = rows.filter((r) => r.agendado && !r.booking_uid).length;  // marcou mas o Cal não confirmou
+  const semBooking = rows.filter((r) => r.agendado && !r.booking_uid);         // marcou mas o Cal não confirmou
   const qualificados = rows.filter((r) => r.qualificado === true).length;
-  const futuras = pessoasAgendadas(rows.filter((r) => r.agendamento_em && new Date(r.agendamento_em).getTime() > Date.now()));
+  const futurasRows = rows.filter((r) => r.agendamento_em && new Date(r.agendamento_em).getTime() > Date.now());
 
   const agendSub = pct(agendados, completos) + '% dos que completaram · pessoas (dedupe por e-mail)'
     + (agendRows > agendados ? ' · ' + nf(agendRows - agendados) + ' duplicadas ignoradas' : '');
 
   box.append(
-    kpiCard('Total de leads', nf(total), 'entraram no quiz', { hero: true, featured: true }),
-    kpiCard('Agendaram conversa', nf(agendados), agendSub),
-    kpiCard('Completaram o quiz', nf(completos), pct(completos, total) + '% do total', { color: 'blue' }),
-    kpiCard('Pararam no meio', nf(Math.max(0, total - completos)), 'responderam só uma parte', { color: 'amber' }),
+    kpiCard('Total de leads', nf(total), 'entraram no quiz',
+      { hero: true, featured: true, icone: 'usuarios', cor: 'lima', tendencia: tendenciaDe((rs) => rs.length, rows, rowsAnteriores, 'alta'), leads: rows }),
+    kpiCard('Agendaram conversa', nf(agendados), agendSub,
+      { icone: 'calendario', cor: 'azul', tendencia: tendenciaDe(pessoasAgendadas, rows, rowsAnteriores, 'alta'), leads: rows.filter((r) => r.agendado) }),
+    kpiCard('Completaram o quiz', nf(completos), pct(completos, total) + '% do total',
+      { color: 'blue', icone: 'grafico', cor: 'azul', tendencia: tendenciaDe(calcCompletos, rows, rowsAnteriores, 'alta'), leads: rows.filter((r) => (STATUS_ORD[r.status] || 1) >= STATUS_ORD.completo) }),
+    kpiCard('Pararam no meio', nf(Math.max(0, total - completos)), 'responderam só uma parte',
+      { color: 'amber', icone: 'grafico', cor: 'laranja', tendencia: tendenciaDe(calcPararam, rows, rowsAnteriores, 'baixa'), leads: rows.filter((r) => (STATUS_ORD[r.status] || 1) < STATUS_ORD.completo) }),
   );
   // 1 card por qualificador configurado (substitui o antigo card fixo "WhatsApp R$15 mil+")
   qualificadoresOuFallback().forEach((q) => {
-    const n = rows.filter((r) => r.call_track === q.chave).length;
-    const nAgend = pessoasAgendadas(rows.filter((r) => r.call_track === q.chave));
-    destino.appendChild(kpiCard(q.nome || q.chave, nf(n), nAgend + ' agendaram', { color: 'green' }));
+    const leadsQ = rows.filter((r) => r.call_track === q.chave);
+    const nAgend = pessoasAgendadas(leadsQ);
+    destino.appendChild(kpiCard(q.nome || q.chave, nf(leadsQ.length), nAgend + ' agendaram',
+      { color: 'green', icone: 'envio', cor: 'verde', tendencia: tendenciaDe((rs) => rs.filter((r) => r.call_track === q.chave).length, rows, rowsAnteriores, 'alta'), leads: leadsQ }));
   });
-  destino.appendChild(kpiCard('Conversas futuras', nf(futuras), 'a partir de agora'));
+  destino.appendChild(kpiCard('Conversas futuras', nf(pessoasAgendadas(futurasRows)), 'a partir de agora',
+    { icone: 'calendario', cor: 'azul', tendencia: tendenciaDe(calcFuturas, rows, rowsAnteriores, 'alta'), leads: futurasRows }));
   // monitor do bug latente: lead marcou agendado mas sem booking_uid (Cal falhou / modo local)
-  if (semBooking) destino.append(kpiCard('Sem código do Cal', nf(semBooking), 'agendaram pelo chat, mas o código de confirmação não foi salvo. Confira na sua agenda do Google/Cal se estão lá', { color: 'amber' }));
+  if (semBooking.length) destino.append(kpiCard('Sem código do Cal', nf(semBooking.length), 'agendaram pelo chat, mas o código de confirmação não foi salvo. Confira na sua agenda do Google/Cal se estão lá',
+    { color: 'amber', icone: 'engrenagem', cor: 'cinza', leads: semBooking }));
 }
+
+/* popup de detalhe de um card de KPI — número, comparação com o período
+   anterior, um detalhamento opcional e a lista dos leads que compõem o
+   indicador (reaproveita montarTabelaLeads, mesmo componente da Renda/
+   Áreas). Lista sempre COLAPSADA ao abrir — só monta a tabela quando o
+   usuário clica em "Leads deste indicador". */
+function abrirKpiModal({ label, num, sub, tendencia, leads, detalhes }) {
+  $('#kmTitulo').textContent = label;
+  $('#kmSub').textContent = sub || '';
+  const stats = $('#kmStats'); clear(stats);
+  const stat = (rotulo, valor) => {
+    const box = el('div');
+    const v = el('div'); v.style.cssText = 'font-size:22px;font-weight:800;'; v.textContent = valor;
+    const r = el('div'); r.className = 'sub'; r.textContent = rotulo;
+    box.append(v, r);
+    return box;
+  };
+  stats.appendChild(stat('Neste período', num));
+  if (tendencia && tendencia.anterior != null) {
+    stats.appendChild(stat('Período anterior', nf(tendencia.anterior)));
+    const delta = tendencia.anterior ? Math.round(((tendencia.atual - tendencia.anterior) / tendencia.anterior) * 100) : null;
+    if (delta != null) stats.appendChild(stat('Variação', (delta > 0 ? '+' : '') + delta + '%'));
+  }
+  if (Array.isArray(detalhes)) detalhes.forEach((d) => stats.appendChild(stat(d.rotulo, d.valor)));
+
+  const leadsArr = leads || [];
+  const tabela = $('#kmTabela'); clear(tabela); tabela.hidden = true;
+  const toggle = $('#kmTabelaToggle');
+  let montado = false;
+  const legenda = () => (tabela.hidden ? '▸' : '▾') + ' Leads deste indicador (' + nf(leadsArr.length) + ')';
+  toggle.textContent = legenda();
+  toggle.onclick = () => {
+    if (tabela.hidden) {
+      if (!montado) { montarTabelaLeads(tabela, leadsArr); montado = true; }
+      tabela.hidden = false;
+    } else tabela.hidden = true;
+    toggle.textContent = legenda();
+  };
+  $('#kpiModal').style.display = 'flex';
+}
+$('#kmFechar').onclick = () => { $('#kpiModal').style.display = 'none'; };
+$('#kpiModal').addEventListener('click', (e) => { if (e.target === $('#kpiModal')) $('#kpiModal').style.display = 'none'; });
 
 function renderFunnel(rows) {
   const box = $('#funnel'); clear(box);
