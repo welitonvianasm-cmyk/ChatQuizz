@@ -12,11 +12,17 @@
  * não vem marcada com conta nenhuma. Resolve pelo lead já cadastrado com
  * esse telefone (o lead JÁ tem conta_id); sem lead conhecido, cai na
  * primeira conta ativa (mesmo fallback usado nos endpoints públicos).
+ *
+ * Env opcional: AGENTE_SDR_WEBHOOK_URL — se configurada, toda mensagem
+ * RECEBIDA (direção 'in') é encaminhada pra essa URL, fire-and-forget,
+ * pra um agente externo de SDR/IA poder responder por fora do painel.
+ * Sem essa env, esse encaminhamento simplesmente não acontece.
  */
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const SECRET = process.env.WA_WEBHOOK_SECRET || '';
+const SDR_WEBHOOK_URL = process.env.AGENTE_SDR_WEBHOOK_URL || '';
 
 let CONTA_PADRAO_CACHE = null;
 async function contaPadrao() {
@@ -66,6 +72,15 @@ export default async (req) => {
         method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
         body: JSON.stringify({ conta_id: contaId, telefone, lead_ref, direcao, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out' }),
       });
+
+      // encaminha mensagem recebida pra um agente externo (SDR/IA), se
+      // configurado — best-effort, nunca atrapalha o webhook em si
+      if (direcao === 'in' && SDR_WEBHOOK_URL) {
+        fetch(SDR_WEBHOOK_URL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telefone, texto, wa_id, contaId, lead_ref }),
+        }).catch(() => {});
+      }
     }
     return new Response('ok');
   } catch (e) {
