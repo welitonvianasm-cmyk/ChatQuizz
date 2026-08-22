@@ -2,5 +2,8 @@
   "name": "quizzhub",
   "version": "1.0.0",
   "private": true,
-  "description": "Quiz de captação e qualificação de leads, com painel de configuração e CRM."
+  "description": "Quiz de captação e qualificação de leads, com painel de configuração e CRM.",
+  "dependencies": {
+    "googleapis": "^176.0.0"
+  }
 }

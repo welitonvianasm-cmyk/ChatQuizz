@@ -100,3 +100,34 @@ export async function dispararMentoriaHub(contaId, evento, dados) {
     console.warn('[mentoriahub webhook] erro ao montar disparo (seguindo normal):', evento, e?.message || e);
   }
 }
+
+/* ====================================================================
+   Conexão Google Agenda — espelho de eventos (não é uma "vitrine" de
+   agendamento, isso continua sendo o Cal.com). Guarda os tokens OAuth
+   por conta; a troca/renovação de token acontece em netlify/_googleAgenda.mjs,
+   que também usa lerConexaoGoogleAgenda/salvarConexaoGoogleAgenda daqui
+   pra persistir o access_token renovado a cada chamada (função sem
+   estado — não dá pra confiar em um listener "vivo" como faria um
+   servidor de longa duração).
+   ==================================================================== */
+const CHAVE_GOOGLE_AGENDA = 'conexao_google_agenda';
+
+export async function lerConexaoGoogleAgenda(contaId) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/funnel_config?conta_id=eq.${contaId}&key=eq.${CHAVE_GOOGLE_AGENDA}&select=value&limit=1`, { headers: H });
+    if (r.ok) {
+      const rows = await r.json();
+      const v = rows[0] && JSON.parse(rows[0].value || '{}');
+      if (v && typeof v === 'object') return v;
+    }
+  } catch { /* nada salvo ainda */ }
+  return {};
+}
+
+export async function salvarConexaoGoogleAgenda(contaId, dados) {
+  await fetch(`${SB_URL}/rest/v1/funnel_config?on_conflict=conta_id,key`, {
+    method: 'POST',
+    headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ conta_id: contaId, key: CHAVE_GOOGLE_AGENDA, value: JSON.stringify(dados || {}), updated_at: new Date().toISOString() }),
+  });
+}

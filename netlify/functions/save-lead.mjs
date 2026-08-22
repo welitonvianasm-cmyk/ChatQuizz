@@ -27,6 +27,7 @@ import { votar, interpolar, carregarConfigPublicada } from '../_quiz.mjs';
 import { dispararMentoriaHub } from '../_conexoes.mjs';
 import { resolverContaPorHost } from '../_tenant.mjs';
 import { enviarWhats } from './whatsapp.mjs';
+import { sincronizarEventoGoogle } from '../_googleAgenda.mjs';
 
 const SUPABASE_URL = (process.env.SUPABASE_DIAG_URL || 'https://aktktxizmpwckvxbdjzf.supabase.co').replace(/\/+$/, '');
 const TABLE = 'diag_instagram_leads';
@@ -185,6 +186,7 @@ export default async (req) => {
         chatquizzLeadRef: row.lead_ref, agendamentoEm: row.agendamento_em,
         linkReuniao: row.video_url, bookingUid: row.booking_uid,
       });
+      try { await sincronizarAgendaGoogle(SUPABASE_URL, H, contaId, row); } catch (e) { console.error('google-agenda:', e?.message || e); }
     }
 
     return json({ ok: true });
@@ -232,6 +234,39 @@ async function avaliarAlertaVip(SB_URL, H, contaId, lead_ref, nome, qualificador
     // se passasse o lead_ref, marcaria (errado) o lead como já atendido
     await enviarWhats(contaId, autom.destino, texto, 'Automação');
   } catch { /* melhor-esforço */ }
+}
+
+/* Espelha o agendamento confirmado no Google Agenda da conta (se
+   conectado — melhor-esforço, nunca derruba o save principal). Duração
+   fixa de 30min: o QuizzHub não guarda a duração real do evento do
+   Cal.com em lugar nenhum, então é uma estimativa (ajustar aqui se
+   precisar de outro padrão). Preenche o video_url do lead com o link
+   do Meet só se ainda estiver vazio (nunca sobrescreve um link que o
+   Cal.com ou a equipe já tenham colocado). */
+const DURACAO_PADRAO_MIN = 30;
+async function sincronizarAgendaGoogle(SB_URL, H, contaId, row) {
+  const inicio = new Date(row.agendamento_em);
+  if (isNaN(inicio)) return;
+  const fim = new Date(inicio.getTime() + DURACAO_PADRAO_MIN * 60000);
+  // sempre INSERT aqui: esse ponto só roda na primeira confirmação de
+  // agendamento vinda do próprio quiz (guard client-side impede reenvio
+  // pro mesmo lead) — remarcação de verdade só acontece pelo painel
+  // (lead-admin.mjs), que já tem o google_event_id salvo pra fazer UPDATE.
+  const resultado = await sincronizarEventoGoogle(contaId, {
+    titulo: 'Encontro com ' + (row.nome || 'lead'),
+    inicioISO: inicio.toISOString(),
+    fimISO: fim.toISOString(),
+    participanteNome: row.nome,
+    participanteEmail: row.email,
+  });
+  if (!resultado) return;
+  const patch = {};
+  if (resultado.id) patch.google_event_id = resultado.id;
+  if (resultado.meetLink && !row.video_url) patch.video_url = resultado.meetLink;
+  if (!Object.keys(patch).length) return;
+  await fetch(`${SB_URL}/rest/v1/${TABLE}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(row.lead_ref)}`, {
+    method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch),
+  }).catch((e) => console.warn('[google-agenda] falha ao gravar de volta (seguindo normal):', e.message));
 }
 
 function cors() {

@@ -11,9 +11,16 @@
  *   POST /api/conexoes { token, action:'remover_calcom' }           (admin)
  *   POST /api/conexoes { token, action:'salvar_mentoriahub', url, secret, ativo }   (admin)
  *   POST /api/conexoes { token, action:'remover_mentoriahub' }                      (admin)
+ *   POST /api/conexoes { token, action:'google_calendarios' }                       (admin)
+ *   POST /api/conexoes { token, action:'google_salvar_calendario', calendarId }     (admin)
+ *   POST /api/conexoes { token, action:'google_desconectar' }                       (admin)
+ *
+ * (a conexão do Google Agenda em si é feita via /api/google-oauth — este
+ * arquivo só cuida do "resto": listar calendários, escolher um, desconectar)
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
-import { lerConexaoCalcom, salvarConexaoCalcom, obterConexaoMentoriaHub, salvarConexaoMentoriaHub } from '../_conexoes.mjs';
+import { lerConexaoCalcom, salvarConexaoCalcom, obterConexaoMentoriaHub, salvarConexaoMentoriaHub, lerConexaoGoogleAgenda, salvarConexaoGoogleAgenda } from '../_conexoes.mjs';
+import { listarCalendariosGoogle } from '../_googleAgenda.mjs';
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
@@ -34,10 +41,12 @@ export default async (req) => {
       const temEnv = !!process.env.CALCOM_API_KEY;
       const temSalva = !!salvo.api_key;
       const mentoriahub = await obterConexaoMentoriaHub(contaId);
+      const google = await lerConexaoGoogleAgenda(contaId);
       return json({
         ok: true,
         calcom: { temEnv, temSalva, conectado: temEnv || temSalva },
         mentoriahub: { conectado: !!mentoriahub },
+        google: { conectado: !!google.refreshToken, email: google.email || '', calendarId: google.calendarId || '' },
       });
     }
 
@@ -65,6 +74,30 @@ export default async (req) => {
 
     if (a === 'remover_mentoriahub') {
       await salvarConexaoMentoriaHub(contaId, {});
+      return json({ ok: true });
+    }
+
+    if (a === 'google_calendarios') {
+      try {
+        const lista = await listarCalendariosGoogle(contaId);
+        return json({ ok: true, calendarios: lista });
+      } catch (e) {
+        console.error('conexoes google_calendarios:', e?.message || e);
+        return json({ ok: false, error: 'Não consegui listar os calendários — tente reconectar o Google Agenda.' });
+      }
+    }
+
+    if (a === 'google_salvar_calendario') {
+      const calendarId = String(body.calendarId || '').trim().slice(0, 300);
+      if (!calendarId) return json({ ok: false, error: 'Escolha um calendário.' });
+      const existente = await lerConexaoGoogleAgenda(contaId);
+      if (!existente.refreshToken) return json({ ok: false, error: 'Conecte o Google Agenda primeiro.' });
+      await salvarConexaoGoogleAgenda(contaId, { ...existente, calendarId });
+      return json({ ok: true });
+    }
+
+    if (a === 'google_desconectar') {
+      await salvarConexaoGoogleAgenda(contaId, {});
       return json({ ok: true });
     }
 

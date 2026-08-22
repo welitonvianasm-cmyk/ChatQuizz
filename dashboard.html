@@ -554,7 +554,7 @@
   #leadModal > div, #calModal > div, #vendaModal > div, #alertModal > div, #diaModal > div,
   #novoLeadModal > div, #remarcarModal > div, #masterContaModal > div, #euNovoModal > div, #euDetModal > div, #chatModal > div,
   #modalConexaoPlano > div, #modalConexaoDominio > div, #modalConexaoWhatsapp > div, #modalConexaoCalcom > div,
-  #modalConexaoMentoriaHub > div, #promptModal > div { animation: dsPop .18s ease; }
+  #modalConexaoMentoriaHub > div, #modalConexaoGoogleAgenda > div, #promptModal > div { animation: dsPop .18s ease; }
   #sinoLista { animation: dsPop .15s ease; }
   #chatModal { background: rgba(9, 7, 15, .6) !important; }
   .modal-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(9, 7, 15, .6); display: flex; align-items: center; justify-content: center; }
@@ -1097,6 +1097,33 @@
         <button class="btn" id="mhBtnRemover" style="display:none;">Remover</button>
       </div>
       <div class="muted-cell" id="mhMsg" style="margin-top:8px;font-size:12.5px;"></div>
+    </div>
+  </div>
+
+  <div id="modalConexaoGoogleAgenda" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;">Google Agenda</h2>
+        <button class="acao-btn" onclick="fecharModalConexao('modalConexaoGoogleAgenda')" title="Fechar">✕</button>
+      </div>
+      <div class="sub" style="margin:0 0 12px;">Não é a "vitrine" de agendamento do lead — isso continua sendo o Cal.com. Aqui, cada reunião confirmada (pelo quiz via Cal.com ou marcada manualmente pelo painel) vira um evento espelho na sua Google Agenda, com uma sala do Google Meet criada automaticamente (preenche o link da reunião sozinho, se ainda estiver vazio).</div>
+      <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
+        <b>Situação:</b> <span id="gaEstado" class="pill parcial">verificando…</span>
+      </div>
+      <div id="gaConectado" style="display:none;">
+        <div class="muted-cell" id="gaEmail" style="margin-bottom:8px;"></div>
+        <label style="font-size:11.5px;font-weight:700;">Calendário
+          <select id="gaCalendarSel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"></select>
+        </label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;">
+          <button class="btn" id="gaBtnSalvarCalendario">Salvar calendário</button>
+          <button class="btn" id="gaBtnDesconectar">Desconectar</button>
+        </div>
+      </div>
+      <div id="gaDesconectado">
+        <button class="btn" id="gaBtnConectar">Conectar com Google</button>
+      </div>
+      <div class="muted-cell" id="gaMsg" style="margin-top:8px;font-size:12.5px;"></div>
     </div>
   </div>
 
@@ -1751,6 +1778,21 @@
 
         <div class="conexao-tile">
           <div class="ct-topo">
+            <span class="ic-chip" data-ic="calendario" data-cor="verde"></span>
+            <span class="pill parcial" id="ctGoogleAgendaPill">verificando…</span>
+          </div>
+          <h3>Google Agenda</h3>
+          <div class="ct-desc">Espelha cada reunião confirmada (Cal.com ou manual) como evento, com sala do Meet automática.</div>
+          <ul class="ct-lista">
+            <li><b>✓</b> Não substitui o Cal.com, só espelha</li>
+            <li><b>✓</b> Gera o link do Meet sozinho</li>
+            <li><b>✓</b> Segue remarcação e cancelamento</li>
+          </ul>
+          <button class="ct-btn" onclick="abrirModalConexao('modalConexaoGoogleAgenda')">Configurar Google Agenda</button>
+        </div>
+
+        <div class="conexao-tile">
+          <div class="ct-topo">
             <span class="ic-chip" data-ic="raio" data-cor="roxo"></span>
             <span class="pill parcial" id="ctMhPill">verificando…</span>
           </div>
@@ -1994,6 +2036,7 @@ async function doLogin(token) {
     carregarAlertas(true);   // alertas pendentes → popup obrigatório a cada acesso
     iniciarSync();           // sincronização automática entre atendentes (sem F5)
     carregarWaStatus();      // estado do WhatsApp (decide popup interno × WhatsApp Web)
+    verificarRetornoGoogle();   // acabou de voltar do consentimento do Google Agenda?
   } catch (e) {
     localStorage.removeItem(TKEY);
     showGate(e.message);
@@ -2327,7 +2370,7 @@ function navGo(sec) {
     if (!QE_CARREGADO) qeCarregar(); else qeRenderTudo();
   }
   if (sec === 'links' && !LINKS_CARREGADO) linksCarregar();
-  if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); carregarConexaoMentoriaHub(); renderPlanoInfo(); renderDominioInfo(); }
+  if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); carregarConexaoMentoriaHub(); carregarConexaoGoogleAgenda(); renderPlanoInfo(); renderDominioInfo(); }
   if (sec === 'usuarios') { $('#eqLogsBody').style.display = 'none'; $('#eqLogsChevron').style.transform = 'none'; }
   if (sec === 'masterContas') masterCarregar();
   if (sec === 'conversas') carregarWaStatus().then(carregarInbox);
@@ -5227,6 +5270,86 @@ $('#mhBtnRemover').onclick = async () => {
   $('#mhMsg').textContent = r.ok ? 'Removida.' : ('' + (r.error || 'Erro ao remover.'));
   if (r.ok) carregarConexaoMentoriaHub();
 };
+
+/* ===== Google Agenda — interface de conexão (aba Configurações → Conexões) =====
+   Não é a "vitrine" de agendamento (isso é o Cal.com) — só espelha reuniões
+   já confirmadas, com Meet automático. Ver netlify/_googleAgenda.mjs. */
+async function carregarConexaoGoogleAgenda() {
+  const estado = $('#gaEstado'), msg = $('#gaMsg');
+  estado.className = 'pill parcial'; estado.textContent = 'verificando…';
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'status' }),
+  }).then((x) => x.json()).catch(() => null);
+  if (!r || !r.ok) { estado.className = 'pill parcial'; estado.textContent = 'erro ao verificar'; espelharPill(estado, 'ctGoogleAgendaPill'); return; }
+  const g = r.google || {};
+  estado.className = 'pill ' + (g.conectado ? 'agendado' : 'parcial');
+  estado.textContent = g.conectado ? 'conectada' : 'não conectada';
+  $('#gaConectado').style.display = g.conectado ? '' : 'none';
+  $('#gaDesconectado').style.display = g.conectado ? 'none' : '';
+  msg.textContent = '';
+  if (g.conectado) {
+    $('#gaEmail').textContent = 'Conta conectada: ' + (g.email || '—');
+    await popularCalendariosGoogle(g.calendarId);
+  }
+  espelharPill(estado, 'ctGoogleAgendaPill');
+}
+async function popularCalendariosGoogle(calendarIdSalvo) {
+  const sel = $('#gaCalendarSel'); clear(sel);
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'google_calendarios' }),
+  }).then((x) => x.json()).catch(() => ({ ok: false }));
+  const lista = (r.ok && r.calendarios) || [];
+  if (!lista.length) { const o = el('option'); o.value = ''; o.textContent = 'Nenhum calendário encontrado'; sel.appendChild(o); return; }
+  lista.forEach((c) => {
+    const o = el('option'); o.value = c.id; o.textContent = c.nome + (c.principal ? ' (principal)' : ''); sel.appendChild(o);
+  });
+  const principal = lista.find((c) => c.principal);
+  const alvo = calendarIdSalvo || (principal ? principal.id : lista[0].id);
+  if ([...sel.options].some((o) => o.value === alvo)) sel.value = alvo;
+}
+$('#gaBtnConectar').onclick = async () => {
+  $('#gaMsg').textContent = 'abrindo o Google…';
+  const r = await fetch('/api/google-oauth', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'auth' }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  if (!r.ok || !r.url) { $('#gaMsg').textContent = r.error || 'Não consegui iniciar a conexão com o Google.'; return; }
+  window.location.href = r.url;
+};
+$('#gaBtnSalvarCalendario').onclick = async () => {
+  const calendarId = $('#gaCalendarSel').value;
+  if (!calendarId) { $('#gaMsg').textContent = 'Escolha um calendário.'; return; }
+  $('#gaMsg').textContent = 'salvando…';
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'google_salvar_calendario', calendarId }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  $('#gaMsg').textContent = r.ok ? '✓ Salvo!' : ('' + (r.error || 'Erro ao salvar.'));
+};
+$('#gaBtnDesconectar').onclick = async () => {
+  if (!confirm('Desconectar o Google Agenda? Reuniões futuras deixam de ser espelhadas lá.')) return;
+  $('#gaMsg').textContent = 'desconectando…';
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'google_desconectar' }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  $('#gaMsg').textContent = r.ok ? 'Desconectado.' : ('' + (r.error || 'Erro ao desconectar.'));
+  if (r.ok) carregarConexaoGoogleAgenda();
+};
+/* volta do consentimento do Google (?google=conectado|erro na URL) — mostra
+   o resultado, abre direto a tela de Conexões e limpa a URL. */
+function verificarRetornoGoogle() {
+  const params = new URLSearchParams(location.search);
+  const resultado = params.get('google');
+  if (!resultado) return;
+  history.replaceState(null, '', location.pathname);
+  navGo('conexoes');
+  if (resultado === 'conectado') toast('success', 'Google Agenda conectado!', 'Agora é só escolher o calendário.');
+  else toast('error', 'Não consegui conectar', 'O Google recusou ou algo deu errado — tente de novo.');
+  setTimeout(() => abrirModalConexao('modalConexaoGoogleAgenda'), 200);
+}
 
 /* dropdown "Origem": só os links de rastreio cadastrados (de onde veio o
    clique) — qualificador (resultado do quiz) é um filtro à parte. */

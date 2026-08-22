@@ -20,6 +20,7 @@
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
 import { dispararMentoriaHub, obterCalcomApiKey } from '../_conexoes.mjs';
+import { sincronizarEventoGoogle, removerEventoGoogle } from '../_googleAgenda.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -41,6 +42,40 @@ async function cancelarLembretesPendentes(refUrl) {
       method: 'DELETE', headers: H,
     });
   } catch { /* melhor-esforço */ }
+}
+
+/* google_event_id é coluna nova (setup-google-agenda.sql) — busca isolada
+   e best-effort, nunca junto do SELECT principal do lead (senão, antes de
+   rodar a migração, quebraria a leitura inteira do lead por causa de 1
+   coluna só, o mesmo bug já corrigido no metrics.mjs). */
+async function obterGoogleEventId(contaId, refUrl) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=google_event_id&limit=1`, { headers: H });
+    if (!r.ok) return '';
+    const rows = await r.json();
+    return (rows[0] && rows[0].google_event_id) || '';
+  } catch { return ''; }
+}
+
+/* espelha o agendamento no Google Agenda da conta (se conectada) — cria
+   na 1ª vez (pedindo uma sala do Meet junto) ou atualiza se já existir
+   google_event_id (sem pedir sala nova). Melhor-esforço: nunca derruba
+   a ação principal do painel. Preenche video_url só se ainda tiver vazio. */
+async function sincronizarAgendaGoogle(contaId, refUrl, { googleEventId, titulo, inicioISO, participanteNome, participanteEmail, videoUrlAtual }) {
+  try {
+    const inicio = new Date(inicioISO);
+    if (isNaN(inicio)) return;
+    const fimISO = new Date(inicio.getTime() + 30 * 60000).toISOString();   // duração estimada (30min) — o painel não guarda a duração real
+    const resultado = await sincronizarEventoGoogle(contaId, { googleEventId: googleEventId || undefined, titulo, inicioISO, fimISO, participanteNome, participanteEmail });
+    if (!resultado) return;
+    const patch = {};
+    if (resultado.id && resultado.id !== googleEventId) patch.google_event_id = resultado.id;
+    if (resultado.meetLink && !videoUrlAtual) patch.video_url = resultado.meetLink;
+    if (!Object.keys(patch).length) return;
+    await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}`, {
+      method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch),
+    });
+  } catch (e) { console.error('google-agenda:', e?.message || e); }
 }
 
 /* colunas oficiais do funil (espelho do kanban.mjs) */
@@ -198,11 +233,13 @@ export default async (req) => {
       let eq = { obs: '', campos: [], historico: [] };
       let temColunaEquipe = true;
       let atendenteLead = '';
-      const rc2 = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=equipe_json,atendente&limit=1`, { headers: H });
+      let leadNome = '', leadEmail = '', leadVideoUrl = '';
+      const rc2 = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=equipe_json,atendente,nome,email,video_url&limit=1`, { headers: H });
       if (rc2.ok) {
         const row = (await rc2.json())[0] || {};
         if (semPermissao(row.atendente)) return erroBloqueio(row.atendente);
         atendenteLead = String(row.atendente || '').trim();
+        leadNome = row.nome || ''; leadEmail = row.email || ''; leadVideoUrl = row.video_url || '';
         try { const p = JSON.parse(row.equipe_json || ''); if (p && typeof p === 'object') eq = { obs: p.obs || '', campos: Array.isArray(p.campos) ? p.campos : [], historico: Array.isArray(p.historico) ? p.historico : [] }; } catch { /* começa vazio */ }
       } else temColunaEquipe = false;
 
@@ -225,6 +262,13 @@ export default async (req) => {
       if (rg.ok) dispararMentoriaHub(contaId, 'agendamento_confirmado', {
         chatquizzLeadRef: ref, agendamentoEm: emISO, linkReuniao: '', bookingUid: uid,
       });
+      if (rg.ok && emISO) {
+        const geId = await obterGoogleEventId(contaId, refUrl);
+        await sincronizarAgendaGoogle(contaId, refUrl, {
+          googleEventId: geId, titulo: 'Encontro com ' + (leadNome || 'lead'),
+          inicioISO: emISO, participanteNome: leadNome, participanteEmail: leadEmail, videoUrlAtual: leadVideoUrl,
+        });
+      }
       return json({ ok: rg.ok, equipe_json: temColunaEquipe ? JSON.stringify(eq) : '' });
     }
 
@@ -242,7 +286,7 @@ export default async (req) => {
       let eq2 = { obs: '', campos: [], historico: [] };
       let temColunaEquipe2 = true;
       let atendenteLead2 = '';
-      const rc3 = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=equipe_json,atendente,booking_uid,agendamento_em&limit=1`, { headers: H });
+      const rc3 = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=equipe_json,atendente,booking_uid,agendamento_em,nome,email,video_url&limit=1`, { headers: H });
       if (!rc3.ok) return json({ ok: false, error: 'Lead não encontrado.' });
       const rowAtual = (await rc3.json())[0] || {};
       if (semPermissao(rowAtual.atendente)) return erroBloqueio(rowAtual.atendente);
@@ -297,6 +341,11 @@ export default async (req) => {
       await cancelarLembretesPendentes(refUrl);
       dispararMentoriaHub(contaId, 'agendamento_reagendado', {
         chatquizzLeadRef: ref, agendamentoEm: emISO2, bookingUid: novoUid,
+      });
+      const geId2 = await obterGoogleEventId(contaId, refUrl);
+      await sincronizarAgendaGoogle(contaId, refUrl, {
+        googleEventId: geId2, titulo: 'Encontro com ' + (rowAtual.nome || 'lead'),
+        inicioISO: emISO2, participanteNome: rowAtual.nome, participanteEmail: rowAtual.email, videoUrlAtual: rowAtual.video_url,
       });
       return json({ ok: true, agendamento_em: emISO2, booking_uid: novoUid, equipe_json: temColunaEquipe2 ? JSON.stringify(eq2) : '' });
     }
@@ -510,7 +559,11 @@ export default async (req) => {
         });
       } catch { /* alerta é melhor-esforço; a presença já foi salva */ }
     }
-    if (cancelarLembrete) await cancelarLembretesPendentes(refUrl);
+    if (cancelarLembrete) {
+      await cancelarLembretesPendentes(refUrl);
+      const geId3 = await obterGoogleEventId(contaId, refUrl);
+      if (geId3) await removerEventoGoogle(contaId, geId3);
+    }
     // o quadro Kanban do responsável acompanha a mudança (melhor-esforço)
     const atendenteFinal = 'atendente' in c ? patch.atendente : (atual.atendente || '');
     if (mudouAtendente) {
