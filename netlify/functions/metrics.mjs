@@ -28,6 +28,7 @@ const COLS = [
   'agendado', 'agendamento_em', 'booking_uid', 'atendente', 'agendamento_status', 'equipe_json',
   'resultado', 'resultado_motivo', 'resultado_em', 'resultado_por', 'etapa', 'venda_json',
   'qualificador', 'nivel_consciencia', 'roteamento_tipo',
+  'agendamento_origem',
   'ig_followers', 'ig_posts', 'ig_verificado', 'ig_categoria',
   'reel_views', 'reel_likes', 'reel_comments',
   'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'referrer',
@@ -83,10 +84,22 @@ export default async (req) => {
         { headers: hdrs }
       );
       let res = await buscar();
-      // alguma coluna nova ainda não existe no banco? vai tirando até funcionar
-      const RECUOS = [',venda_json', ',etapa', ',resultado,resultado_motivo,resultado_em,resultado_por', ',equipe_json', ',atendente,agendamento_status', ',qualificador,nivel_consciencia,roteamento_tipo'];
-      for (const recuo of RECUOS) {
-        if (res.ok || res.status !== 400 || !colsAtivas.includes(recuo.slice(1).split(',')[0])) continue;
+      /* alguma coluna nova ainda não existe no banco? tira só o grupo que a
+         PRÓPRIA mensagem de erro do Postgres aponta como inexistente — nunca
+         em cascata cega por ordem: sem checar a mensagem, isso apagava do
+         SELECT todo grupo anterior ao que realmente faltava, mesmo já
+         existindo no banco (ex.: 1 coluna nova no fim da lista sumia com
+         atendente/etapa/equipe_json etc. do painel inteiro). */
+      const RECUOS = [',venda_json', ',etapa', ',resultado,resultado_motivo,resultado_em,resultado_por', ',equipe_json', ',atendente,agendamento_status', ',qualificador,nivel_consciencia,roteamento_tipo', ',agendamento_origem'];
+      for (let tentativa = 0; tentativa < RECUOS.length; tentativa++) {
+        if (res.ok || res.status !== 400) break;
+        const errText = await res.clone().text().catch(() => '');
+        // nome exato da coluna que falta (não substring — "atendente" é
+        // prefixo de futuras colunas tipo "atendente_atribuido_em")
+        const m = errText.match(/column [\w."]+\.(\w+) does not exist/);
+        const faltando = m && m[1];
+        const recuo = faltando && RECUOS.find((r) => colsAtivas.includes(r) && r.slice(1).split(',').includes(faltando));
+        if (!recuo) break;
         colsAtivas = colsAtivas.replace(recuo, '');
         res = await buscar();
       }
