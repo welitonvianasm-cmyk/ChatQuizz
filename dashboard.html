@@ -2733,6 +2733,7 @@ function agCardEl(r) {
 /* ===== CARTÃO DO LEAD — ficha completa ===== */
 let LM_ATUAL = null;
 let LM_DRAFT = null;   // rascunho das anotações em edição (obs + campos)
+let LM_ABERTAS = new Set();   // seções recolhíveis abertas (Respostas do quiz/Histórico) — reseta ao trocar de lead
 function lmLinha(rotulo, valor) {
   const row = el('div'); row.style.cssText = 'display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;align-items:center;';
   const l = el('span'); l.textContent = rotulo; l.style.cssText = 'color:var(--text-muted);font-weight:600;min-width:135px;flex-shrink:0;';
@@ -2753,6 +2754,7 @@ function abrirLeadModal(r) {
   if (LM_ATUAL !== r || !LM_DRAFT) {
     const eq = leadEquipe(r);
     LM_DRAFT = { obs: eq.obs, campos: eq.campos.map((f) => ({ k: f.k, v: f.v })) };
+    LM_ABERTAS = new Set();
   }
   LM_ATUAL = r;
   $('#lmTitulo').textContent = '' + (r.nome || '(sem nome)');
@@ -2792,8 +2794,8 @@ function abrirLeadModal(r) {
   stRow.appendChild(stSel);
   c.appendChild(stRow);
 
-  /* botões principais: Conversar · Agendar · Excluir */
-  const acoes = el('div'); acoes.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px;';
+  /* botões principais: Conversar · Agendar · Excluir — compactos, tudo numa linha só */
+  const acoes = el('div'); acoes.style.cssText = 'display:flex;gap:6px;flex-wrap:nowrap;align-items:center;margin:10px 0 4px;overflow-x:auto;';
   if (r.whatsapp) {
     const wa = el('button');
     wa.textContent = 'Conversar';
@@ -2850,20 +2852,21 @@ function abrirLeadModal(r) {
   c.appendChild(lmLinha('Ações', acoesAgendamento(r)));
   if (r.booking_uid && r.booking_uid !== 'confirmado_manual') c.appendChild(lmLinha('Código no Cal', r.booking_uid));
 
-  const h2 = el('h2'); h2.textContent = 'Respostas do quiz'; h2.style.marginTop = '14px'; c.appendChild(h2);
-  if (r.whatsapp) {
-    const a = el('a'); a.href = 'https://wa.me/' + String(r.whatsapp).replace(/\D/g, ''); a.target = '_blank'; a.rel = 'noopener';
-    a.textContent = r.whatsapp; a.style.cssText = 'font-weight:600;color:var(--text);';
-    c.appendChild(lmLinha('WhatsApp', a));
-  } else c.appendChild(lmLinha('WhatsApp', '—'));
-  c.appendChild(lmLinha('E-mail', r.email));
-  c.appendChild(lmLinha('Renda familiar', r.renda));
-  c.appendChild(lmLinha('Como se sente', r.nicho));
-  c.appendChild(lmLinha('Áreas afetadas', r.dificuldade));
-  c.appendChild(lmLinha('Faixa etária', r.seguidores));
-  c.appendChild(lmLinha('Buscou ajuda antes?', r.nicho_detectado));
-  c.appendChild(lmLinha('Entrou no quiz em', fmtDateTime(r.created_at)));
-  c.appendChild(lmLinha('Última atualização', fmtDateTime(r.updated_at)));
+  c.appendChild(lmSecao('Respostas do quiz', (body) => {
+    if (r.whatsapp) {
+      const a = el('a'); a.href = 'https://wa.me/' + String(r.whatsapp).replace(/\D/g, ''); a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = r.whatsapp; a.style.cssText = 'font-weight:600;color:var(--text);';
+      body.appendChild(lmLinha('WhatsApp', a));
+    } else body.appendChild(lmLinha('WhatsApp', '—'));
+    body.appendChild(lmLinha('E-mail', r.email));
+    body.appendChild(lmLinha('Renda familiar', r.renda));
+    body.appendChild(lmLinha('Como se sente', r.nicho));
+    body.appendChild(lmLinha('Áreas afetadas', r.dificuldade));
+    body.appendChild(lmLinha('Faixa etária', r.seguidores));
+    body.appendChild(lmLinha('Buscou ajuda antes?', r.nicho_detectado));
+    body.appendChild(lmLinha('Entrou no quiz em', fmtDateTime(r.created_at)));
+    body.appendChild(lmLinha('Última atualização', fmtDateTime(r.updated_at)));
+  }));
 
   /* anotações da equipe: observações + campos personalizados */
   const h3 = el('h2'); h3.textContent = 'Anotações da equipe'; h3.style.marginTop = '14px'; c.appendChild(h3);
@@ -2899,21 +2902,42 @@ function abrirLeadModal(r) {
 
   /* histórico automático */
   const eqSalvo = leadEquipe(r);
-  const h4 = el('h2'); h4.textContent = 'Histórico'; h4.style.marginTop = '14px'; c.appendChild(h4);
-  if (!eqSalvo.historico.length) {
-    const e2 = el('div', 'muted-cell'); e2.textContent = 'Ainda sem registros, cada mudança feita pela equipe aparece aqui, com quem fez e quando.';
-    e2.style.padding = '6px 0'; c.appendChild(e2);
-  } else {
-    eqSalvo.historico.slice(0, 12).forEach((h) => {
-      const d = new Date(h.t);
-      const linha = el('div'); linha.style.cssText = 'font-size:12.5px;padding:5px 0;border-bottom:1px dashed var(--line);color:var(--text-muted);';
-      const b = el('b'); b.textContent = h.quem; b.style.color = 'var(--text)';
-      linha.append(d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' · ', b, ' · ' + h.txt);
-      c.appendChild(linha);
-    });
-  }
+  c.appendChild(lmSecao('Histórico', (body) => {
+    if (!eqSalvo.historico.length) {
+      const e2 = el('div', 'muted-cell'); e2.textContent = 'Ainda sem registros, cada mudança feita pela equipe aparece aqui, com quem fez e quando.';
+      e2.style.padding = '6px 0'; body.appendChild(e2);
+    } else {
+      eqSalvo.historico.slice(0, 12).forEach((h) => {
+        const d = new Date(h.t);
+        const linha = el('div'); linha.style.cssText = 'font-size:12.5px;padding:5px 0;border-bottom:1px dashed var(--line);color:var(--text-muted);';
+        const b = el('b'); b.textContent = h.quem; b.style.color = 'var(--text)';
+        linha.append(d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' · ', b, ' · ' + h.txt);
+        body.appendChild(linha);
+      });
+    }
+  }));
 
   $('#leadModal').style.display = 'flex';
+}
+/* seção recolhível do Cartão do Lead (▸/▾) — fica lembrado enquanto o
+   mesmo lead estiver aberto (LM_ABERTAS), some ao trocar de lead */
+function lmSecao(titulo, montar) {
+  const wrap = el('div');
+  const aberta = LM_ABERTAS.has(titulo);
+  const head = el('h2'); head.style.cssText = 'margin-top:14px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;';
+  const seta = el('span'); seta.textContent = aberta ? '▾' : '▸'; seta.style.fontSize = '13px';
+  head.append(seta, document.createTextNode(titulo));
+  const body = el('div'); body.hidden = !aberta;
+  let montado = false;
+  const montarSeNecessario = () => { if (!montado) { montar(body); montado = true; } };
+  if (aberta) montarSeNecessario();
+  head.onclick = () => {
+    body.hidden = !body.hidden;
+    seta.textContent = body.hidden ? '▸' : '▾';
+    if (body.hidden) LM_ABERTAS.delete(titulo); else { LM_ABERTAS.add(titulo); montarSeNecessario(); }
+  };
+  wrap.append(head, body);
+  return wrap;
 }
 function fecharLeadModal() { $('#leadModal').style.display = 'none'; LM_ATUAL = null; LM_DRAFT = null; }
 $('#lmFechar').onclick = fecharLeadModal;
