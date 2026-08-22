@@ -28,7 +28,12 @@ import { salvarConexaoGoogleAgenda, lerConexaoGoogleAgenda } from '../_conexoes.
 
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 const SITE_URL = (process.env.URL || '').replace(/\/+$/, '');
-const SCOPES = ['https://www.googleapis.com/auth/calendar'];
+// calendar = acesso à agenda; userinfo.email = só pra identificar QUAL conta
+// conectou (mostrar o e-mail no painel) — sem essa 2ª, oauth2.userinfo.get()
+// falha com "missing required authentication credential" (o token fica sem
+// nenhuma permissão de identidade, e esse endpoint legado do Google trata
+// isso como se não houvesse credencial nenhuma, em vez de erro de escopo).
+const SCOPES = ['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/userinfo.email'];
 
 function assinarState(contaId) {
   const sig = createHmac('sha256', CLIENT_SECRET).update(String(contaId)).digest('hex').slice(0, 24);
@@ -55,10 +60,18 @@ async function tratarCallback(url) {
 
   try {
     const client = criarOAuthClient();
-    const { tokens } = await client.getToken(code);
+    const { tokens } = await client.getToken(code);   // isso é o essencial — se falhar, não tem conexão pra salvar mesmo
     client.setCredentials(tokens);
-    const oauth2 = google.oauth2({ version: 'v2', auth: client });
-    const { data: perfil } = await oauth2.userinfo.get();
+
+    // e-mail é só pra exibição no painel — melhor-esforço, nunca descarta
+    // os tokens (que já foram obtidos com sucesso) se essa parte falhar
+    let perfil = {};
+    try {
+      const oauth2 = google.oauth2({ version: 'v2', auth: client });
+      perfil = (await oauth2.userinfo.get()).data || {};
+    } catch (e) {
+      console.warn('google-oauth callback (userinfo, seguindo mesmo assim):', e?.message || e);
+    }
 
     const existente = await lerConexaoGoogleAgenda(contaId);
     await salvarConexaoGoogleAgenda(contaId, {
