@@ -1725,6 +1725,7 @@
         <b id="reTitulo" style="min-width:180px;text-align:center;font-size:14px;"></b>
         <button class="btn" id="reNext">›</button>
         <button class="btn" id="reHoje">Hoje</button>
+        <button class="btn" id="reNovoBtn">+ Novo agendamento</button>
         <span class="muted-cell" id="reResumo" style="margin-left:auto;"></span>
       </div>
       <div id="reLista"></div>
@@ -6323,6 +6324,7 @@ $('#naSalvar').onclick = async () => {
   renderAgendaCal(); renderAgDia();
 };
 $('#agNovoBtn').onclick = abrirNovoAgendamento;
+$('#reNovoBtn').onclick = abrirNovoAgendamento;
 $('#leadsStatusSel').addEventListener('change', (e) => {
   const v = e.target.value;
   // Convertido/Perdido são "abas" internas (colunas próprias); os demais filtram os ativos
