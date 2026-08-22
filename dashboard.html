@@ -388,6 +388,22 @@
   #kpis { grid-template-columns: 1.6fr repeat(3, 1fr); }
   #kpisRestante { grid-template-columns: 1fr 1fr; }
 
+  /* ===== Entrada de leads — dia × hora (gráfico empilhado, sem lib) ===== */
+  .dh-chart { display: flex; align-items: flex-end; gap: 10px; padding: 6px 2px 0; overflow-x: auto; }
+  .dh-col { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 34px; }
+  .dh-total { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 5px; white-space: nowrap; }
+  .dh-bar { width: 100%; max-width: 46px; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 3px 3px; overflow: hidden; background: var(--surface-card-2); }
+  .dh-seg { width: 100%; }
+  .dh-label { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 7px; white-space: nowrap; }
+  .dh-legenda { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 11px; color: var(--text-dim); }
+  .dh-legenda .dh-gradiente { flex: 1; max-width: 220px; height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--accent-soft), var(--chart-dark)); }
+  /* gráfico de barras verticais (1 coluna por hora) — reaproveitado do "por horário" */
+  .vb-chart { display: flex; align-items: flex-end; gap: 6px; padding: 6px 2px 0; overflow-x: auto; }
+  .vb-col { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 22px; }
+  .vb-val { font-size: 10.5px; font-weight: 700; color: var(--text); margin-bottom: 4px; white-space: nowrap; }
+  .vb-bar { width: 100%; max-width: 26px; border-radius: 4px 4px 2px 2px; background: var(--chart); }
+  .vb-label { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-top: 6px; white-space: nowrap; }
+
   /* ===== SECTIONS / GRID ===== */
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
   /* cards padronizados: padding 20px, raio 14px, cabeçalho com ícone (10px de vão) */
@@ -1200,13 +1216,44 @@
 
     <div id="tabFunil">
     <div class="kpis kpis-hero" id="kpis"></div>
-    <div class="kpis kpis-2col" id="kpisRestante"></div>
 
     <div class="panel" id="pAgendaram" hidden>
       <h2>Agendaram conversas</h2>
       <div class="sub">Resumo dos Encontros marcados pelo quiz</div>
       <div class="kpis" id="agStats" style="margin-bottom:0;"></div>
     </div>
+
+    <div class="panel" id="pEntradaDiaHora">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div>
+          <h2>Entrada de leads — dia e horário</h2>
+          <div class="sub">Volume por dia e por horário de entrada · identifica os picos (tem filtro de período próprio, não muda com o filtro geral do topo)</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="entradaPeriodoSel" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;background:var(--surface-input);color:var(--text);">
+            <option value="7">Últimos 7 dias</option>
+            <option value="hoje">Hoje</option>
+            <option value="15">Últimos 15 dias</option>
+            <option value="30">Últimos 30 dias</option>
+            <option value="mes">Este mês</option>
+            <option value="custom">Personalizado</option>
+          </select>
+          <span id="entradaCustomBox" style="display:none;gap:6px;align-items:center;">
+            <input type="date" id="entradaIni" style="padding:7px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;background:var(--surface-input);color:var(--text);">
+            <span class="sub">até</span>
+            <input type="date" id="entradaFim" style="padding:7px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;background:var(--surface-input);color:var(--text);">
+            <button class="acao-btn" id="entradaAplicar">Aplicar</button>
+          </span>
+        </div>
+      </div>
+      <div class="sub" style="margin-top:12px;font-weight:700;">Por dia e horário — cada barra é 1 dia, cada fatia é 1 hora daquele dia</div>
+      <div id="entradaDiaHora"></div>
+      <div class="dh-legenda"><span>00h</span><span class="dh-gradiente"></span><span>23h</span></div>
+      <div class="sub" style="margin-top:18px;font-weight:700;">Por horário (soma do período) <span id="entradaPico" style="font-weight:400;"></span></div>
+      <div id="entradaPorHora"></div>
+    </div>
+
+    <div class="kpis kpis-2col" id="kpisRestante"></div>
 
     <div class="panel" style="display:none;align-items:center;gap:14px;flex-wrap:wrap;">
       <div>
@@ -2115,6 +2162,7 @@ function render() {
   renderSeguidores(rows);
   renderDesafio(rows);
   renderPerDay(rows);
+  renderEntradaDiaHora();
   renderUF(rows);
   renderUTM(rows);
   renderUpcoming();
@@ -2132,7 +2180,7 @@ function render() {
 const SECTIONS = {
   /* Visão Geral concentra TODOS os quadros analíticos; cada módulo fica
      só com o seu card essencial */
-  geral: ['#kpis', '#kpisRestante', '#pAgendaram', '#pFunil', '#pNicho', '#pIdadeAreas', '#pDiaUF', '#pOrigemUtm', '#pDestino', '#pPorAtendente'],
+  geral: ['#kpis', '#pAgendaram', '#pEntradaDiaHora', '#kpisRestante', '#pFunil', '#pNicho', '#pIdadeAreas', '#pDiaUF', '#pOrigemUtm', '#pDestino', '#pPorAtendente'],
   agendaDash: ['#pAgendaDash'],      // só o Calendário
   agendados: ['#pUpcoming'],         // só Leads Agendados
   reunioes: ['#pReunioes'],          // reuniões por data + presença
@@ -2345,7 +2393,7 @@ const DS_CORES = { azul: 'var(--blue)', verde: 'var(--green)', laranja: 'var(--a
 const DS_CORES_SOFT = { azul: 'var(--blue-soft)', verde: 'var(--green-soft)', laranja: 'var(--amber-soft)', lima: 'var(--lime-soft)', cinza: 'var(--surface-card-2)', roxo: 'var(--chart-soft)' };
 const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verde · Vendas laranja · Usuários lima · Config cinza · gráficos roxo claro) */
   pFunil: ['grafico', 'roxo'], pRenda: ['carteira', 'verde'], pNicho: ['grafico', 'roxo'],
-  pIdadeAreas: ['grafico', 'roxo'], pDiaUF: ['grafico', 'roxo'], pOrigemUtm: ['grafico', 'roxo'], pDestino: ['envio', 'azul'],
+  pIdadeAreas: ['grafico', 'roxo'], pDiaUF: ['grafico', 'roxo'], pEntradaDiaHora: ['grafico', 'roxo'], pOrigemUtm: ['grafico', 'roxo'], pDestino: ['envio', 'azul'],
   pAgendaram: ['calendario', 'azul'], pPorAtendente: ['usuarios', 'lima'],
   pAgendaDash: ['calendario', 'azul'], pUpcoming: ['calendario', 'azul'], pReunioes: ['usuarios', 'azul'],
   pQuadro: ['kanban', 'azul'], pLeads: ['usuarios', 'lima'],
@@ -4411,6 +4459,110 @@ function renderPerDay() {
   ];
   barChart($('#perday'), items);
 }
+
+/* ===== Entrada de leads por dia e horário (filtro de período próprio) ===== */
+let ENTRADA_RANGE = { tipo: '7', ini: null, fim: null };
+const fmtHoraBRT = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false });
+function entradaJanela() {
+  const hojeIni = inicioHojeBRT();
+  const amanha = hojeIni + 864e5;
+  if (ENTRADA_RANGE.tipo === 'hoje') return { ini: hojeIni, fim: amanha };
+  if (ENTRADA_RANGE.tipo === '15') return { ini: hojeIni - 14 * 864e5, fim: amanha };
+  if (ENTRADA_RANGE.tipo === '30') return { ini: hojeIni - 29 * 864e5, fim: amanha };
+  if (ENTRADA_RANGE.tipo === 'mes') {
+    const d = new Date();
+    const primeiroDia = diaBRT(new Date(d.getFullYear(), d.getMonth(), 1));
+    return { ini: new Date(primeiroDia + 'T00:00:00-03:00').getTime(), fim: amanha };
+  }
+  if (ENTRADA_RANGE.tipo === 'custom') {
+    const ini = ENTRADA_RANGE.ini ? new Date(ENTRADA_RANGE.ini + 'T00:00:00-03:00').getTime() : hojeIni - 6 * 864e5;
+    const fim = ENTRADA_RANGE.fim ? new Date(ENTRADA_RANGE.fim + 'T23:59:59-03:00').getTime() : amanha;
+    return { ini, fim };
+  }
+  return { ini: hojeIni - 6 * 864e5, fim: amanha };   // padrão: últimos 7 dias
+}
+function renderEntradaDiaHora() {
+  const boxHora = $('#entradaPorHora'); const picoEl = $('#entradaPico');
+  const boxMatriz = $('#entradaDiaHora');
+  if (!boxHora) return;
+  const { ini, fim } = entradaJanela();
+  const noPeriodo = ALL.filter((r) => { const t = new Date(r.created_at).getTime(); return t >= ini && t < fim; });
+
+  // matriz dia×hora: 1 mapa por dia, cada um com as 24 contagens de hora —
+  // base tanto do gráfico empilhado (por dia) quanto do total por horário
+  const matriz = new Map();
+  noPeriodo.forEach((r) => {
+    const k = diaBRT(new Date(r.created_at));
+    const h = Number(fmtHoraBRT.format(new Date(r.created_at))) % 24;
+    if (!matriz.has(k)) matriz.set(k, new Array(24).fill(0));
+    matriz.get(k)[h]++;
+  });
+  const dias = [...matriz.keys()].sort();
+  if (boxMatriz) barChartEmpilhado(boxMatriz, dias, matriz);
+
+  const porHora = new Array(24).fill(0);
+  dias.forEach((k) => matriz.get(k).forEach((v, h) => { porHora[h] += v; }));
+  const itemsHora = porHora.map((v, h) => ({ label: String(h).padStart(2, '0') + 'h', value: v }));
+  barChartVertical(boxHora, itemsHora);
+  const maxHora = Math.max(...porHora);
+  picoEl.textContent = maxHora > 0 ? '· pico às ' + String(porHora.indexOf(maxHora)).padStart(2, '0') + 'h' : '';
+}
+/* gráfico de barras verticais — 1 coluna por hora (00h-23h), altura = volume */
+function barChartVertical(box, items) {
+  clear(box);
+  const live = items.filter((i) => i.value > 0);
+  if (!live.length) { const e = el('div', 'empty'); e.textContent = 'Sem dados no período.'; box.appendChild(e); return; }
+  const max = Math.max(...items.map((i) => i.value));
+  const chart = el('div', 'vb-chart');
+  items.forEach((it) => {
+    const col = el('div', 'vb-col');
+    const val = el('div', 'vb-val'); val.textContent = nf(it.value);
+    const bar = el('div', 'vb-bar'); bar.style.height = Math.max(3, Math.round(it.value / max * 170)) + 'px';
+    bar.title = it.label + ' · ' + nf(it.value) + ' lead(s)';
+    const lab = el('div', 'vb-label'); lab.textContent = it.label;
+    col.append(val, bar, lab);
+    chart.appendChild(col);
+  });
+  box.appendChild(chart);
+}
+/* 1 barra vertical por dia (eixo X), empilhada em 24 fatias de hora (eixo
+   Y) — cor mais escura conforme a hora avança (00h claro → 23h escuro) */
+function barChartEmpilhado(box, dias, matriz) {
+  clear(box);
+  if (!dias.length) { const e = el('div', 'empty'); e.textContent = 'Sem dados no período.'; box.appendChild(e); return; }
+  const totais = dias.map((k) => matriz.get(k).reduce((a, b) => a + b, 0));
+  const max = Math.max(...totais, 1);
+  const chart = el('div', 'dh-chart');
+  dias.forEach((k, i) => {
+    const horas = matriz.get(k);
+    const total = totais[i];
+    const col = el('div', 'dh-col');
+    const tot = el('div', 'dh-total'); tot.textContent = nf(total);
+    const bar = el('div', 'dh-bar'); bar.style.height = Math.max(4, Math.round(total / max * 180)) + 'px';
+    horas.forEach((v, h) => {
+      if (!v) return;
+      const seg = el('div', 'dh-seg');
+      seg.style.height = (v / total * 100) + '%';
+      seg.style.background = 'color-mix(in srgb, var(--chart-dark) ' + Math.round(h / 23 * 100) + '%, var(--accent-soft))';
+      seg.title = String(h).padStart(2, '0') + 'h · ' + nf(v) + ' lead(s)';
+      bar.appendChild(seg);
+    });
+    const lab = el('div', 'dh-label'); lab.textContent = k.slice(8, 10) + '/' + k.slice(5, 7);
+    col.append(tot, bar, lab);
+    chart.appendChild(col);
+  });
+  box.appendChild(chart);
+}
+$('#entradaPeriodoSel').addEventListener('change', (e) => {
+  ENTRADA_RANGE.tipo = e.target.value;
+  $('#entradaCustomBox').style.display = ENTRADA_RANGE.tipo === 'custom' ? 'inline-flex' : 'none';
+  if (ENTRADA_RANGE.tipo !== 'custom') renderEntradaDiaHora();
+});
+$('#entradaAplicar').addEventListener('click', () => {
+  ENTRADA_RANGE.ini = $('#entradaIni').value || null;
+  ENTRADA_RANGE.fim = $('#entradaFim').value || null;
+  renderEntradaDiaHora();
+});
 
 function fmtDateTime(iso) {
   if (!iso) return '—';
