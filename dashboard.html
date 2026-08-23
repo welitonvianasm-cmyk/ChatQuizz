@@ -56,6 +56,12 @@
   }
   h1, h2, h3, h4, b, th, .k-num { color: var(--text); }
   b { font-weight: 700; }
+  /* Cartão do Lead: nome fica num cabeçalho amarelo (ver #lmTitulo acima);
+     os títulos de seção dentro do corpo (Agendamento, Respostas do quiz,
+     Anotações da equipe, Histórico) ficam menores e amarelos, nunca maiores
+     que o nome do lead ali em cima. */
+  #lmCorpo h2 { color: var(--brand); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+  #lmTituloPills .pill { font-size: 9.5px; padding: 2px 7px; }
   /* título de cada "caixa" no Editor do Quiz (Pergunta N, nível/qualificador, roteamento) */
   .qe-titulo { color: var(--brand); }
   ::selection { background: var(--lime-soft); }
@@ -735,7 +741,10 @@
   <div id="leadModal" style="display:none;position:fixed;inset:0;z-index:70;background:rgba(20,20,40,.45);align-items:center;justify-content:center;padding:16px;">
     <div id="leadModalCard" style="background:var(--card);border-radius:16px;max-width:580px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-        <h2 id="lmTitulo" style="flex:1;margin:0;font-size:17px;"></h2>
+        <div style="flex:1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--brand);color:var(--brand-ink);border-radius:10px;padding:9px 14px;">
+          <h2 id="lmTitulo" style="margin:0;font-size:15px;font-weight:800;color:var(--brand-ink);"></h2>
+          <div id="lmTituloPills" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;"></div>
+        </div>
         <button class="acao-btn" id="lmFechar" title="Fechar">✕</button>
       </div>
       <div id="lmCorpo"></div>
@@ -2850,11 +2859,11 @@ function abrirLeadModal(r) {
   $('#lmTitulo').textContent = '' + (r.nome || '(sem nome)');
   const c = $('#lmCorpo'); clear(c);
 
-  const st = el('div'); st.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0 4px;';
+  // selos de status ficam no cabeçalho amarelo, ao lado do nome (não mais no corpo)
+  const st = $('#lmTituloPills'); clear(st);
   st.append(trilhaPill(r.call_track), agendPill(r.agendamento_status), respostaPill(r));
   if (r.resultado === 'convertido') { const p = el('span', 'pill agendado'); p.textContent = '✓ CONVERTIDO'; st.appendChild(p); }
   if (r.resultado === 'perdido') { const p = el('span', 'pill parcial'); p.textContent = '✕ PERDIDO'; st.appendChild(p); }
-  c.appendChild(st);
 
   /* Status oficial do funil — editável; o card no Kanban acompanha sozinho */
   const stRow = el('div'); stRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin:8px 0 2px;font-size:13px;font-weight:700;';
@@ -2924,11 +2933,6 @@ function abrirLeadModal(r) {
     rea.onclick = () => { if (confirm('Reativar ' + (r.nome || 'este lead') + '? Ele volta para os Leads Ativos.')) salvarLeadCampos(r, { resultado: '' }); };
     acoes.appendChild(rea);
   }
-  const bx = el('button');
-  bx.textContent = 'Excluir lead';
-  bx.style.cssText = 'background:var(--surface-card-2);color:var(--red);border:1.5px solid var(--red);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;margin-left:auto;';
-  bx.onclick = () => excluirLead(r);
-  acoes.appendChild(bx);
   c.appendChild(acoes);
   if (r.resultado) {
     c.appendChild(lmLinha(r.resultado === 'convertido' ? '✓ Convertido em' : '✕ Perdido em', fmtDateTime(r.resultado_em)));
@@ -2941,22 +2945,6 @@ function abrirLeadModal(r) {
   c.appendChild(lmLinha('Atendente', selAtendente(r)));
   c.appendChild(lmLinha('Ações', acoesAgendamento(r)));
   if (r.booking_uid && r.booking_uid !== 'confirmado_manual') c.appendChild(lmLinha('Código no Cal', r.booking_uid));
-
-  c.appendChild(lmSecao('Respostas do quiz', (body) => {
-    if (r.whatsapp) {
-      const a = el('a'); a.href = 'https://wa.me/' + String(r.whatsapp).replace(/\D/g, ''); a.target = '_blank'; a.rel = 'noopener';
-      a.textContent = r.whatsapp; a.style.cssText = 'font-weight:600;color:var(--text);';
-      body.appendChild(lmLinha('WhatsApp', a));
-    } else body.appendChild(lmLinha('WhatsApp', '—'));
-    body.appendChild(lmLinha('E-mail', r.email));
-    body.appendChild(lmLinha('Renda familiar', r.renda));
-    body.appendChild(lmLinha('Como se sente', r.nicho));
-    body.appendChild(lmLinha('Áreas afetadas', r.dificuldade));
-    body.appendChild(lmLinha('Faixa etária', r.seguidores));
-    body.appendChild(lmLinha('Buscou ajuda antes?', r.nicho_detectado));
-    body.appendChild(lmLinha('Entrou no quiz em', fmtDateTime(r.created_at)));
-    body.appendChild(lmLinha('Última atualização', fmtDateTime(r.updated_at)));
-  }));
 
   /* anotações da equipe: observações + campos personalizados */
   const h3 = el('h2'); h3.textContent = 'Anotações da equipe'; h3.style.marginTop = '14px'; c.appendChild(h3);
@@ -2990,6 +2978,22 @@ function abrirLeadModal(r) {
   rodape.append(bAdd, bSalvar);
   c.appendChild(rodape);
 
+  c.appendChild(lmSecao('Respostas do quiz', (body) => {
+    if (r.whatsapp) {
+      const a = el('a'); a.href = 'https://wa.me/' + String(r.whatsapp).replace(/\D/g, ''); a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = r.whatsapp; a.style.cssText = 'font-weight:600;color:var(--text);';
+      body.appendChild(lmLinha('WhatsApp', a));
+    } else body.appendChild(lmLinha('WhatsApp', '—'));
+    body.appendChild(lmLinha('E-mail', r.email));
+    body.appendChild(lmLinha('Renda familiar', r.renda));
+    body.appendChild(lmLinha('Como se sente', r.nicho));
+    body.appendChild(lmLinha('Áreas afetadas', r.dificuldade));
+    body.appendChild(lmLinha('Faixa etária', r.seguidores));
+    body.appendChild(lmLinha('Buscou ajuda antes?', r.nicho_detectado));
+    body.appendChild(lmLinha('Entrou no quiz em', fmtDateTime(r.created_at)));
+    body.appendChild(lmLinha('Última atualização', fmtDateTime(r.updated_at)));
+  }));
+
   /* histórico automático */
   const eqSalvo = leadEquipe(r);
   c.appendChild(lmSecao('Histórico', (body) => {
@@ -3006,6 +3010,15 @@ function abrirLeadModal(r) {
       });
     }
   }));
+
+  /* excluir lead — ação de maior consequência, fica isolada no fim do cartão */
+  const zonaExcluir = el('div'); zonaExcluir.style.cssText = 'display:flex;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--line);';
+  const bx = el('button');
+  bx.textContent = 'Excluir lead';
+  bx.style.cssText = 'background:var(--surface-card-2);color:var(--red);border:1.5px solid var(--red);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
+  bx.onclick = () => excluirLead(r);
+  zonaExcluir.appendChild(bx);
+  c.appendChild(zonaExcluir);
 
   $('#leadModal').style.display = 'flex';
 }
