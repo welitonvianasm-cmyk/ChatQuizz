@@ -6,7 +6,7 @@
    Guardado em funnel_config (mesmo padrão já usado no resto do
    projeto), nunca devolvido de volta pro navegador em texto puro.
    ==================================================================== */
-import { createHmac } from 'node:crypto';
+import { createHmac, randomBytes } from 'node:crypto';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -130,4 +130,42 @@ export async function salvarConexaoGoogleAgenda(contaId, dados) {
     headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify({ conta_id: contaId, key: CHAVE_GOOGLE_AGENDA, value: JSON.stringify(dados || {}), updated_at: new Date().toISOString() }),
   });
+}
+
+/* ====================================================================
+   Conexão do Webhook de Pagamento (MAKE) — diferente do Cal.com/
+   MentoriaHub, o segredo aqui é GERADO pelo próprio painel (não digitado
+   pelo usuário), só pra montar a URL que a conta cola na plataforma de
+   pagamento/MAKE. Por isso é devolvido em texto puro pra tela de
+   Conexões: escondê-lo do próprio dono da conta não protegeria nada
+   (foi o painel dele mesmo que gerou), e ele precisa poder copiar de
+   novo a qualquer momento, não só na hora que gerou.
+   ==================================================================== */
+const CHAVE_WEBHOOK_PAGAMENTO = 'conexao_webhook_pagamento';
+
+export async function lerConexaoWebhookPagamento(contaId) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/funnel_config?conta_id=eq.${contaId}&key=eq.${CHAVE_WEBHOOK_PAGAMENTO}&select=value&limit=1`, { headers: H });
+    if (r.ok) {
+      const rows = await r.json();
+      const v = rows[0] && JSON.parse(rows[0].value || '{}');
+      if (v && typeof v === 'object') return v;
+    }
+  } catch { /* nada salvo ainda */ }
+  return {};
+}
+
+export async function salvarConexaoWebhookPagamento(contaId, dados) {
+  await fetch(`${SB_URL}/rest/v1/funnel_config?on_conflict=conta_id,key`, {
+    method: 'POST',
+    headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ conta_id: contaId, key: CHAVE_WEBHOOK_PAGAMENTO, value: JSON.stringify(dados || {}), updated_at: new Date().toISOString() }),
+  });
+}
+
+/* gera (ou regenera, invalidando o anterior) o segredo da conta e já salva */
+export async function gerarSegredoWebhookPagamento(contaId) {
+  const segredo = randomBytes(24).toString('hex');
+  await salvarConexaoWebhookPagamento(contaId, { segredo });
+  return segredo;
 }

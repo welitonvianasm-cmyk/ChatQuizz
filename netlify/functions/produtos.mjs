@@ -1,11 +1,17 @@
 /**
  * PRODUTOS — catálogo usado na conversão (Pós-Venda).
  *
- *   POST /api/produtos { token, action:'listar' }              → { ok, produtos }
- *   POST /api/produtos { token, action:'criar', nome, valor }  → { ok, produto }
+ *   POST /api/produtos { token, action:'listar' }
+ *     → { ok, produtos: [{id,nome,valor,aliases:[nomeExterno,...]}] }
+ *   POST /api/produtos { token, action:'criar', nome, valor }        → { ok, produto }
+ *   POST /api/produtos { token, action:'editar', id, nome, valor }   → { ok, produto }
+ *   POST /api/produtos { token, action:'excluir', id }               → { ok }
+ *   POST /api/produtos { token, action:'vincular_alias', nome_externo, produto_id } → { ok }
+ *     (associa o nome que vem do webhook de pagamento a um produto do catálogo —
+ *      da próxima vez que esse nome externo chegar, já resolve sozinho)
  *
- * Qualquer usuário autenticado lista; criação também é liberada pra equipe
- * (o atendente cadastra o produto na hora de fechar a venda).
+ * Qualquer usuário autenticado lista; criação/edição/vínculo também são
+ * liberados pra equipe (o atendente cadastra o produto na hora de fechar a venda).
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
 
@@ -28,9 +34,19 @@ export default async (req) => {
 
   try {
     if (body.action === 'listar') {
-      const r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&select=id,nome,valor&order=nome.asc`, { headers: H });
+      // embed dos aliases (produto_aliases → produtos via FK) — se a tabela
+      // ainda não existir (setup-pagamento-webhook.sql não rodou), cai pro
+      // select simples: a tela de Produtos continua funcionando, só sem aliases.
+      let r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&select=id,nome,valor,produto_aliases(nome_externo)&order=nome.asc`, { headers: H });
+      let comAliases = r.ok;
+      if (!r.ok) r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&select=id,nome,valor&order=nome.asc`, { headers: H });
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
-      return json({ ok: true, produtos: await r.json() });
+      const linhas = await r.json();
+      const produtos = linhas.map((p) => ({
+        id: p.id, nome: p.nome, valor: p.valor,
+        aliases: comAliases ? (p.produto_aliases || []).map((a) => a.nome_externo) : [],
+      }));
+      return json({ ok: true, produtos });
     }
 
     if (body.action === 'criar') {
@@ -46,6 +62,41 @@ export default async (req) => {
       });
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       return json({ ok: true, produto: (await r.json())[0] });
+    }
+
+    if (body.action === 'editar') {
+      const id = Number(body.id);
+      const nome = String(body.nome || '').trim().slice(0, 120);
+      const valor = Math.max(0, Number(body.valor) || 0);
+      if (!id) return json({ ok: false, error: 'Produto inválido.' });
+      if (!nome) return json({ ok: false, error: 'Dê um nome ao produto.' });
+      const r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&id=eq.${id}`, {
+        method: 'PATCH', headers: { ...H, Prefer: 'return=representation' },
+        body: JSON.stringify({ nome, valor }),
+      });
+      if (!r.ok) return json({ ok: false, error: AVISO_SQL });
+      const linha = (await r.json())[0];
+      if (!linha) return json({ ok: false, error: 'Produto não encontrado.' });
+      return json({ ok: true, produto: linha });
+    }
+
+    if (body.action === 'excluir') {
+      const id = Number(body.id);
+      if (!id) return json({ ok: false, error: 'Produto inválido.' });
+      const r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&id=eq.${id}`, { method: 'DELETE', headers: H });
+      return json({ ok: r.ok });
+    }
+
+    if (body.action === 'vincular_alias') {
+      const nome_externo = String(body.nome_externo || '').trim().slice(0, 120);
+      const produto_id = Number(body.produto_id);
+      if (!nome_externo || !produto_id) return json({ ok: false, error: 'Informe o nome recebido e o produto de destino.' });
+      const r = await fetch(`${SB_URL}/rest/v1/produto_aliases?on_conflict=conta_id,nome_externo`, {
+        method: 'POST', headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({ conta_id: contaId, nome_externo, produto_id }),
+      });
+      if (!r.ok) return json({ ok: false, error: 'Falta rodar o setup-pagamento-webhook.sql no Supabase (vínculo de produtos).' });
+      return json({ ok: true });
     }
 
     return json({ error: 'unknown_action' }, 400);

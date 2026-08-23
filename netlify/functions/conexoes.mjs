@@ -6,11 +6,15 @@
  * lê de volta em texto puro).
  *
  *   POST /api/conexoes { token, action:'status' }
- *     → { ok, calcom: { temEnv, temSalva, conectado }, mentoriahub: { conectado } }
+ *     → { ok, calcom: { temEnv, temSalva, conectado }, mentoriahub: { conectado },
+ *         pagamento: { conectado, url } }
  *   POST /api/conexoes { token, action:'salvar_calcom', api_key }   (admin)
  *   POST /api/conexoes { token, action:'remover_calcom' }           (admin)
  *   POST /api/conexoes { token, action:'salvar_mentoriahub', url, secret, ativo }   (admin)
  *   POST /api/conexoes { token, action:'remover_mentoriahub' }                      (admin)
+ *   POST /api/conexoes { token, action:'pagamento_gerar' }          (admin) → { ok, url }
+ *     (gera/regenera o segredo do webhook de pagamento — a URL completa,
+ *      pronta pra colar no MAKE, já sai montada na resposta)
  *   POST /api/conexoes { token, action:'google_calendarios' }                       (admin)
  *   POST /api/conexoes { token, action:'google_salvar_calendario', calendarId }     (admin)
  *   POST /api/conexoes { token, action:'google_desconectar' }                       (admin)
@@ -19,7 +23,7 @@
  * arquivo só cuida do "resto": listar calendários, escolher um, desconectar)
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
-import { lerConexaoCalcom, salvarConexaoCalcom, obterConexaoMentoriaHub, salvarConexaoMentoriaHub, lerConexaoGoogleAgenda, salvarConexaoGoogleAgenda } from '../_conexoes.mjs';
+import { lerConexaoCalcom, salvarConexaoCalcom, obterConexaoMentoriaHub, salvarConexaoMentoriaHub, lerConexaoGoogleAgenda, salvarConexaoGoogleAgenda, lerConexaoWebhookPagamento, gerarSegredoWebhookPagamento } from '../_conexoes.mjs';
 import { listarCalendariosGoogle } from '../_googleAgenda.mjs';
 
 export default async (req) => {
@@ -42,11 +46,14 @@ export default async (req) => {
       const temSalva = !!salvo.api_key;
       const mentoriahub = await obterConexaoMentoriaHub(contaId);
       const google = await lerConexaoGoogleAgenda(contaId);
+      const pagamento = await lerConexaoWebhookPagamento(contaId);
+      const origin = new URL(req.url).origin;
       return json({
         ok: true,
         calcom: { temEnv, temSalva, conectado: temEnv || temSalva },
         mentoriahub: { conectado: !!mentoriahub },
         google: { conectado: !!google.refreshToken, email: google.email || '', calendarId: google.calendarId || '' },
+        pagamento: { conectado: !!pagamento.segredo, url: pagamento.segredo ? `${origin}/api/webhook-pagamento?conta=${contaId}&segredo=${pagamento.segredo}` : '' },
       });
     }
 
@@ -75,6 +82,12 @@ export default async (req) => {
     if (a === 'remover_mentoriahub') {
       await salvarConexaoMentoriaHub(contaId, {});
       return json({ ok: true });
+    }
+
+    if (a === 'pagamento_gerar') {
+      const segredo = await gerarSegredoWebhookPagamento(contaId);
+      const origin = new URL(req.url).origin;
+      return json({ ok: true, url: `${origin}/api/webhook-pagamento?conta=${contaId}&segredo=${segredo}` });
     }
 
     if (a === 'google_calendarios') {

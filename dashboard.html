@@ -571,7 +571,7 @@
   #leadModal > div, #calModal > div, #vendaModal > div, #alertModal > div, #diaModal > div,
   #novoLeadModal > div, #novoAgendamentoModal > div, #remarcarModal > div, #masterContaModal > div, #euNovoModal > div, #euDetModal > div, #chatModal > div,
   #modalConexaoPlano > div, #modalConexaoDominio > div, #modalConexaoWhatsapp > div, #modalConexaoCalcom > div,
-  #modalConexaoMentoriaHub > div, #modalConexaoGoogleAgenda > div, #promptModal > div { animation: dsPop .18s ease; }
+  #modalConexaoMentoriaHub > div, #modalConexaoGoogleAgenda > div, #modalConexaoPagamento > div, #promptModal > div { animation: dsPop .18s ease; }
   #sinoLista { animation: dsPop .15s ease; }
   #chatModal { background: rgba(9, 7, 15, .6) !important; }
   .modal-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(9, 7, 15, .6); display: flex; align-items: center; justify-content: center; }
@@ -1153,6 +1153,27 @@
     </div>
   </div>
 
+  <div id="modalConexaoPagamento" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border-radius:16px;max-width:600px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;">Pagamentos (MAKE)</h2>
+        <button class="acao-btn" onclick="fecharModalConexao('modalConexaoPagamento')" title="Fechar">✕</button>
+      </div>
+      <div class="sub" style="margin:0 0 12px;">Cole esta URL no cenário do MAKE, no passo que recebe a confirmação de pagamento (Hotmart, Eduzz, Kiwify etc). Toda vez que uma venda for paga, o MAKE chama esta URL e o lead é convertido automaticamente, sem ação manual da equipe.</div>
+      <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
+        <b>Situação:</b> <span id="pgEstado" class="pill parcial">verificando…</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="pgUrl" readonly placeholder="Gere o segredo para ver a URL" style="flex:1;min-width:240px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:12.5px;font-family:monospace;background:var(--surface-input);color:var(--text);">
+        <button class="btn" id="pgBtnCopiar">Copiar</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
+        <button class="btn" id="pgBtnGerar">Gerar novo segredo</button>
+      </div>
+      <div class="muted-cell" id="pgMsg" style="margin-top:8px;font-size:12.5px;">Campos esperados no corpo (JSON) da chamada: email, telefone, nome, produto, valor, forma_pagamento, endereco.</div>
+    </div>
+  </div>
+
   <div id="modalConexaoGoogleAgenda" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
     <div style="background:var(--card);border-radius:16px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
@@ -1276,6 +1297,7 @@
             <button data-sec="posConv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Conversão</button>
             <button data-sec="posAtend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>Conversão por Atendente</button>
             <button data-sec="posFin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>Financeiro</button>
+            <button data-sec="posProdutos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>Produtos</button>
           </div>
         </div>
         <div class="nav-menu">
@@ -1601,6 +1623,19 @@
       <div class="tbl-wrap"><table id="pfTabela"></table></div>
     </div>
 
+    <!-- ===== PÓS-VENDA — Produtos ===== -->
+    <div class="panel tem-banner" id="pPosProdutos" hidden>
+      <h2>Pós-Venda · Produtos</h2>
+      <div class="sub">Cadastre os produtos e o valor de cada um. Quando o nome que chega pelo webhook de pagamento bater com um produto já vinculado, a venda se resolve sozinha — quando não, ele aparece em "Produtos sem vínculo" pra você ligar uma vez só.</div>
+      <div class="fbar" data-pbanner="posProdutos">
+        <button class="acao-btn" id="ppNovoProduto">+ Novo produto</button>
+      </div>
+      <div class="tbl-wrap"><table id="ppTabela"></table></div>
+      <h2 style="margin-top:20px;">Produtos sem vínculo</h2>
+      <div class="sub" style="margin:0 0 10px;">Nomes que já chegaram em alguma venda mas ainda não correspondem a nenhum produto do catálogo (nem a um alias já vinculado).</div>
+      <div id="ppSemVinculo"></div>
+    </div>
+
     <!-- ===== CONVERSAS — inbox do WhatsApp ===== -->
     <div class="panel tem-banner" id="pConversas" hidden>
       <h2>Conversas</h2>
@@ -1859,6 +1894,21 @@
             <li><b>✓</b> Webhook com segredo compartilhado</li>
           </ul>
           <button class="ct-btn" onclick="abrirModalConexao('modalConexaoMentoriaHub')">Configurar MentoriaHub</button>
+        </div>
+
+        <div class="conexao-tile">
+          <div class="ct-topo">
+            <span class="ic-chip" data-ic="carteira" data-cor="laranja"></span>
+            <span class="pill parcial" id="ctPgPill">verificando…</span>
+          </div>
+          <h3>Pagamentos (MAKE)</h3>
+          <div class="ct-desc">Recebe a confirmação de venda e converte o lead sozinho, sem ação manual.</div>
+          <ul class="ct-lista">
+            <li><b>✓</b> Converte e preenche Pós-Venda</li>
+            <li><b>✓</b> Cria o lead se não achar ninguém</li>
+            <li><b>✓</b> Avisa o atendente responsável</li>
+          </ul>
+          <button class="ct-btn" onclick="abrirModalConexao('modalConexaoPagamento')">Configurar Pagamentos</button>
         </div>
 
         <div class="conexao-tile">
@@ -2341,6 +2391,7 @@ const SECTIONS = {
   posConv: ['#pPosConv'],            // Pós-Venda: convertidos p/ o CS
   posAtend: ['#pPosAtend'],          // Pós-Venda: ranking de conversões
   posFin: ['#pPosFin'],              // Pós-Venda: financeiro
+  posProdutos: ['#pPosProdutos'],    // Pós-Venda: catálogo de produtos + vínculo do webhook
   conversas: ['#pConversas'],        // Inbox do WhatsApp
   automacoes: ['#pAutomacoes'],      // automações de mensagens
   disparos: ['#pDisparos'],          // fila de disparos agendados
@@ -2360,7 +2411,7 @@ const SECOES_SO_COMPLETO = new Set([
   'quadro', 'conversas',
   'agendaDash', 'reunioes', 'agendados', 'calEspelho',
   'automacoes', 'disparos',
-  'posConv', 'posAtend', 'posFin',
+  'posConv', 'posAtend', 'posFin', 'posProdutos',
   'usuarios',
 ]);
 function aplicarGatingPlano() {
@@ -2384,7 +2435,7 @@ const SEC_MENU = {
   quadro: 'gestao', leads: 'gestao', conversas: 'gestao',
   agendaDash: 'agenda', reunioes: 'agenda', agendados: 'agenda', calEspelho: 'agenda',
   automacoes: 'automacao', disparos: 'automacao',
-  posConv: 'posvenda', posAtend: 'posvenda', posFin: 'posvenda',
+  posConv: 'posvenda', posAtend: 'posvenda', posFin: 'posvenda', posProdutos: 'posvenda',
   links: 'config', conexoes: 'config', usuarios: 'config',
   qePerguntas: 'config', qeQualificadores: 'config', qeNiveis: 'config', qeResultados: 'config', qeRoteamento: 'config', qeAparencia: 'config',
   masterContas: 'master',
@@ -2425,7 +2476,7 @@ function navGo(sec) {
     if (!QE_CARREGADO) qeCarregar(); else qeRenderTudo();
   }
   if (sec === 'links' && !LINKS_CARREGADO) linksCarregar();
-  if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); carregarConexaoMentoriaHub(); carregarConexaoGoogleAgenda(); renderPlanoInfo(); renderDominioInfo(); }
+  if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); carregarConexaoMentoriaHub(); carregarConexaoGoogleAgenda(); carregarConexaoPagamento(); renderPlanoInfo(); renderDominioInfo(); }
   if (sec === 'usuarios') { $('#eqLogsBody').style.display = 'none'; $('#eqLogsChevron').style.transform = 'none'; }
   if (sec === 'masterContas') masterCarregar();
   if (sec === 'conversas') carregarWaStatus().then(carregarInbox);
@@ -2434,10 +2485,11 @@ function navGo(sec) {
   if (sec === 'agendaDash') { renderAgendaCal(); renderAgDia(); }
   if (sec === 'reunioes') renderReunioes();
   if (sec === 'quadro' && !KB_CARREGADO) kbCarregar();
-  if (sec === 'posConv' || sec === 'posFin') carregarProdutos();   // catálogo pro popup/filtros
+  if (sec === 'posConv' || sec === 'posFin' || sec === 'posProdutos') carregarProdutos();   // catálogo pro popup/filtros
   if (sec === 'posConv') renderPosConv();
   if (sec === 'posAtend') renderPosAtend();
   if (sec === 'posFin') renderPosFin();
+  if (sec === 'posProdutos') carregarProdutos(true).then(renderPosProdutos);
 }
 $('#sidenav').addEventListener('click', (e) => {
   const leaf = e.target.closest('button[data-sec]');
@@ -2548,7 +2600,7 @@ const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verd
   pAgendaram: ['calendario', 'azul'], pPorAtendente: ['usuarios', 'lima'],
   pAgendaDash: ['calendario', 'azul'], pUpcoming: ['calendario', 'azul'], pReunioes: ['usuarios', 'azul'],
   pQuadro: ['kanban', 'azul'], pLeads: ['usuarios', 'lima'],
-  pPosConv: ['trofeu', 'laranja'], pPosAtend: ['medalha', 'laranja'], pPosFin: ['carteira', 'verde'],
+  pPosConv: ['trofeu', 'laranja'], pPosAtend: ['medalha', 'laranja'], pPosFin: ['carteira', 'verde'], pPosProdutos: ['lista', 'laranja'],
   pConversas: ['conversa', 'verde'], pAutomacoes: ['raio', 'laranja'], pDisparos: ['envio', 'laranja'],
   pQuizEditor: ['lista', 'cinza'], pConexoes: ['conversa', 'cinza'],
   pLinks: ['envio', 'cinza'], equipePanel: ['usuarios', 'lima'], equipeLogsPanel: ['lista', 'cinza'], pMasterContas: ['usuarios', 'roxo'],
@@ -2592,6 +2644,7 @@ const PBANNER = {
   posConv: { tit: 'Pós-Venda · Convertidos', sub: 'Leads aguardando o primeiro contato do CS', ic: 'trofeu', cor: 'laranja' },
   posAtend: { tit: 'Conversões por Atendente', sub: 'Ranking de quem converteu: quantidade e valor', ic: 'medalha', cor: 'laranja' },
   posFin: { tit: 'Pós-Venda · Financeiro', sub: 'Relatório financeiro dos leads convertidos', ic: 'carteira', cor: 'verde' },
+  posProdutos: { tit: 'Pós-Venda · Produtos', sub: 'Catálogo de produtos e vínculo com os nomes que chegam pelo webhook de pagamento', ic: 'lista', cor: 'laranja' },
   conversas: { tit: 'Conversas', sub: 'Inbox do WhatsApp', ic: 'conversa', cor: 'verde' },
   automacoes: { tit: 'Automações', sub: 'Mensagens automáticas 100% editáveis', ic: 'raio', cor: 'laranja' },
   disparos: { tit: 'Disparos Agendados', sub: 'Fila de mensagens agendadas para envio', ic: 'envio', cor: 'laranja' },
@@ -2949,6 +3002,23 @@ function abrirLeadModal(r) {
   c.appendChild(lmLinha('Atendente', selAtendente(r)));
   c.appendChild(lmLinha('Ações', acoesAgendamento(r)));
   if (r.booking_uid && r.booking_uid !== 'confirmado_manual') c.appendChild(lmLinha('Código no Cal', r.booking_uid));
+
+  /* cliente recorrente: mostra as compras anteriores, não só a última
+     (a atual já aparece em "Vendeu"/Pós-Venda — aqui é só o histórico) */
+  const vendaLm = vendaDe(r);
+  if (Array.isArray(vendaLm.compras) && vendaLm.compras.length > 1) {
+    const hCompras = el('h2'); hCompras.textContent = 'Compras anteriores'; hCompras.style.marginTop = '12px'; c.appendChild(hCompras);
+    const listaCompras = el('div'); listaCompras.style.cssText = 'display:grid;gap:4px;margin-bottom:4px;';
+    [...vendaLm.compras].reverse().forEach((compra) => {
+      const linha = el('div'); linha.style.cssText = 'font-size:12.5px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;display:flex;justify-content:space-between;gap:8px;background:var(--surface-card-2);';
+      const esq = el('span'); esq.textContent = compra.produto || '(produto)';
+      const dir = el('span'); dir.style.cssText = 'color:var(--text-muted);white-space:nowrap;';
+      dir.textContent = fmtBRL(compra.valor) + ' · ' + fmtDateTime(compra.data);
+      linha.append(esq, dir);
+      listaCompras.appendChild(linha);
+    });
+    c.appendChild(listaCompras);
+  }
 
   /* anotações da equipe: observações + campos personalizados */
   const h3 = el('h2'); h3.textContent = 'Anotações da equipe'; h3.style.marginTop = '14px'; c.appendChild(h3);
@@ -4473,12 +4543,17 @@ function tendenciaPill(t) {
 // mesmo já entrando com status:'completo' (é só o valor técnico usado pra
 // liberar o cadastro direto no funil, não reflete uma resposta real).
 function ehManual(r) { return r.origem === 'painel-crm'; }
-function calcCompletos(rows) { return rows.filter((r) => !ehManual(r) && (STATUS_ORD[r.status] || 1) >= STATUS_ORD.completo).length; }
+// lead criado sozinho pelo webhook de pagamento (comprou sem nunca ter
+// passado pelo quiz) — mesmo tratamento do ehManual: não conta como
+// "completou o quiz" mesmo entrando com status:'completo'.
+function ehWebhookPagamento(r) { return r.origem === 'webhook-pagamento'; }
+function calcCompletos(rows) { return rows.filter((r) => !ehManual(r) && !ehWebhookPagamento(r) && (STATUS_ORD[r.status] || 1) >= STATUS_ORD.completo).length; }
 function calcPararam(rows) { return rows.length - calcCompletos(rows); }
 // "Pararam no meio" = respondeu só uma parte do quiz + inseridos manualmente
-// (a soma dos dois sempre bate com o total do card, ver calcPararam acima)
-function calcPararamParcial(rows) { return rows.filter((r) => !ehManual(r) && (STATUS_ORD[r.status] || 1) < STATUS_ORD.completo).length; }
+// + compraram sem passar pelo funil (a soma dos três bate com o total do card)
+function calcPararamParcial(rows) { return rows.filter((r) => !ehManual(r) && !ehWebhookPagamento(r) && (STATUS_ORD[r.status] || 1) < STATUS_ORD.completo).length; }
 function calcManuais(rows) { return rows.filter(ehManual).length; }
+function calcWebhookPagamento(rows) { return rows.filter(ehWebhookPagamento).length; }
 function renderKpis(rows, rowsAnteriores) {
   const box = $('#kpis'); clear(box);
   // #kpisRestante concentra os cards secundários (2 colunas), destacando só
@@ -4505,10 +4580,11 @@ function renderKpis(rows, rowsAnteriores) {
     kpiCard('Pararam no meio', nf(Math.max(0, total - completos)), 'respondeu só uma parte ou foi cadastrado manualmente',
       {
         color: 'amber', icone: 'grafico', cor: 'laranja', tendencia: tendenciaDe(calcPararam, rows, rowsAnteriores, 'baixa'),
-        leads: rows.filter((r) => ehManual(r) || (STATUS_ORD[r.status] || 1) < STATUS_ORD.completo),
+        leads: rows.filter((r) => ehManual(r) || ehWebhookPagamento(r) || (STATUS_ORD[r.status] || 1) < STATUS_ORD.completo),
         detalhes: [
           { rotulo: 'Responderam só uma parte', valor: nf(calcPararamParcial(rows)) },
           { rotulo: 'Cadastrados manualmente', valor: nf(calcManuais(rows)) },
+          { rotulo: 'Compraram sem passar pelo funil', valor: nf(calcWebhookPagamento(rows)) },
         ],
       }),
   );
@@ -4519,6 +4595,10 @@ function renderKpis(rows, rowsAnteriores) {
     destino.appendChild(kpiCard(q.nome || q.chave, nf(leadsQ.length), nAgend + ' agendaram',
       { color: 'green', icone: 'envio', cor: 'verde', tendencia: tendenciaDe((rs) => rs.filter((r) => r.call_track === q.chave).length, rows, rowsAnteriores, 'alta'), leads: leadsQ }));
   });
+  // leads que converteram direto por um pagamento, sem nunca ter passado pelo quiz
+  const compraramSemFunil = rows.filter(ehWebhookPagamento);
+  if (compraramSemFunil.length) destino.appendChild(kpiCard('Compraram sem passar pelo funil', nf(compraramSemFunil.length), 'lead criado e convertido direto pelo webhook de pagamento',
+    { color: 'green', icone: 'carteira', cor: 'verde', tendencia: tendenciaDe(calcWebhookPagamento, rows, rowsAnteriores, 'alta'), leads: compraramSemFunil }));
   // monitor do bug latente: lead marcou agendado mas sem booking_uid (Cal falhou / modo local)
   if (semBooking.length) destino.append(kpiCard('Sem código do Cal', nf(semBooking.length), 'agendaram pelo chat, mas o código de confirmação não foi salvo. Confira na sua agenda do Google/Cal se estão lá',
     { color: 'amber', icone: 'engrenagem', cor: 'cinza', leads: semBooking }));
@@ -5440,6 +5520,40 @@ $('#mhBtnRemover').onclick = async () => {
   if (r.ok) carregarConexaoMentoriaHub();
 };
 
+/* ===== Webhook de Pagamento (MAKE) — segredo GERADO pelo painel, a URL
+   completa (com o segredo) fica pronta pra copiar direto pro cenário do
+   MAKE. Ver netlify/functions/webhook-pagamento.mjs. */
+async function carregarConexaoPagamento() {
+  const estado = $('#pgEstado');
+  estado.className = 'pill parcial'; estado.textContent = 'verificando…';
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'status' }),
+  }).then((x) => x.json()).catch(() => null);
+  if (!r || !r.ok) { estado.className = 'pill parcial'; estado.textContent = 'erro ao verificar'; espelharPill(estado, 'ctPgPill'); return; }
+  const p = r.pagamento || {};
+  estado.className = 'pill ' + (p.conectado ? 'agendado' : 'parcial');
+  estado.textContent = p.conectado ? 'conectado' : 'não configurado';
+  $('#pgUrl').value = p.url || '';
+  espelharPill(estado, 'ctPgPill');
+}
+$('#pgBtnGerar').onclick = async () => {
+  if ($('#pgUrl').value && !confirm('Gerar um novo segredo invalida a URL atual — o cenário do MAKE precisa ser atualizado com a nova URL. Continuar?')) return;
+  $('#pgMsg').textContent = 'gerando…';
+  const r = await fetch('/api/conexoes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'pagamento_gerar' }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  if (r.ok) { $('#pgUrl').value = r.url; $('#pgMsg').textContent = '✓ Gerado! Cole esta URL no MAKE.'; carregarConexaoPagamento(); }
+  else $('#pgMsg').textContent = '' + (r.error || 'Erro ao gerar.');
+};
+$('#pgBtnCopiar').onclick = () => {
+  const url = $('#pgUrl').value;
+  if (!url) { $('#pgMsg').textContent = 'Gere o segredo antes de copiar.'; return; }
+  navigator.clipboard.writeText(url).catch(() => {});
+  $('#pgBtnCopiar').textContent = 'Copiado!'; setTimeout(() => $('#pgBtnCopiar').textContent = 'Copiar', 1500);
+};
+
 /* ===== Google Agenda — interface de conexão (aba Configurações → Conexões) =====
    Não é a "vitrine" de agendamento (isso é o Cal.com) — só espelha reuniões
    já confirmadas, com Meet automático. Ver netlify/_googleAgenda.mjs. */
@@ -5905,6 +6019,99 @@ $('#pfCs').addEventListener('change', (e) => { PF.cs = e.target.value; renderPos
 $('#pfProduto').addEventListener('change', (e) => { PF.produto = e.target.value; renderPosFin(); });
 $('#pfForma').addEventListener('change', (e) => { PF.forma = e.target.value; renderPosFin(); });
 $('#pfStatus').addEventListener('change', (e) => { PF.status = e.target.value; renderPosFin(); });
+
+/* --- Produtos (catálogo + vínculo com o que chega pelo webhook) --- */
+async function produtosApi(payload) {
+  return fetch('/api/produtos', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', ...payload }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+}
+function renderPosProdutos() {
+  const t = $('#ppTabela'); if (!t) return; clear(t);
+  const lista = PRODUTOS || [];
+  t.appendChild(tableHead(['Nome', 'Valor', 'Vinculado a', 'Editar', 'Excluir']));
+  const tb = el('tbody');
+  lista.forEach((p) => {
+    const tr = el('tr');
+    const aliasesTxt = (p.aliases || []).length ? p.aliases.join(', ') : '—';
+    const bEditar = el('button', 'acao-btn'); bEditar.textContent = 'Editar';
+    bEditar.onclick = async () => {
+      const resp = await promptModal({
+        titulo: 'Editar produto',
+        campos: [
+          { id: 'nome', label: 'Nome do produto', valor: p.nome, obrigatorio: true },
+          { id: 'valor', label: 'Valor (R$)', valor: String(p.valor || 0) },
+        ],
+        textoOk: 'Salvar',
+      });
+      if (!resp) return;
+      const r = await produtosApi({ action: 'editar', id: p.id, nome: resp.nome, valor: Number(String(resp.valor).replace(/\./g, '').replace(',', '.')) || 0 });
+      if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao salvar.'); return; }
+      await carregarProdutos(true); renderPosProdutos();
+    };
+    const bExcluir = el('button', 'acao-btn'); bExcluir.textContent = 'Excluir';
+    bExcluir.onclick = async () => {
+      if (!confirm('Excluir o produto "' + p.nome + '"? Vendas já registradas com esse nome não são afetadas.')) return;
+      const r = await produtosApi({ action: 'excluir', id: p.id });
+      if (!r.ok) { toast('error', 'Aviso', 'Erro ao excluir.'); return; }
+      await carregarProdutos(true); renderPosProdutos();
+    };
+    tr.append(td(p.nome, 'nome'), td(fmtBRL(p.valor)), td(aliasesTxt), td(bEditar), td(bExcluir));
+    tb.appendChild(tr);
+  });
+  if (!lista.length) { const tr = el('tr'); const c = td('Nenhum produto cadastrado ainda.'); c.colSpan = 5; c.className = 'muted-cell'; tr.appendChild(c); tb.appendChild(tr); }
+  t.appendChild(tb);
+  renderPosProdutosSemVinculo();
+}
+function renderPosProdutosSemVinculo() {
+  const box = $('#ppSemVinculo'); if (!box) return; clear(box);
+  const lista = PRODUTOS || [];
+  const conhecidos = new Set(lista.flatMap((p) => [p.nome.toLowerCase(), ...(p.aliases || []).map((a) => a.toLowerCase())]));
+  const semVinculo = [...new Set(convertidos().map((r) => vendaDe(r).produto).filter(Boolean))].filter((nome) => !conhecidos.has(nome.toLowerCase()));
+  if (!semVinculo.length) { box.appendChild(emptyState('Tudo vinculado', 'Nenhum nome de produto pendente de vínculo no momento.')); return; }
+  semVinculo.forEach((nomeExterno) => {
+    const row = el('div'); row.style.cssText = 'display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap;';
+    const label = el('span'); label.textContent = nomeExterno; label.style.cssText = 'font-weight:600;flex:1;min-width:160px;';
+    const sel = el('select'); sel.style.cssText = 'padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;cursor:pointer;min-width:200px;';
+    const o0 = el('option'); o0.value = ''; o0.textContent = '— vincular a —'; sel.appendChild(o0);
+    lista.forEach((p) => { const o = el('option'); o.value = p.id; o.textContent = p.nome; sel.appendChild(o); });
+    const oNovo = el('option'); oNovo.value = '__novo__'; oNovo.textContent = '+ Cadastrar como novo produto'; sel.appendChild(oNovo);
+    const bConfirmar = el('button', 'acao-btn'); bConfirmar.textContent = 'Vincular';
+    bConfirmar.onclick = async () => {
+      let produtoId = sel.value ? Number(sel.value) : 0;
+      if (sel.value === '__novo__') {
+        const resp = await promptModal({
+          titulo: 'Novo produto',
+          campos: [{ id: 'nome', label: 'Nome do produto', valor: nomeExterno, obrigatorio: true }, { id: 'valor', label: 'Valor (R$)', valor: '0' }],
+          textoOk: 'Cadastrar',
+        });
+        if (!resp) return;
+        const rc = await produtosApi({ action: 'criar', nome: resp.nome, valor: Number(String(resp.valor).replace(/\./g, '').replace(',', '.')) || 0 });
+        if (!rc.ok) { toast('error', 'Aviso', rc.error || 'Erro ao cadastrar.'); return; }
+        produtoId = rc.produto.id;
+      }
+      if (!produtoId) { toast('error', 'Aviso', 'Escolha um produto para vincular.'); return; }
+      const r = await produtosApi({ action: 'vincular_alias', nome_externo: nomeExterno, produto_id: produtoId });
+      if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao vincular.'); return; }
+      toast('success', 'Vinculado!', 'Da próxima vez que "' + nomeExterno + '" chegar pelo webhook, já resolve sozinho.');
+      await carregarProdutos(true); renderPosProdutos();
+    };
+    row.append(label, sel, bConfirmar);
+    box.appendChild(row);
+  });
+}
+$('#ppNovoProduto').onclick = async () => {
+  const resp = await promptModal({
+    titulo: 'Novo produto',
+    campos: [{ id: 'nome', label: 'Nome do produto', obrigatorio: true }, { id: 'valor', label: 'Valor (R$)', valor: '0' }],
+    textoOk: 'Cadastrar',
+  });
+  if (!resp) return;
+  const r = await produtosApi({ action: 'criar', nome: resp.nome, valor: Number(String(resp.valor).replace(/\./g, '').replace(',', '.')) || 0 });
+  if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao cadastrar o produto.'); return; }
+  await carregarProdutos(true); renderPosProdutos();
+};
 
 /* ===================== WHATSAPP (Evolution API) ===================== */
 let WA = { configurada: false, estado: 'nao_configurada', conversas: false, disparos: false };
