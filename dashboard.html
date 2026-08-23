@@ -66,6 +66,13 @@
      todo input/select/textarea sem "color" explícito cai no preto padrão do navegador
      (invisível em cima de fundo escuro) */
   button, input, select, textarea { font-family: inherit; color: var(--text); }
+  /* mesmo problema do lado do FUNDO: só a cor do texto herda; o fundo de um
+     select/input/textarea criado via JS sem "background" explícito cai no
+     branco padrão do navegador (caixa branca destoando do tema escuro — bug
+     real visto em produção no <select> de Atendente das tabelas). Corrige
+     na raiz pra qualquer campo, existente ou futuro, que esqueça de setar —
+     campos que já definem um fundo próprio inline continuam mandando. */
+  input, select, textarea { background: var(--surface-input); }
   input::placeholder, textarea::placeholder { color: var(--text-3); opacity: 1; }
   button, .kb-card, tr, select, input, a { transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .12s ease, opacity .15s ease; }
   button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
