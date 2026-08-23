@@ -61,7 +61,11 @@
      Anotações da equipe, Histórico) ficam menores e amarelos, nunca maiores
      que o nome do lead ali em cima. */
   #lmCorpo h2 { color: var(--brand); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
-  #lmTituloPills .pill { font-size: 9.5px; padding: 2px 7px; }
+  /* selos dentro do cabeçalho amarelo: o preenchimento "soft" de cada selo
+     (pensado pra contrastar em cima de fundo escuro) fica ilegível em cima
+     do amarelo — troca só o fundo aqui por um cinza bem claro; a cor do
+     texto de cada selo (verde/azul/etc.) continua vindo da própria classe. */
+  #lmTituloPills .pill { font-size: 9.5px; padding: 2px 7px; background: #e9e9ec; }
   /* título de cada "caixa" no Editor do Quiz (Pergunta N, nível/qualificador, roteamento) */
   .qe-titulo { color: var(--brand); }
   ::selection { background: var(--lime-soft); }
