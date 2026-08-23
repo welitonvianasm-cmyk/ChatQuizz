@@ -4479,9 +4479,6 @@ function calcPararam(rows) { return rows.length - calcCompletos(rows); }
 // (a soma dos dois sempre bate com o total do card, ver calcPararam acima)
 function calcPararamParcial(rows) { return rows.filter((r) => !ehManual(r) && (STATUS_ORD[r.status] || 1) < STATUS_ORD.completo).length; }
 function calcManuais(rows) { return rows.filter(ehManual).length; }
-function calcFuturas(rows) {
-  return pessoasAgendadas(rows.filter((r) => r.agendamento_em && new Date(r.agendamento_em).getTime() > Date.now()));
-}
 function renderKpis(rows, rowsAnteriores) {
   const box = $('#kpis'); clear(box);
   // #kpisRestante concentra os cards secundários (2 colunas), destacando só
@@ -4494,7 +4491,6 @@ function renderKpis(rows, rowsAnteriores) {
   const agendRows = rows.filter((r) => r.agendado).length;                     // linhas marcadas (inclui restart/duplicata)
   const semBooking = rows.filter((r) => r.agendado && !r.booking_uid);         // marcou mas o Cal não confirmou
   const qualificados = rows.filter((r) => r.qualificado === true).length;
-  const futurasRows = rows.filter((r) => r.agendamento_em && new Date(r.agendamento_em).getTime() > Date.now());
 
   const agendSub = pct(agendados, completos) + '% dos que completaram · pessoas (dedupe por e-mail)'
     + (agendRows > agendados ? ' · ' + nf(agendRows - agendados) + ' duplicadas ignoradas' : '');
@@ -4523,8 +4519,6 @@ function renderKpis(rows, rowsAnteriores) {
     destino.appendChild(kpiCard(q.nome || q.chave, nf(leadsQ.length), nAgend + ' agendaram',
       { color: 'green', icone: 'envio', cor: 'verde', tendencia: tendenciaDe((rs) => rs.filter((r) => r.call_track === q.chave).length, rows, rowsAnteriores, 'alta'), leads: leadsQ }));
   });
-  destino.appendChild(kpiCard('Conversas futuras', nf(pessoasAgendadas(futurasRows)), 'a partir de agora',
-    { icone: 'calendario', cor: 'azul', tendencia: tendenciaDe(calcFuturas, rows, rowsAnteriores, 'alta'), leads: futurasRows }));
   // monitor do bug latente: lead marcou agendado mas sem booking_uid (Cal falhou / modo local)
   if (semBooking.length) destino.append(kpiCard('Sem código do Cal', nf(semBooking.length), 'agendaram pelo chat, mas o código de confirmação não foi salvo. Confira na sua agenda do Google/Cal se estão lá',
     { color: 'amber', icone: 'engrenagem', cor: 'cinza', leads: semBooking }));
