@@ -22,7 +22,7 @@ const TABLE = 'diag_instagram_leads';
 
 // colunas que o dashboard precisa (PII fica protegida pelo token; texto longo fica de fora)
 const COLS = [
-  'lead_ref', 'status', 'nome', 'email', 'whatsapp', 'uf',
+  'lead_ref', 'status', 'origem', 'nome', 'email', 'whatsapp', 'uf',
   'instagram', 'nicho', 'nicho_detectado', 'seguidores', 'dificuldade',
   'renda', 'lead_score', 'qualificado', 'call_track', 'vendedor',
   'agendado', 'agendamento_em', 'booking_uid', 'atendente', 'agendamento_status', 'equipe_json',

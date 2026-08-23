@@ -4464,8 +4464,17 @@ function tendenciaPill(t) {
   p.textContent = seta + ' ' + Math.abs(delta) + '%';
   return p;
 }
-function calcCompletos(rows) { return rows.filter((r) => (STATUS_ORD[r.status] || 1) >= STATUS_ORD.completo).length; }
+// lead cadastrado manualmente pelo painel (botão "+ Novo Lead"/"Novo agendamento")
+// nunca passou pelo quiz de verdade — não conta como "completou o quiz"
+// mesmo já entrando com status:'completo' (é só o valor técnico usado pra
+// liberar o cadastro direto no funil, não reflete uma resposta real).
+function ehManual(r) { return r.origem === 'painel-crm'; }
+function calcCompletos(rows) { return rows.filter((r) => !ehManual(r) && (STATUS_ORD[r.status] || 1) >= STATUS_ORD.completo).length; }
 function calcPararam(rows) { return rows.length - calcCompletos(rows); }
+// "Pararam no meio" = respondeu só uma parte do quiz + inseridos manualmente
+// (a soma dos dois sempre bate com o total do card, ver calcPararam acima)
+function calcPararamParcial(rows) { return rows.filter((r) => !ehManual(r) && (STATUS_ORD[r.status] || 1) < STATUS_ORD.completo).length; }
+function calcManuais(rows) { return rows.filter(ehManual).length; }
 function calcFuturas(rows) {
   return pessoasAgendadas(rows.filter((r) => r.agendamento_em && new Date(r.agendamento_em).getTime() > Date.now()));
 }
@@ -4492,9 +4501,16 @@ function renderKpis(rows, rowsAnteriores) {
     kpiCard('Agendaram conversa', nf(agendados), agendSub,
       { icone: 'calendario', cor: 'azul', tendencia: tendenciaDe(pessoasAgendadas, rows, rowsAnteriores, 'alta'), leads: rows.filter((r) => r.agendado) }),
     kpiCard('Completaram o quiz', nf(completos), pct(completos, total) + '% do total',
-      { color: 'blue', icone: 'grafico', cor: 'azul', tendencia: tendenciaDe(calcCompletos, rows, rowsAnteriores, 'alta'), leads: rows.filter((r) => (STATUS_ORD[r.status] || 1) >= STATUS_ORD.completo) }),
-    kpiCard('Pararam no meio', nf(Math.max(0, total - completos)), 'responderam só uma parte',
-      { color: 'amber', icone: 'grafico', cor: 'laranja', tendencia: tendenciaDe(calcPararam, rows, rowsAnteriores, 'baixa'), leads: rows.filter((r) => (STATUS_ORD[r.status] || 1) < STATUS_ORD.completo) }),
+      { color: 'blue', icone: 'grafico', cor: 'azul', tendencia: tendenciaDe(calcCompletos, rows, rowsAnteriores, 'alta'), leads: rows.filter((r) => !ehManual(r) && (STATUS_ORD[r.status] || 1) >= STATUS_ORD.completo) }),
+    kpiCard('Pararam no meio', nf(Math.max(0, total - completos)), 'respondeu só uma parte ou foi cadastrado manualmente',
+      {
+        color: 'amber', icone: 'grafico', cor: 'laranja', tendencia: tendenciaDe(calcPararam, rows, rowsAnteriores, 'baixa'),
+        leads: rows.filter((r) => ehManual(r) || (STATUS_ORD[r.status] || 1) < STATUS_ORD.completo),
+        detalhes: [
+          { rotulo: 'Responderam só uma parte', valor: nf(calcPararamParcial(rows)) },
+          { rotulo: 'Cadastrados manualmente', valor: nf(calcManuais(rows)) },
+        ],
+      }),
   );
   // 1 card por qualificador configurado (substitui o antigo card fixo "WhatsApp R$15 mil+")
   qualificadoresOuFallback().forEach((q) => {
@@ -4559,7 +4575,7 @@ function renderFunnel(rows) {
   const stages = [
     { name: '1 · Deixaram o WhatsApp', n: reached('parcial') },
     { name: '2 · Deixaram o e-mail', n: reached('contato') },
-    { name: '3 · Completaram o quiz', n: reached('completo') },
+    { name: '3 · Completaram o quiz', n: calcCompletos(rows) },   // exclui cadastro manual (nunca passou pelo quiz de verdade)
     { name: '4 · Agendaram conversa', n: pessoasAgendadas(rows) },
   ];
   stages.forEach((st, i) => {
