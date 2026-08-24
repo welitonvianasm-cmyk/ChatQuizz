@@ -20,7 +20,7 @@
  * este É o propósito da chamada, então erros reais retornam status de
  * erro de verdade — o MAKE precisa saber se falhou pra poder reenviar.
  */
-import { lerConexaoWebhookPagamento } from '../_conexoes.mjs';
+import { lerConexaoWebhookPagamento, dispararMentoriaHub } from '../_conexoes.mjs';
 import { moverNoKanban } from '../_kanban.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
@@ -179,6 +179,16 @@ export default async (req) => {
           }),
         });
       } catch { /* alerta é melhor-esforço; a venda já foi salva */ }
+    }
+
+    /* espelha a conversão pro MentoriaHub conectado (se tiver) — só o
+       evento 'conversao', fire-and-forget; lá cai em Alunos → Via Webhook
+       pra aprovação, sem depender do Lead nem do módulo Vendas de lá */
+    if (!duplicado) {
+      dispararMentoriaHub(contaId, 'conversao', {
+        nome: lead.nome || nome || '', email: lead.email || email || '', telefone: lead.whatsapp || telefone || '',
+        produto: produtoFinal, valor, formaPagamento, chatquizzLeadRef: lead.lead_ref,
+      });
     }
 
     return json({ ok: true, lead_ref: lead.lead_ref, criado, convertido_agora: !jaConvertido, produto_vinculado: vinculado, duplicado });
