@@ -18,6 +18,8 @@
  * pra um agente externo de SDR/IA poder responder por fora do painel.
  * Sem essa env, esse encaminhamento simplesmente não acontece.
  */
+import { marcarPrimeiroAtendimento } from '../_kpi.mjs';
+
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
@@ -51,8 +53,21 @@ export default async (req) => {
       const jid = String(d.key.remoteJid || '');
       if (!jid.endsWith('@s.whatsapp.net')) continue;      // só conversas 1:1 (ignora grupos)
       const telefone = jid.replace(/\D/g, '');
-      const texto = (d.message && (d.message.conversation || (d.message.extendedTextMessage && d.message.extendedTextMessage.text))) || '';
-      if (!telefone || !texto) continue;
+      // tipo da mensagem (formato da resposta do lead) — texto tem o conteúdo
+      // extraído normalmente; os demais tipos são gravados sem texto (só a
+      // contagem por tipo importa pro KPI, não o conteúdo em si por enquanto).
+      let texto = '';
+      let tipo = 'outro';
+      if (d.message) {
+        if (d.message.conversation) { texto = d.message.conversation; tipo = 'texto'; }
+        else if (d.message.extendedTextMessage && d.message.extendedTextMessage.text) { texto = d.message.extendedTextMessage.text; tipo = 'texto'; }
+        else if (d.message.audioMessage) tipo = 'audio';
+        else if (d.message.imageMessage) tipo = 'imagem';
+        else if (d.message.documentMessage) tipo = 'documento';
+        else if (d.message.videoMessage) tipo = 'video';
+        else if (d.message.stickerMessage) tipo = 'figurinha';   // sticker é campo próprio no Baileys, não cai em imageMessage
+      }
+      if (!telefone || !d.message) continue;   // antes também exigia texto, o que descartava áudio/mídia antes até de gravar
       const direcao = d.key.fromMe ? 'out' : 'in';
       const wa_id = String(d.key.id || '');
 
@@ -70,12 +85,16 @@ export default async (req) => {
 
       await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
         method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
-        body: JSON.stringify({ conta_id: contaId, telefone, lead_ref, direcao, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out' }),
+        body: JSON.stringify({ conta_id: contaId, telefone, lead_ref, direcao, tipo, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out' }),
       });
+      if (lead_ref) marcarPrimeiroAtendimento(contaId, lead_ref, 'conversa');
 
-      // encaminha mensagem recebida pra um agente externo (SDR/IA), se
-      // configurado — best-effort, nunca atrapalha o webhook em si
-      if (direcao === 'in' && SDR_WEBHOOK_URL) {
+      // encaminha mensagens de TEXTO recebidas pro agente externo (SDR/IA),
+      // se configurado — best-effort, nunca atrapalha o webhook em si.
+      // Continua exigindo `texto` aqui de propósito: o agente ainda só sabe
+      // processar texto, e antes dessa mudança áudio/mídia nunca chegava
+      // até aqui mesmo (era descartado antes de gravar em wa_mensagens).
+      if (direcao === 'in' && texto && SDR_WEBHOOK_URL) {
         fetch(SDR_WEBHOOK_URL, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ telefone, texto, wa_id, contaId, lead_ref }),

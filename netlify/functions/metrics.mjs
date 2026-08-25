@@ -34,6 +34,7 @@ const COLS = [
   'reel_views', 'reel_likes', 'reel_comments',
   'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'referrer',
   'created_at', 'updated_at',
+  'primeiro_atendimento_em', 'respostas_json',
 ].join(',');
 
 export default async (req) => {
@@ -91,7 +92,7 @@ export default async (req) => {
          SELECT todo grupo anterior ao que realmente faltava, mesmo já
          existindo no banco (ex.: 1 coluna nova no fim da lista sumia com
          atendente/etapa/equipe_json etc. do painel inteiro). */
-      const RECUOS = [',venda_json', ',etapa', ',resultado,resultado_motivo,resultado_em,resultado_por', ',equipe_json', ',atendente,agendamento_status', ',qualificador,nivel_consciencia,roteamento_tipo', ',agendamento_origem', ',google_event_id'];
+      const RECUOS = [',venda_json', ',etapa', ',resultado,resultado_motivo,resultado_em,resultado_por', ',equipe_json', ',atendente,agendamento_status', ',qualificador,nivel_consciencia,roteamento_tipo', ',agendamento_origem', ',google_event_id', ',primeiro_atendimento_em', ',respostas_json'];
       for (let tentativa = 0; tentativa < RECUOS.length; tentativa++) {
         if (res.ok || res.status !== 400) break;
         const errText = await res.clone().text().catch(() => '');

@@ -404,8 +404,10 @@
   .kpi .k-num.green { color: var(--green); }
   .kpi .k-num.blue { color: var(--blue); }
   .kpi .k-num.amber { color: var(--amber); }
+  .kpi .k-num.red { color: var(--red); }
   .kpis-2col { grid-template-columns: 1fr 1fr; }
-  #kpis { grid-template-columns: repeat(4, 1fr); }
+  #kpisGrupo1, #kpisGrupo2 { grid-template-columns: repeat(5, 1fr); }
+  #kpisGrupo3 { grid-template-columns: repeat(4, 1fr); }
   #kpisRestante { grid-template-columns: 1fr 1fr; }
 
   /* ===== Entrada de leads — dia × hora (gráfico empilhado, sem lib) ===== */
@@ -527,7 +529,6 @@
     .kpis { grid-template-columns: repeat(2, 1fr); }
     .grid2 { grid-template-columns: 1fr; }
     .bc-row { grid-template-columns: 100px 1fr auto; }
-    #kpis, #kpisRestante { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 919px) and (min-width: 641px) {
     /* tablet: sidebar sempre recolhida (só ícones) pra sobrar mais espaço de conteúdo */
@@ -600,7 +601,6 @@
     .topsearch { flex: 1 1 100%; order: 5; }
     .fbar select, .fbar .fmais { max-width: none; flex: 1 1 45%; }
     .kpis { grid-template-columns: 1fr 1fr; gap: 9px; }
-    #kpis, #kpisRestante { grid-template-columns: 1fr 1fr; gap: 9px; }
     .kpi .k-num { font-size: 22px; }
     .panel { padding: 14px; border-radius: 13px; }
     .kb-col { min-width: 82vw; max-width: 82vw; }
@@ -1201,6 +1201,34 @@
     </div>
   </div>
 
+  <!-- "+ INSERIR KPI" — KPIs opcionais da Visão Geral (Agendamento + 1 painel por pergunta do quiz) -->
+  <div id="modalInserirKpi" style="display:none;position:fixed;inset:0;z-index:85;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div class="modal-card" style="max-width:480px;width:100%;max-height:90vh;overflow:auto;padding:22px 24px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+        <h2 style="flex:1;margin:0;font-size:16px;">Inserir KPI</h2>
+        <button class="acao-btn" id="kikFechar" title="Fechar">✕</button>
+      </div>
+      <div class="sub" style="margin:0 0 14px;">Escolha os KPIs opcionais que aparecem na seção "Personalizado", no fim da Visão Geral.</div>
+
+      <label style="display:flex;align-items:center;gap:9px;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;margin-bottom:14px;">
+        <input type="checkbox" id="kikAgendamento" style="width:16px;height:16px;">
+        <div>
+          <b style="font-size:13px;">Agendamento</b>
+          <div class="sub" style="margin:2px 0 0;">Agendaram conversa, conversas futuras/passadas, concluídas/canceladas e conversão por atendente.</div>
+        </div>
+      </label>
+
+      <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);margin-bottom:6px;">Perguntas do quiz — 1 painel por pergunta marcada</div>
+      <div id="kikPerguntas" style="display:grid;gap:8px;max-height:280px;overflow:auto;margin-bottom:14px;"></div>
+
+      <div class="muted-cell" id="kikStatus" style="margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button id="kikCancelar" style="flex:1;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface-card-2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;">Cancelar</button>
+        <button id="kikSalvar" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- DASHBOARD -->
   <div id="app">
     <div id="impersonarBar" hidden style="margin-left:225px;padding:10px clamp(20px,3vw,48px);background:var(--warning-bg);color:var(--warning-text);font-size:13px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -1336,14 +1364,20 @@
     </div>
 
     <div id="tabFunil">
-    <div class="kpis kpis-hero" id="kpis"></div>
-
-    <div class="panel" id="pAgendaram" hidden>
-      <h2>Agendaram conversas</h2>
-      <div class="sub">Resumo dos Encontros marcados pelo quiz</div>
-      <div class="kpis" id="agStats" style="margin-bottom:0;"></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+      <button class="acao-btn" id="kpiInserirBtn">+ Inserir KPI</button>
     </div>
 
+    <!-- Grupo 1 — Funil do quiz -->
+    <div class="kpis kpis-hero" id="kpisGrupo1"></div>
+
+    <!-- Grupo 2 — Atendimento e resultado -->
+    <div class="kpis" id="kpisGrupo2"></div>
+
+    <!-- Grupo 3 — Financeiro e resposta -->
+    <div class="kpis" id="kpisGrupo3"></div>
+
+    <!-- Grupo 4 — Entrada de leads (dia e horário) -->
     <div class="panel" id="pEntradaDiaHora">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
         <div>
@@ -1372,6 +1406,37 @@
       <div class="dh-legenda"><span>00h</span><span class="dh-gradiente"></span><span>23h</span></div>
       <div class="sub" style="margin-top:18px;font-weight:700;">Por horário (soma do período) <span id="entradaPico" style="font-weight:400;"></span></div>
       <div id="entradaPorHora"></div>
+    </div>
+
+    <!-- Grupo 5 — Top estados / Origem dos leads -->
+    <div class="grid2" id="pDiaUF">
+      <div class="panel grid2-item">
+        <h2>Leads por dia</h2>
+        <div class="sub">Últimos 7 dias, dia a dia · a 1ª barra é o acumulado de tudo que entrou antes (este quadro não muda com o filtro de período)</div>
+        <div id="perday"></div>
+      </div>
+      <div class="panel grid2-item">
+        <h2>Top estados (UF)</h2>
+        <div class="sub">Pelo DDD do WhatsApp</div>
+        <div id="uf"></div>
+      </div>
+    </div>
+
+    <!-- Origem dos leads (UTM) — reativado junto com os Links de Rastreio -->
+    <div class="panel" id="pOrigemUtm" hidden>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div>
+          <h2>Origem dos leads (UTM)</h2>
+          <div class="sub">De onde vêm os leads e quais origens mais agendam</div>
+        </div>
+        <div class="seg" id="utmDim">
+          <button data-d="utm_source" class="on">Source</button>
+          <button data-d="utm_campaign">Campanha</button>
+          <button data-d="utm_medium">Medium</button>
+          <button data-d="utm_content">Conteúdo</button>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table id="utmTable"></table></div>
     </div>
 
     <div class="kpis kpis-2col" id="kpisRestante"></div>
@@ -1421,35 +1486,17 @@
       <div id="desafio"></div>
     </div>
 
-    <div class="grid2" id="pDiaUF">
-      <div class="panel grid2-item">
-        <h2>Leads por dia</h2>
-        <div class="sub">Últimos 7 dias, dia a dia · a 1ª barra é o acumulado de tudo que entrou antes (este quadro não muda com o filtro de período)</div>
-        <div id="perday"></div>
-      </div>
-      <div class="panel grid2-item">
-        <h2>Top estados (UF)</h2>
-        <div class="sub">Pelo DDD do WhatsApp</div>
-        <div id="uf"></div>
-      </div>
+    <!-- ===== PERSONALIZADO — opcional, escolhido em "+ Inserir KPI" ===== -->
+    <h2 style="margin:24px 0 2px;font-size:15.5px;font-weight:700;display:flex;align-items:center;gap:8px;">Personalizado</h2>
+    <div class="sub" style="margin-bottom:14px;">KPIs opcionais — ligue ou desligue em <b>"+ Inserir KPI"</b>, no topo desta tela.</div>
+
+    <div class="panel" id="pAgendaram" hidden>
+      <h2>Agendaram conversas</h2>
+      <div class="sub">Resumo dos Encontros marcados pelo quiz</div>
+      <div class="kpis" id="agStats" style="margin-bottom:0;"></div>
     </div>
 
-    <!-- Origem dos leads (UTM) — reativado junto com os Links de Rastreio -->
-    <div class="panel" id="pOrigemUtm" hidden>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-        <div>
-          <h2>Origem dos leads (UTM)</h2>
-          <div class="sub">De onde vêm os leads e quais origens mais agendam</div>
-        </div>
-        <div class="seg" id="utmDim">
-          <button data-d="utm_source" class="on">Source</button>
-          <button data-d="utm_campaign">Campanha</button>
-          <button data-d="utm_medium">Medium</button>
-          <button data-d="utm_content">Conteúdo</button>
-        </div>
-      </div>
-      <div class="tbl-wrap"><table id="utmTable"></table></div>
-    </div>
+    <div id="kpisPersonalizados"></div>
 
     <div class="panel tem-banner" id="pUpcoming" hidden>
       <h2>Leads Agendados</h2>
@@ -2121,7 +2168,9 @@ async function doLogin(token) {
     render();
     carregarPrioridade();
     carregarRendaCfg();   // faixas de renda atuais do quiz (pro quadro de renda)
-    carregarQualificadoresOrigem();   // qualificadores + links de rastreio (pro filtro de Origem)
+    carregarQualificadoresOrigem();   // qualificadores + links de rastreio (pro filtro de Origem) + perguntas do quiz
+    carregarWaMetricas();      // taxa/tempo de resposta + tipo de resposta no WhatsApp (Grupo 3)
+    carregarKpisConfig();      // Agendamento opcional + painéis por pergunta escolhidos ("+ Inserir KPI")
     aplicarPerfil();
     carregarAlertas(true);   // alertas pendentes → popup obrigatório a cada acesso
     iniciarSync();           // sincronização automática entre atendentes (sem F5)
@@ -2366,7 +2415,7 @@ function render() {
 const SECTIONS = {
   /* Visão Geral concentra TODOS os quadros analíticos; cada módulo fica
      só com o seu card essencial */
-  geral: ['#kpis', '#pAgendaram', '#pEntradaDiaHora', '#kpisRestante', '#pFunil', '#pNicho', '#pIdadeAreas', '#pDiaUF', '#pOrigemUtm', '#pDestino', '#pPorAtendente'],
+  geral: ['#kpisGrupo1', '#kpisGrupo2', '#kpisGrupo3', '#pAgendaram', '#pEntradaDiaHora', '#kpisRestante', '#pFunil', '#pNicho', '#pIdadeAreas', '#pDiaUF', '#pOrigemUtm', '#pDestino', '#pPorAtendente', '#kpisPersonalizados'],
   agendaDash: ['#pAgendaDash'],      // só o Calendário
   agendados: ['#pUpcoming'],         // só Leads Agendados
   reunioes: ['#pReunioes'],          // reuniões por data + presença
@@ -2469,6 +2518,9 @@ function navGo(sec) {
   if (sec === 'disparos') carregarDisparos();
   if (sec === 'agendaDash') { renderAgendaCal(); renderAgDia(); }
   if (sec === 'reunioes') renderReunioes();
+  // navGo() reexibe #pAgendaram/#pPorAtendente sozinho (fazem parte de SECTIONS.geral)
+  // toda vez que entra em "geral" — reaplica o toggle de Agendamento por cima
+  if (sec === 'geral') renderKpis(ALL.filter(inRange), periodoAnterior() ? ALL.filter(inPeriodoAnterior) : null);
   if (sec === 'quadro' && !KB_CARREGADO) kbCarregar();
   if (sec === 'posConv' || sec === 'posFin' || sec === 'posProdutos') carregarProdutos();   // catálogo pro popup/filtros
   if (sec === 'posConv') renderPosConv();
@@ -2577,8 +2629,8 @@ const DS_PATHS = {
   kanban: '<path d="M6 5v11"/><path d="M12 5v6"/><path d="M18 5v14"/>',
   lista: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
 };
-const DS_CORES = { azul: 'var(--blue)', verde: 'var(--green)', laranja: 'var(--amber)', lima: 'var(--lime-icon)', cinza: 'var(--text-muted)', roxo: 'var(--chart)' };
-const DS_CORES_SOFT = { azul: 'var(--blue-soft)', verde: 'var(--green-soft)', laranja: 'var(--amber-soft)', lima: 'var(--lime-soft)', cinza: 'var(--surface-card-2)', roxo: 'var(--chart-soft)' };
+const DS_CORES = { azul: 'var(--blue)', verde: 'var(--green)', laranja: 'var(--amber)', lima: 'var(--lime-icon)', cinza: 'var(--text-muted)', roxo: 'var(--chart)', vermelho: 'var(--red)' };
+const DS_CORES_SOFT = { azul: 'var(--blue-soft)', verde: 'var(--green-soft)', laranja: 'var(--amber-soft)', lima: 'var(--lime-soft)', cinza: 'var(--surface-card-2)', roxo: 'var(--chart-soft)', vermelho: 'var(--red-soft)' };
 const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verde · Vendas laranja · Usuários lima · Config cinza · gráficos roxo claro) */
   pFunil: ['grafico', 'roxo'], pRenda: ['carteira', 'verde'], pNicho: ['grafico', 'roxo'],
   pIdadeAreas: ['grafico', 'roxo'], pDiaUF: ['grafico', 'roxo'], pEntradaDiaHora: ['grafico', 'roxo'], pOrigemUtm: ['grafico', 'roxo'], pDestino: ['envio', 'azul'],
@@ -4523,6 +4575,146 @@ function tendenciaPill(t) {
   p.textContent = seta + ' ' + Math.abs(delta) + '%';
   return p;
 }
+/* ===== Visão Geral — helpers de cálculo dos 5 grupos padrão de KPI ===== */
+function perdidos() { return ALL.filter((r) => r.resultado === 'perdido'); }
+function calcConvertidosRows(rows) { return rows.filter((r) => r.resultado === 'convertido'); }
+function calcPerdidosRows(rows) { return rows.filter((r) => r.resultado === 'perdido'); }
+// "Em atendimento" = estado ATUAL (ainda ativo + já tem atendente) — não
+// precisa de dado novo. Diferente de "Leads Atendidos" (cumulativo, ver baixo).
+function calcEmAtendimentoRows(rows) { return rows.filter((r) => !r.resultado && String(r.atendente || '').trim()); }
+// "Leads Atendidos" = todo lead que JÁ teve 1º atendimento alguma vez
+// (atribuição de atendente OU 1ª conversa real no WhatsApp, o que vier
+// primeiro — ver netlify/_kpi.mjs). Cumulativo: continua contando mesmo
+// que hoje já esteja convertido/perdido. Mesma base do KPI de tempo abaixo.
+function calcLeadsAtendidosRows(rows) { return rows.filter((r) => r.primeiro_atendimento_em); }
+function calcTempoAtendimentoMin(rows) {
+  const deltas = rows.filter((r) => r.primeiro_atendimento_em && r.created_at)
+    .map((r) => (new Date(r.primeiro_atendimento_em) - new Date(r.created_at)) / 60000)
+    .filter((min) => isFinite(min) && min >= 0);
+  return deltas.length ? Math.round(deltas.reduce((s, v) => s + v, 0) / deltas.length) : null;
+}
+function calcTicketMedio(rows) {
+  const convs = calcConvertidosRows(rows);
+  const tot = convs.reduce((s, r) => s + (Number(vendaDe(r).valor) || 0), 0);
+  return convs.length ? tot / convs.length : 0;
+}
+function calcTempoConversaoDias(rows) {
+  const deltas = calcConvertidosRows(rows)
+    .filter((r) => r.resultado_em && r.created_at)
+    .map((r) => (new Date(r.resultado_em) - new Date(r.created_at)) / 86400000)
+    .filter((d) => isFinite(d) && d >= 0);
+  return deltas.length ? deltas.reduce((s, v) => s + v, 0) / deltas.length : null;
+}
+function fmtDuracaoMin(min) {
+  if (min == null) return '—';
+  if (min < 60) return Math.round(min) + ' min';
+  const h = min / 60;
+  if (h < 24) return h.toFixed(1) + 'h';
+  return (h / 24).toFixed(1) + ' dias';
+}
+function fmtDias(d) { return d == null ? '—' : d.toFixed(1) + ' dias'; }
+
+/* ===== Métricas de resposta no WhatsApp (endpoint próprio, não entra no
+   filtro de período do topo — mesmo espírito do "Leads por dia") ===== */
+let WA_METRICAS = null;
+async function carregarWaMetricas() {
+  const r = await fetch('/api/wa-metricas', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '' }),
+  }).then((x) => x.json()).catch(() => null);
+  WA_METRICAS = (r && r.ok) ? r : { respondeu: { total: 0, responderam: 0, taxa: 0, tempoMedioMin: null }, tipos: {} };
+  render();
+}
+
+/* ===== Configuração dos KPIs personalizados (Agendamento opcional +
+   painéis por pergunta do quiz) — por conta, ver kpis-config.mjs ===== */
+let KPIS_CONFIG = { agendamentoAtivo: true, perguntasAtivas: [] };
+async function carregarKpisConfig() {
+  const r = await fetch('/api/kpis-config', { headers: { 'x-dash-token': localStorage.getItem(TKEY) || '' } }).then((x) => x.json()).catch(() => null);
+  if (r && r.ok) KPIS_CONFIG = { agendamentoAtivo: !!r.agendamentoAtivo, perguntasAtivas: r.perguntasAtivas || [] };
+  render();
+}
+/* liga/desliga o grupo de Agendamento (hero + #pAgendaram + #pPorAtendente)
+   e renderiza os painéis por pergunta escolhidos — chamado toda vez que a
+   Visão Geral atualiza (mesmo esquema de #pDestino/#pOrigemUtm: SECTIONS já
+   desconde tudo, isso aqui só reforça o estado real por cima). */
+function aplicarKpisPersonalizados(rows) {
+  // "Agendaram conversa" já é o 1º card dentro de #pAgendaram (renderAgendaram())
+  const ag = $('#pAgendaram'); if (ag) ag.hidden = !KPIS_CONFIG.agendamentoAtivo;
+  const pa = $('#pPorAtendente'); if (pa) pa.hidden = !KPIS_CONFIG.agendamentoAtivo;
+  renderKpisPersonalizados(rows);
+}
+function renderKpisPersonalizados(rows) {
+  const box = $('#kpisPersonalizados'); if (!box) return; clear(box);
+  KPIS_CONFIG.perguntasAtivas.forEach((perguntaId) => {
+    const pergunta = (QUIZ_PERGUNTAS_CACHE || []).find((p) => p.id === perguntaId);
+    if (pergunta) box.appendChild(renderPainelPergunta(pergunta, rows));
+  });
+}
+/* painel genérico "1 por pergunta" — mesmo espírito visual do painel
+   "Renda familiar" (que é fixo numa coluna específica do lead), só que
+   genérico pra qualquer pergunta cadastrada, lendo respostas_json. */
+function renderPainelPergunta(pergunta, rows) {
+  const panel = el('div', 'panel grid2-item');
+  const h2 = el('h2'); h2.textContent = pergunta.q; panel.appendChild(h2);
+  const sub = el('div', 'sub'); sub.textContent = 'Contagem por resposta · KPI personalizado'; panel.appendChild(sub);
+  const contagem = new Map();
+  (pergunta.opts || []).forEach((o) => contagem.set(o.t, 0));
+  rows.forEach((r) => {
+    let respostas = null;
+    try { respostas = JSON.parse(r.respostas_json || ''); } catch { /* sem resposta */ }
+    if (!respostas) return;
+    const v = respostas[pergunta.id];
+    const indices = Array.isArray(v) ? v : (v != null ? [v] : []);
+    indices.forEach((i) => {
+      const opt = pergunta.opts && pergunta.opts[i];
+      if (opt) contagem.set(opt.t, (contagem.get(opt.t) || 0) + 1);
+    });
+  });
+  const items = [...contagem.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
+  const corpo = el('div'); panel.appendChild(corpo);
+  barChart(corpo, items);
+  return panel;
+}
+
+/* ===== Modal "+ Inserir KPI" ===== */
+function abrirModalInserirKpi() {
+  $('#kikAgendamento').checked = !!KPIS_CONFIG.agendamentoAtivo;
+  const box = $('#kikPerguntas'); clear(box);
+  if (!QUIZ_PERGUNTAS_CACHE.length) {
+    const vazio = el('div', 'muted-cell'); vazio.textContent = 'Nenhuma pergunta cadastrada no Editor do Quiz ainda.';
+    box.appendChild(vazio);
+  }
+  QUIZ_PERGUNTAS_CACHE.forEach((p) => {
+    const label = el('label');
+    label.style.cssText = 'display:flex;align-items:center;gap:9px;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;cursor:pointer;font-size:12.5px;';
+    const chk = el('input'); chk.type = 'checkbox'; chk.value = p.id; chk.style.cssText = 'width:15px;height:15px;flex-shrink:0;';
+    chk.checked = KPIS_CONFIG.perguntasAtivas.includes(p.id);
+    label.append(chk, document.createTextNode(p.q));
+    box.appendChild(label);
+  });
+  $('#kikStatus').textContent = '';
+  $('#modalInserirKpi').style.display = 'flex';
+}
+function fecharModalInserirKpi() { $('#modalInserirKpi').style.display = 'none'; }
+$('#kpiInserirBtn').onclick = abrirModalInserirKpi;
+$('#kikFechar').onclick = fecharModalInserirKpi;
+$('#kikCancelar').onclick = fecharModalInserirKpi;
+$('#modalInserirKpi').addEventListener('click', (e) => { if (e.target === $('#modalInserirKpi')) fecharModalInserirKpi(); });
+$('#kikSalvar').onclick = async () => {
+  const perguntasAtivas = [...$('#kikPerguntas').querySelectorAll('input[type=checkbox]:checked')].map((i) => i.value);
+  const agendamentoAtivo = $('#kikAgendamento').checked;
+  $('#kikStatus').textContent = 'salvando…';
+  const r = await fetch('/api/kpis-config', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', agendamentoAtivo, perguntasAtivas }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+  if (!r.ok) { $('#kikStatus').textContent = r.error || 'Erro ao salvar.'; return; }
+  KPIS_CONFIG = { agendamentoAtivo, perguntasAtivas };
+  fecharModalInserirKpi();
+  render();
+};
+
 // lead cadastrado manualmente pelo painel (botão "+ Novo Lead"/"Novo agendamento")
 // nunca passou pelo quiz de verdade — não conta como "completou o quiz"
 // mesmo já entrando com status:'completo' (é só o valor técnico usado pra
@@ -4540,26 +4732,17 @@ function calcPararamParcial(rows) { return rows.filter((r) => !ehManual(r) && !e
 function calcManuais(rows) { return rows.filter(ehManual).length; }
 function calcWebhookPagamento(rows) { return rows.filter(ehWebhookPagamento).length; }
 function renderKpis(rows, rowsAnteriores) {
-  const box = $('#kpis'); clear(box);
-  // #kpisRestante concentra os cards secundários (2 colunas), destacando só
-  // o de "Total de leads" na linha de cima — mesma organização do quiz-suavitatis
-  const restante = $('#kpisRestante'); if (restante) clear(restante);
-  const destino = restante || box;
   const total = rows.length;
   const completos = calcCompletos(rows);
-  const agendados = pessoasAgendadas(rows);                                    // pessoas distintas c/ booking confirmado
-  const agendRows = rows.filter((r) => r.agendado).length;                     // linhas marcadas (inclui restart/duplicata)
   const semBooking = rows.filter((r) => r.agendado && !r.booking_uid);         // marcou mas o Cal não confirmou
-  const qualificados = rows.filter((r) => r.qualificado === true).length;
 
-  const agendSub = pct(agendados, completos) + '% dos que completaram · pessoas (dedupe por e-mail)'
-    + (agendRows > agendados ? ' · ' + nf(agendRows - agendados) + ' duplicadas ignoradas' : '');
-
-  box.append(
+  /* ---------- Grupo 1 — Funil do quiz ---------- */
+  const g1 = $('#kpisGrupo1'); clear(g1);
+  const emAtend = calcEmAtendimentoRows(rows);
+  const leadsAtendidosRows1 = rows.filter((r) => r.primeiro_atendimento_em);
+  g1.append(
     kpiCard('Total de leads', nf(total), 'entraram no quiz',
-      { hero: true, featured: true, icone: 'usuarios', cor: 'lima', tendencia: tendenciaDe((rs) => rs.length, rows, rowsAnteriores, 'alta'), leads: rows }),
-    kpiCard('Agendaram conversa', nf(agendados), agendSub,
-      { icone: 'calendario', cor: 'azul', tendencia: tendenciaDe(pessoasAgendadas, rows, rowsAnteriores, 'alta'), leads: rows.filter((r) => r.agendado) }),
+      { icone: 'usuarios', cor: 'lima', tendencia: tendenciaDe((rs) => rs.length, rows, rowsAnteriores, 'alta'), leads: rows }),
     kpiCard('Completaram o quiz', nf(completos), pct(completos, total) + '% do total',
       { color: 'blue', icone: 'grafico', cor: 'azul', tendencia: tendenciaDe(calcCompletos, rows, rowsAnteriores, 'alta'), leads: rows.filter((r) => !ehManual(r) && (STATUS_ORD[r.status] || 1) >= STATUS_ORD.completo) }),
     kpiCard('Pararam no meio', nf(Math.max(0, total - completos)), 'respondeu só uma parte ou foi cadastrado manualmente',
@@ -4572,7 +4755,52 @@ function renderKpis(rows, rowsAnteriores) {
           { rotulo: 'Compraram sem passar pelo funil', valor: nf(calcWebhookPagamento(rows)) },
         ],
       }),
+    kpiCard('Em atendimento', nf(emAtend.length), 'ativos e já com atendente',
+      { icone: 'conversa', cor: 'azul', tendencia: tendenciaDe((rs) => calcEmAtendimentoRows(rs).length, rows, rowsAnteriores, 'alta'), leads: emAtend }),
+    kpiCard('Tempo até 1º atendimento', fmtDuracaoMin(calcTempoAtendimentoMin(rows)), 'da entrada até o 1º contato (WhatsApp ou atribuição)',
+      { icone: 'raio', cor: 'laranja', leads: leadsAtendidosRows1 }),
   );
+
+  /* ---------- Grupo 2 — Atendimento e resultado ---------- */
+  const g2 = $('#kpisGrupo2'); clear(g2);
+  const convRows = calcConvertidosRows(rows);
+  const perdRows = calcPerdidosRows(rows);
+  const leadsAtendidosRows2 = rows.filter((r) => r.primeiro_atendimento_em);
+  g2.append(
+    kpiCard('Leads Atendidos', nf(leadsAtendidosRows2.length), 'já tiveram 1º atendimento alguma vez',
+      { icone: 'usuarios', cor: 'lima', tendencia: tendenciaDe((rs) => rs.filter((r) => r.primeiro_atendimento_em).length, rows, rowsAnteriores, 'alta'), leads: leadsAtendidosRows2 }),
+    kpiCard('Leads convertidos', nf(convRows.length), pct(convRows.length, total) + '% do total',
+      { color: 'green', icone: 'trofeu', cor: 'verde', tendencia: tendenciaDe((rs) => calcConvertidosRows(rs).length, rows, rowsAnteriores, 'alta'), leads: convRows }),
+    kpiCard('Taxa de conversão', pct(convRows.length, total) + '%', nf(convRows.length) + ' de ' + nf(total) + ' leads',
+      { color: 'green', icone: 'medalha', cor: 'verde', leads: convRows }),
+    kpiCard('Lead perdido', nf(perdRows.length), pct(perdRows.length, total) + '% do total',
+      { color: 'red', icone: 'grafico', cor: 'vermelho', tendencia: tendenciaDe((rs) => calcPerdidosRows(rs).length, rows, rowsAnteriores, 'baixa'), leads: perdRows }),
+    kpiCard('Taxa de perda', pct(perdRows.length, total) + '%', nf(perdRows.length) + ' de ' + nf(total) + ' leads',
+      { color: 'red', icone: 'grafico', cor: 'vermelho', leads: perdRows }),
+  );
+
+  /* ---------- Grupo 3 — Financeiro e resposta ---------- */
+  const g3 = $('#kpisGrupo3'); clear(g3);
+  const wa = WA_METRICAS || { respondeu: { total: 0, responderam: 0, taxa: 0, tempoMedioMin: null }, tipos: {} };
+  const ROTULO_TIPO_MSG = { texto: '💬 Texto', audio: '🎤 Áudio', imagem: '🖼️ Imagem', documento: '📄 Documento', video: '🎬 Vídeo', figurinha: '🌟 Figurinha', outro: '❓ Outro' };
+  const tiposOrdenados = Object.entries(wa.tipos || {}).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  const totalMsgsTipo = tiposOrdenados.reduce((s, [, v]) => s + v, 0);
+  g3.append(
+    kpiCard('Ticket médio', fmtBRL(calcTicketMedio(rows)), 'valor médio por venda',
+      { icone: 'carteira', cor: 'verde', leads: convRows }),
+    kpiCard('Tempo de conversão', fmtDias(calcTempoConversaoDias(rows)), 'da entrada até a compra',
+      { icone: 'raio', cor: 'azul', leads: convRows }),
+    kpiCard('Taxa de resposta (WhatsApp)', pct(wa.respondeu.responderam, wa.respondeu.total) + '%', wa.respondeu.tempoMedioMin != null ? 'responde em média ' + fmtDuracaoMin(wa.respondeu.tempoMedioMin) : 'ainda sem respostas registradas',
+      { icone: 'conversa', cor: 'azul' }),
+    kpiCard('Tipo de resposta (WhatsApp)', tiposOrdenados.length ? ROTULO_TIPO_MSG[tiposOrdenados[0][0]] || tiposOrdenados[0][0] : '—', totalMsgsTipo ? nf(totalMsgsTipo) + ' mensagens recebidas' : 'sem mensagens no período',
+      {
+        icone: 'conversa', cor: 'roxo',
+        detalhes: tiposOrdenados.map(([t, v]) => ({ rotulo: ROTULO_TIPO_MSG[t] || t, valor: nf(v) })),
+      }),
+  );
+
+  /* ---------- Grupo 5 (parte dinâmica) + qualificadores + monitores ---------- */
+  const destino = $('#kpisRestante'); if (destino) clear(destino);
   // 1 card por qualificador configurado (substitui o antigo card fixo "WhatsApp R$15 mil+")
   qualificadoresOuFallback().forEach((q) => {
     const leadsQ = rows.filter((r) => r.call_track === q.chave);
@@ -4587,6 +4815,8 @@ function renderKpis(rows, rowsAnteriores) {
   // monitor do bug latente: lead marcou agendado mas sem booking_uid (Cal falhou / modo local)
   if (semBooking.length) destino.append(kpiCard('Sem código do Cal', nf(semBooking.length), 'agendaram pelo chat, mas o código de confirmação não foi salvo. Confira na sua agenda do Google/Cal se estão lá',
     { color: 'amber', icone: 'engrenagem', cor: 'cinza', leads: semBooking }));
+
+  aplicarKpisPersonalizados(rows);
 }
 
 /* popup de detalhe de um card de KPI — número, comparação com o período
@@ -5231,6 +5461,7 @@ function popularLeadsAtendente() {
    (utm_source) cadastradas nos Links de Rastreio (ou o valor cru, se não
    veio de um link cadastrado) */
 let ORIGEM_QUALIFICADORES = [];
+let QUIZ_PERGUNTAS_CACHE = [];   // pro picker "+ Inserir KPI" (painel por pergunta do quiz)
 let ORIGEM_LINKS = [];
 let ROTEAMENTO_CACHE = {};
 let CALCOM_CONECTADO = false;
@@ -5238,6 +5469,7 @@ async function carregarQualificadoresOrigem() {
   try {
     const d = await fetch('/api/quiz-config', { headers: { 'x-dash-token': localStorage.getItem(TKEY) || '' } }).then((x) => x.json());
     if (d && d.ok && Array.isArray(d.qualificadores)) ORIGEM_QUALIFICADORES = d.qualificadores;
+    if (d && d.ok && Array.isArray(d.perguntas)) QUIZ_PERGUNTAS_CACHE = d.perguntas;
     if (d && d.ok && d.roteamento) ROTEAMENTO_CACHE = d.roteamento;
     CALCOM_CONECTADO = !!(d && d.ok && d.calcomConectado);
     // "Espelho do Cal" só aparece no menu quando o CALCOM_API_KEY está configurado

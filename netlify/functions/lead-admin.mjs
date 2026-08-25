@@ -22,6 +22,7 @@ import { temConfig, autenticarToken } from '../_tokens.mjs';
 import { dispararMentoriaHub, obterCalcomApiKey } from '../_conexoes.mjs';
 import { sincronizarEventoGoogle, removerEventoGoogle } from '../_googleAgenda.mjs';
 import { moverNoKanban } from '../_kanban.mjs';
+import { marcarPrimeiroAtendimento } from '../_kpi.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -400,6 +401,9 @@ export default async (req) => {
         hist('Atendente responsável: ' + (patch.atendente || '(nenhum)'));
         mexeuEquipe = true;
         mudouAtendente = true;
+        // reserva do KPI "tempo até 1º atendimento": só grava se nenhuma
+        // conversa real (wa-webhook.mjs) já tiver gravado antes
+        if (patch.atendente) marcarPrimeiroAtendimento(contaId, ref, 'atribuicao');
         // atribuição move o funil: lead entra (ou sai) da etapa Atribuído
         if (temColunaEtapa && !(atual.resultado || '')) patch.etapa = patch.atendente ? 'atribuido' : '';
       }
