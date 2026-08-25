@@ -9,41 +9,43 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  /* ================= DESIGN SYSTEM (20/08/2026) — Dark Premium SaaS =================
-     Fundo quase preto (#100B1A) · superfícies roxo-carvão · amarelo neon #F2F862 como
-     cor de marca usada com moderação (ações primárias, destaque único, item ativo).
-     Proporção alvo ~70% escuro · 20% cinza-roxo · 10% amarelo.
-     Ícones estilo Lucide outline (stroke, sem preenchimento).
+  /* ================= DESIGN SYSTEM (25/08/2026) — Light Blue/Teal SaaS =================
+     Fundo quase branco (#F3F7FC) · superfícies brancas · azul royal #2F6FED como cor de
+     marca, com um gradiente azul→teal (--brand-gradient) reservado pros botões primários
+     e pra borda superior dos modais (o traço visual mais repetido da referência).
+     Ícones estilo Lucide outline (stroke, sem preenchimento) — sem mudança de forma,
+     só de cor, em relação ao tema escuro anterior.
      Os nomes de variável antigos (--lime, --card, --bg, --green...) seguem existindo como
      ALIAS pros tokens novos — todo `var(--nome-antigo)` espalhado pelo arquivo já repinta
      sozinho pro tema novo sem precisar editar cada uso. */
   :root {
     /* ---- tokens novos ---- */
-    --bg-primary: #100B1A; --bg-secondary: #15121F; --bg-sidebar: #0D0A16;
-    --surface-card: #1B1724; --surface-card-2: #211D2D; --surface-input: #242131; --surface-hover: #2B2738;
-    --border: #3A3548; --border-strong: #4A4558;
-    --text-1: #F7F7F7; --text-2: #A7A4AF; --text-3: #777281; --text-4: #55515F;
-    --brand: #F2F862; --brand-hover: #E6EE31; --brand-light: #F8FC8A; --brand-ink: #17140B;
-    --success-bg: #D8F6CF; --success-text: #286A38;
-    --warning-bg: #F7D774; --warning-text: #7A5B12;
-    --danger-bg: #F49587; --danger-text: #8F3026;
-    --info-bg: #C7C6F5; --info-text: #423C7A;
+    --bg-primary: #F3F7FC; --bg-secondary: #EAF1F8; --bg-sidebar: #FFFFFF;
+    --surface-card: #FFFFFF; --surface-card-2: #F1F5F9; --surface-input: #F9FAFB; --surface-hover: #EEF4FF;
+    --border: #E3E8EF; --border-strong: #C7D0DC;
+    --text-1: #101828; --text-2: #4B5768; --text-3: #6B7686; --text-4: #98A2B3;
+    --brand: #2F6FED; --brand-hover: #2557C2; --brand-light: #E7EFFE; --brand-ink: #FFFFFF;
+    --brand-gradient: linear-gradient(90deg, #2F6FED 0%, #14B8A6 100%);
+    --success-bg: #DCFCE7; --success-text: #15803D;
+    --warning-bg: #FEF3C7; --warning-text: #92400E;
+    --danger-bg: #FEE2E2; --danger-text: #B91C1C;
+    --info-bg: #E0E7FF; --info-text: #4338CA;
     --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 20px; --radius-pill: 999px;
     --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-7: 32px; --sp-8: 40px; --sp-9: 48px; --sp-10: 64px;
 
     /* ---- alias (compatibilidade com os ~700 usos existentes de var(--nome-antigo)) ---- */
-    --lime: var(--brand); --lime-hover: var(--brand-hover); --lime-soft: rgba(242, 248, 98, .14);
+    --lime: var(--brand); --lime-hover: var(--brand-hover); --lime-soft: rgba(47, 111, 237, .1);
     --lime-icon: var(--brand);
     --ink: var(--text-1);
-    --accent: var(--brand); --accent-dark: var(--brand-hover); --accent-soft: rgba(242, 248, 98, .14);
-    --chart: #A78BFA; --chart-dark: #8B5CF6;   /* roxo claro: gráficos e informativos */
+    --accent: var(--brand); --accent-dark: var(--brand-hover); --accent-soft: rgba(47, 111, 237, .1);
+    --chart: #8B5CF6; --chart-dark: #7C3AED;   /* roxo: gráficos e informativos, canal separado da marca */
     --bg: var(--bg-primary); --card: var(--surface-card); --line: var(--border); --sidebar: var(--bg-sidebar);
     --text: var(--text-1); --text-body: var(--text-2); --text-muted: var(--text-3); --text-dim: var(--text-4);
-    --green: #4ADE80; --green-soft: rgba(74, 222, 128, .16); --amber: #F5A623; --amber-soft: rgba(245, 166, 35, .16);
-    --blue: #8B85F0; --blue-soft: rgba(139, 133, 240, .16); --red: #F2735E; --red-soft: rgba(242, 115, 94, .16);
-    --chart-soft: rgba(167, 139, 250, .16);
-    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .24);
-    --shadow-md: 0 6px 20px rgba(0, 0, 0, .34), 0 12px 32px rgba(0, 0, 0, .28);
+    --green: #16A34A; --green-soft: rgba(22, 163, 74, .12); --amber: #D97706; --amber-soft: rgba(217, 119, 6, .12);
+    --blue: #6366F1; --blue-soft: rgba(99, 102, 241, .12); --red: #DC2626; --red-soft: rgba(220, 38, 38, .12);
+    --chart-soft: rgba(139, 92, 246, .14);
+    --shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 4px 10px rgba(16, 24, 40, .06);
+    --shadow-md: 0 4px 14px rgba(16, 24, 40, .08), 0 14px 32px rgba(16, 24, 40, .1);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; scrollbar-width: none; }
   /* barra de rolagem invisível em toda a aplicação (rola normal no mouse/trackpad,
@@ -97,8 +99,8 @@
     padding: 48px clamp(28px, 6vw, 90px);
   }
   .gl-esq::before, .gl-esq::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
-  .gl-esq::before { width: 340px; height: 340px; top: -130px; right: -110px; background: rgba(242, 248, 98, .06); }
-  .gl-esq::after { width: 260px; height: 260px; bottom: -110px; left: -70px; background: rgba(242, 248, 98, .04); }
+  .gl-esq::before { width: 340px; height: 340px; top: -130px; right: -110px; background: rgba(47, 111, 237, .06); }
+  .gl-esq::after { width: 260px; height: 260px; bottom: -110px; left: -70px; background: rgba(20, 184, 166, .05); }
   .gl-marca { display: flex; align-items: center; gap: 15px; margin-bottom: 55px; position: relative; z-index: 1; }
   .gl-marca .logo { width: 55px; height: 55px; border-radius: 15px; background: var(--brand); color: var(--brand-ink); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 24px; flex-shrink: 0; }
   .gl-marca b { font-size: 25px; font-weight: 800; color: var(--ink); }
@@ -123,9 +125,9 @@
   .gl-ver { position: absolute; right: 13px; top: 34px; font-size: 11.5px; font-weight: 700; color: var(--brand); cursor: pointer; -webkit-user-select: none; user-select: none; }
   .gl-card button {
     width: 100%; padding: 13px; border: none; border-radius: 11px; cursor: pointer;
-    background: var(--lime); color: var(--brand-ink); font-size: 15px; font-weight: 700; margin-top: 6px;
+    background: var(--lime); background-image: var(--brand-gradient); color: var(--brand-ink); font-size: 15px; font-weight: 700; margin-top: 6px;
   }
-  .gl-card button:hover { background: var(--lime-hover); }
+  .gl-card button:hover { filter: brightness(.94); }
   @media (max-width: 860px) {
     .gl-esq { display: none; }
     .gl-dir { flex: 1 1 100%; min-width: 0; }
@@ -151,9 +153,9 @@
   .gate-card input:focus { border-color: var(--accent); }
   .gate-card button {
     width: 100%; padding: 13px; border: none; border-radius: 11px; cursor: pointer;
-    background: var(--lime); color: var(--brand-ink); font-size: 15px; font-weight: 700;
+    background: var(--lime); background-image: var(--brand-gradient); color: var(--brand-ink); font-size: 15px; font-weight: 700;
   }
-  .gate-card button:hover { background: var(--lime-hover); }
+  .gate-card button:hover { filter: brightness(.94); }
   .gate-err { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 16px; }
 
   /* ===== APP SHELL =====
@@ -178,17 +180,17 @@
 
   /* ===== VOCABULÁRIO DE COMPONENTES (botões, campo, badges) ===== */
   .btn-primary, .btn-secondary, .btn-ghost, .btn-danger {
-    border-radius: var(--radius-md); padding: 9px 16px; cursor: pointer; font-size: 13px; font-weight: 700;
+    border-radius: 9px; padding: 10px 18px; cursor: pointer; font-size: 13.5px; font-weight: 700;
     display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid transparent; line-height: 1.2;
   }
-  .btn-primary { background: var(--brand); color: var(--brand-ink); }
-  .btn-primary:hover { background: var(--brand-hover); }
+  .btn-primary { background: var(--brand); background-image: var(--brand-gradient); color: var(--brand-ink); border: none; }
+  .btn-primary:hover { filter: brightness(.94); }
   .btn-secondary { background: var(--surface-card-2); color: var(--text-1); border-color: var(--border); }
   .btn-secondary:hover { background: var(--surface-hover); border-color: var(--border-strong); }
   .btn-ghost { background: transparent; color: var(--text-2); border-color: transparent; }
   .btn-ghost:hover { background: var(--surface-hover); color: var(--text-1); }
-  .btn-danger { background: transparent; color: var(--danger-bg); border-color: var(--border); }
-  .btn-danger:hover { background: rgba(244, 149, 135, .12); border-color: var(--danger-bg); }
+  .btn-danger { background: transparent; color: var(--danger-text); border-color: var(--border); }
+  .btn-danger:hover { background: var(--danger-bg); border-color: var(--danger-text); }
   .btn-primary svg, .btn-secondary svg, .btn-ghost svg, .btn-danger svg { width: 15px; height: 15px; flex-shrink: 0; }
   .btn-primary:disabled, .btn-secondary:disabled, .btn-ghost:disabled, .btn-danger:disabled { opacity: .45; cursor: not-allowed; }
 
@@ -234,15 +236,17 @@
   .sidenav-sair:hover { background: var(--surface-hover); color: var(--text-1); }
   .sidenav-sair svg { width: 15px; height: 15px; flex-shrink: 0; }
   .maincol { margin-left: 225px; padding: 10px clamp(20px, 3vw, 48px) 60px; transition: margin-left .18s ease; }
-  .sidenav button { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: none; background: none; padding: 10px 11px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--text-2); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidenav button { position: relative; display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; border: none; background: none; padding: 10px 11px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--text-2); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sidenav button svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 1; stroke: currentColor; color: var(--brand); }
   .sidenav button:hover { background: var(--surface-hover); color: var(--text-1); }
-  .sidenav button.on { background: var(--brand); color: var(--brand-ink); font-weight: 700; }
-  .sidenav button.on svg { opacity: 1; color: var(--brand-ink); }
-  /* grupo de topo (Home/Gestão/Agenda/...): maiúsculas, negrito, fonte maior, fundo amarelo suave pra destacar do resto */
-  .nav-menu-btn { font-size: 13.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--text-1); margin-top: 4px; background: rgba(242, 248, 98, .14); }
-  .nav-menu-btn:hover { color: var(--text-1); background: rgba(242, 248, 98, .22); }
-  .nav-menu-btn.aberto { color: var(--text-1); background: rgba(242, 248, 98, .22); }
+  /* item ativo: pílula suave + barra de acento à esquerda (não preenchimento sólido) */
+  .sidenav button.on { background: var(--brand-light); color: var(--brand); font-weight: 700; padding-left: 14px; }
+  .sidenav button.on::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 0 3px 3px 0; background: var(--brand); }
+  .sidenav button.on svg { opacity: 1; color: var(--brand); }
+  /* grupo de topo (Home/Gestão/Agenda/...): maiúsculas, negrito, fonte maior, fundo azul suave pra destacar do resto */
+  .nav-menu-btn { font-size: 13.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--text-1); margin-top: 4px; background: rgba(47, 111, 237, .07); }
+  .nav-menu-btn:hover { color: var(--text-1); background: rgba(47, 111, 237, .12); }
+  .nav-menu-btn.aberto { color: var(--text-1); background: rgba(47, 111, 237, .12); }
   .nav-chevron { margin-left: auto; font-size: 10px; opacity: .6; flex-shrink: 0; }
   .nav-sub { display: flex; flex-direction: column; gap: 4px; padding: 4px 0 8px; }
   .nav-sub button:not(.nav-menu-btn) { padding-left: 27px; font-size: 12.5px; }
@@ -294,7 +298,7 @@
   /* grade de cards da tela "Conexões" — cada card é um resumo clicável, o
      formulário de configuração de verdade vive num popup (#modalConexao*) */
   .conexoes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; }
-  .conexao-tile { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+  .conexao-tile { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
   .conexao-tile:hover { box-shadow: var(--shadow-md); }
   .ct-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
   .ct-topo .ic-chip { width: 40px; height: 40px; border-radius: 12px; }
@@ -303,8 +307,8 @@
   .ct-lista { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; flex: 1; }
   .ct-lista li { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-body); }
   .ct-lista li b { color: var(--green); font-weight: 800; }
-  .ct-btn { width: 100%; padding: 10px; border: none; border-radius: 10px; background: var(--lime); color: var(--brand-ink); font-weight: 700; font-size: 13px; cursor: pointer; margin-top: auto; }
-  .ct-btn:hover { background: var(--lime-hover); }
+  .ct-btn { width: 100%; padding: 10px; border: none; border-radius: 10px; background: var(--lime); background-image: var(--brand-gradient); color: var(--brand-ink); font-weight: 700; font-size: 13px; cursor: pointer; margin-top: auto; }
+  .ct-btn:hover { filter: brightness(.94); }
 
   /* ===== AGENDA — calendário ===== */
   .ag-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 14px; }
@@ -334,7 +338,7 @@
   .kb-body::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
   .kb-body.drag { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: 8px; }
   .kb-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; cursor: grab; box-shadow: var(--shadow); position: relative; }
-  .kb-card:hover { box-shadow: var(--shadow-md); border-color: rgba(242, 248, 98, .4); }
+  .kb-card:hover { box-shadow: var(--shadow-md); border-color: rgba(47, 111, 237, .4); }
   .kb-card:active { transform: scale(.98); }
   .kb-card b { font-size: 13px; display: block; margin-bottom: 2px; }
   .kb-card small { font-size: 11.5px; color: var(--text-muted); display: block; }
@@ -378,7 +382,9 @@
     border: 1px solid var(--line); position: relative; overflow: hidden;
   }
   .kpi .k-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; min-height: 34px; }
-  .kpi .k-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  /* badge do ícone no canto direito (não esquerdo) — mesma leitura da referência */
+  .kpi .k-icon { order: 2; width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .kpi .k-trend { order: 1; }
   .kpi .k-icon svg { width: 17px; height: 17px; }
   .kpi .k-trend { display: inline-flex; align-items: center; gap: 2px; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
   .kpi .k-trend.up { background: var(--green-soft); color: var(--green); }
@@ -391,33 +397,15 @@
   .kpi:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .kpi.clickable { cursor: pointer; }
   .kpi.clickable:hover { border-color: var(--accent); }
-  /* card "hero" — só o KPI de Total de Leads usa isso (destaque único, amarelo sólido) */
-  .kpi.hero { background: var(--brand); border: none; }
-  .kpi.hero .k-label, .kpi.hero .k-num, .kpi.hero .k-sub { color: var(--brand-ink); }
-  .kpi.hero .k-sub { opacity: .72; }
-  .kpi.hero .k-icon { background: rgba(0, 0, 0, .12); }
-  .kpi.hero .k-trend.up { background: rgba(74, 222, 128, .3); }
-  .kpi.hero .k-trend.down { background: rgba(242, 115, 94, .3); }
+  /* redesign 25/08: removido o tratamento "hero" (card gigante amarelo sólido) —
+     a referência usa cards uniformemente densos, sem destaque de tamanho.
+     `.hero`/`.k-featured` continuam sendo adicionados pelo JS (kpiCard()) sem
+     problema — sem CSS próprio, o card só cai de volta no `.kpi` normal. */
   .kpi .k-num.green { color: var(--green); }
   .kpi .k-num.blue { color: var(--blue); }
   .kpi .k-num.amber { color: var(--amber); }
-  /* linha de destaque: 1º card (Total de Leads) em 2 linhas de altura,
-     número gigante; o resto (#kpisRestante) fica numa grade de 2 colunas
-     logo abaixo — mesma organização adotada no quiz-suavitatis (projeto
-     irmão), só que usando as cores do QuizzHub (tokens já existentes). */
-  .kpis-hero { grid-template-columns: 1.6fr repeat(3, 1fr); }
-  .kpis-hero .kpi.k-featured {
-    grid-row: 1 / 3; grid-column: 1; display: flex; flex-direction: column;
-    justify-content: center; align-items: center; text-align: center; padding: 26px 22px;
-  }
-  /* ícone/selo saem do fluxo do flex (fixos no topo) pra não empurrar o
-     número — o resto (label/número/sub) centraliza sozinho no espaço que sobra */
-  .kpis-hero .kpi.k-featured .k-top { position: absolute; top: 18px; left: 22px; right: 22px; width: auto; margin-bottom: 0; }
-  .kpis-hero .kpi.k-featured .k-label { font-size: 14px; }
-  .kpis-hero .kpi.k-featured .k-num { font-size: 72px; margin: 6px 0 4px; }
-  .kpis-hero .kpi.k-featured .k-sub { font-size: 13px; }
   .kpis-2col { grid-template-columns: 1fr 1fr; }
-  #kpis { grid-template-columns: 1.6fr repeat(3, 1fr); }
+  #kpis { grid-template-columns: repeat(4, 1fr); }
   #kpisRestante { grid-template-columns: 1fr 1fr; }
 
   /* ===== Entrada de leads — dia × hora (gráfico empilhado, sem lib) ===== */
@@ -438,8 +426,8 @@
 
   /* ===== SECTIONS / GRID ===== */
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-  /* cards padronizados: padding 20px, raio 14px, cabeçalho com ícone (10px de vão) */
-  .panel { background: var(--card); border-radius: 14px; padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--line); margin-bottom: 16px; }
+  /* cards padronizados: padding 20px, raio 16px, cabeçalho com ícone (10px de vão) */
+  .panel { background: var(--card); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--line); margin-bottom: 16px; }
   .panel h2 { display: flex; align-items: center; gap: 10px; font-size: 15.5px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
   .panel .sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; }
   .panel.grid2-item { margin-bottom: 0; }
@@ -503,7 +491,7 @@
   .stack > div { height: 100%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 700; transition: width .5s; }
   .seg-prem { background: linear-gradient(90deg, var(--chart), var(--chart-dark)); }
   .seg-aud { background: linear-gradient(90deg, var(--blue), #6B63D6); }
-  .seg-pad { background: var(--border-strong); }
+  .seg-pad { background: #94A3B8; }
   .trilha-stats { display: flex; gap: 10px; margin-top: 14px; }
   .ts-card { flex: 1; background: var(--surface-card-2); border-radius: 11px; padding: 12px; }
   .ts-card .n { font-size: 21px; font-weight: 800; color: var(--text-1); }
@@ -518,7 +506,7 @@
   th { color: var(--text-muted); font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; background: var(--surface-card-2); z-index: 2; }
   td.nome { font-weight: 600; }
   tbody tr:hover td { background: var(--surface-hover); }
-  .pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; border: 1px solid rgba(16, 24, 40, .05); }
   .pill.parcial { background: var(--surface-card-2); color: var(--text-muted); }
   .pill.contato { background: var(--blue-soft); color: var(--blue); }
   .pill.completo { background: var(--amber-soft); color: var(--amber); }
@@ -539,12 +527,7 @@
     .kpis { grid-template-columns: repeat(2, 1fr); }
     .grid2 { grid-template-columns: 1fr; }
     .bc-row { grid-template-columns: 100px 1fr auto; }
-    /* hero (1.6fr + 3x1fr) não cabe em tela estreita — cai pra grade normal de 2 colunas */
     #kpis, #kpisRestante { grid-template-columns: repeat(2, 1fr); }
-    .kpis-hero .kpi.k-featured { grid-row: auto; grid-column: auto; padding: 15px 16px; }
-    .kpis-hero .kpi.k-featured .k-top { position: static; margin-bottom: 12px; }
-    .kpis-hero .kpi.k-featured .k-num { font-size: 27px; margin: 0; }
-    .kpis-hero .kpi.k-featured .k-label, .kpis-hero .kpi.k-featured .k-sub { font-size: inherit; }
   }
   @media (max-width: 919px) and (min-width: 641px) {
     /* tablet: sidebar sempre recolhida (só ícones) pra sobrar mais espaço de conteúdo */
@@ -575,7 +558,9 @@
   #sinoLista { animation: dsPop .15s ease; }
   #chatModal { background: rgba(9, 7, 15, .6) !important; }
   .modal-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(9, 7, 15, .6); display: flex; align-items: center; justify-content: center; }
-  .modal-card { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); animation: dsPop .18s ease; }
+  /* faixa em gradiente no topo (4px) — a assinatura visual mais repetida da referência,
+     centralizada aqui em vez de em cada modal individualmente */
+  .modal-card { background: var(--brand-gradient) top / 100% 4px no-repeat, var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); animation: dsPop .18s ease; }
 
   /* ===== TOAST ===== */
   #toastHost { position: fixed; right: 20px; bottom: 20px; z-index: 200; display: flex; flex-direction: column; gap: 10px; }
@@ -702,7 +687,7 @@
 
   <!-- POPUP DE ALERTAS PENDENTES (aparece a cada acesso até tudo virar OK) -->
   <div id="alertModal" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(20,20,40,.55);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <h2 style="margin:0 0 4px;">Você tem alertas pendentes</h2>
       <div class="sub" style="margin-bottom:12px;">Marque cada um como <b>✓ OK</b> depois de tomar ciência, enquanto houver pendentes, este aviso volta a cada acesso.</div>
       <div id="alertModalLista"></div>
@@ -714,7 +699,7 @@
 
   <!-- DETALHE DE UM CARD DE KPI (clique no card) -->
   <div id="kpiModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:4px;">
         <div style="flex:1;">
           <h2 id="kmTitulo" style="margin:0 0 3px;font-size:18px;"></h2>
@@ -732,7 +717,7 @@
 
   <!-- AGENDAMENTOS DO DIA (janela flutuante do calendário) -->
   <div id="diaModal" style="display:none;position:fixed;inset:0;z-index:65;background:rgba(20,20,40,.45);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <h2 id="dmTitulo" style="flex:1;margin:0;font-size:16px;"></h2>
         <button class="acao-btn" id="dmFechar" title="Fechar">✕</button>
@@ -743,7 +728,7 @@
 
   <!-- DETALHE DO AGENDAMENTO / LEAD (janela flutuante) -->
   <div id="leadModal" style="display:none;position:fixed;inset:0;z-index:70;background:rgba(20,20,40,.45);align-items:center;justify-content:center;padding:16px;">
-    <div id="leadModalCard" style="background:var(--card);border-radius:16px;max-width:580px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div id="leadModalCard" class="modal-card" style="max-width:580px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
         <div style="flex:1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--brand);color:var(--brand-ink);border-radius:10px;padding:9px 14px;">
           <h2 id="lmTitulo" style="margin:0;font-size:15px;font-weight:800;color:var(--brand-ink);"></h2>
@@ -757,7 +742,7 @@
 
   <!-- DADOS DA VENDA (pós-conversão) — pode salvar incompleto; completo é exigido no "Recebido" -->
   <div id="vendaModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 id="vmTitulo" style="flex:1;margin:0;font-size:17px;">Dados da venda</h2>
         <button class="acao-btn" id="vmFechar" title="Fechar">✕</button>
@@ -779,7 +764,7 @@
         <label style="font-size:11.5px;font-weight:700;">Responsável CS<select id="vmCs" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— definir depois —</option></select></label>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
-        <button id="vmSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar dados</button>
+        <button id="vmSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar dados</button>
         <span class="muted-cell" id="vmStatus"></span>
       </div>
     </div>
@@ -787,7 +772,7 @@
 
   <!-- NOVO LEAD — cadastro manual pelo painel (botão "+ Novo Lead" do Quadro) -->
   <div id="novoLeadModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:520px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:520px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 style="flex:1;margin:0;font-size:17px;">Novo Lead</h2>
         <button class="acao-btn" id="nlFechar" title="Fechar">✕</button>
@@ -806,7 +791,7 @@
         <label style="font-size:11.5px;font-weight:700;">Atendente responsável<select id="nlAtendente" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— sem responsável —</option></select></label>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
-        <button id="nlSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Cadastrar lead</button>
+        <button id="nlSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Cadastrar lead</button>
         <span class="muted-cell" id="nlStatus"></span>
       </div>
     </div>
@@ -815,7 +800,7 @@
   <!-- NOVO AGENDAMENTO sem lead existente (Google Agenda ou direto no sistema —
        Cal.com continua abrindo o link direto, sem passar por este formulário) -->
   <div id="novoAgendamentoModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:480px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:480px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 style="flex:1;margin:0;font-size:17px;">Novo agendamento</h2>
         <button class="acao-btn" id="naFechar" title="Fechar">✕</button>
@@ -839,7 +824,7 @@
         <label style="font-size:11.5px;font-weight:700;">Dia e horário<span style="color:var(--red);">*</span><input id="naData" type="datetime-local" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
-        <button id="naSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Agendar</button>
+        <button id="naSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Agendar</button>
         <span class="muted-cell" id="naStatus"></span>
       </div>
     </div>
@@ -847,7 +832,7 @@
 
   <!-- REMARCAR agendamento (Cal.com de verdade, ou só a data no painel se for manual) -->
   <div id="remarcarModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:420px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:420px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 style="flex:1;margin:0;font-size:17px;">Remarcar agendamento</h2>
         <button class="acao-btn" id="rmFechar" title="Fechar">✕</button>
@@ -855,7 +840,7 @@
       <div class="sub" id="rmAviso" style="margin:0 0 12px;"></div>
       <label style="font-size:11.5px;font-weight:700;">Novo dia e horário<input id="rmData" type="datetime-local" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
-        <button id="rmSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar novo horário</button>
+        <button id="rmSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar novo horário</button>
         <span class="muted-cell" id="rmStatus"></span>
       </div>
     </div>
@@ -863,7 +848,7 @@
 
   <!-- MASTER: criar/editar conta -->
   <div id="masterContaModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:600px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:600px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 style="flex:1;margin:0;font-size:17px;" id="mcTit">Nova conta</h2>
         <button class="acao-btn" id="mcFechar" title="Fechar">✕</button>
@@ -904,14 +889,14 @@
       <div id="mcCredencial" style="display:none;background:var(--lime-soft,rgba(0,40,179,.1));border-radius:10px;padding:12px 14px;margin-top:10px;font-size:13px;"></div>
 
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
-        <button id="mcSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar</button>
+        <button id="mcSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar</button>
       </div>
     </div>
   </div>
 
   <!-- EQUIPE: novo usuário -->
   <div id="euNovoModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 style="flex:1;margin:0;font-size:17px;">Novo Usuário</h2>
         <button class="acao-btn" id="euNovoFechar" title="Fechar">✕</button>
@@ -936,7 +921,7 @@
         </div>
 
         <div class="muted-cell" id="eunErr" style="color:var(--red);"></div>
-        <button id="eunSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Criar usuário</button>
+        <button id="eunSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Criar usuário</button>
       </div>
 
       <div id="euNovoResultado" style="display:none;">
@@ -945,7 +930,7 @@
         <label style="font-size:11.5px;font-weight:700;display:block;margin-top:10px;">Senha temporária
           <div style="display:flex;gap:8px;margin-top:4px;">
             <div id="eunResSenha" style="flex:1;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-family:monospace;background:var(--surface-card-2);color:var(--text);"></div>
-            <button id="eunResCopiar" style="padding:9px 14px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap;">Copiar</button>
+            <button id="eunResCopiar" style="padding:9px 14px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap;">Copiar</button>
           </div>
         </label>
         <button id="eunResFechar" style="margin-top:16px;width:100%;padding:10px 18px;border:1.5px solid var(--line);border-radius:9px;background:var(--surface-card-2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;">Fechar</button>
@@ -955,7 +940,7 @@
 
   <!-- EQUIPE: detalhe / editar usuário -->
   <div id="euDetModal" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
         <h2 style="flex:1;margin:0;font-size:17px;" id="eudTit">Usuário</h2>
         <button class="acao-btn" id="euDetFechar" title="Fechar">✕</button>
@@ -983,7 +968,7 @@
         </div>
 
         <div class="muted-cell" id="eudErr" style="color:var(--red);"></div>
-        <button id="eudSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar alterações</button>
+        <button id="eudSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar alterações</button>
       </div>
 
       <div id="eudAbaPerfil" style="display:none;">
@@ -994,7 +979,7 @@
           <label style="display:flex;align-items:center;gap:6px;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;" id="eudPerfilOpOp"><input type="radio" name="eudPerfil" value="op" style="accent-color:var(--accent);">Operacional</label>
         </div>
         <p class="muted-cell" style="margin-top:6px;">Administrador tem privilégios completos. Customer Success recebe leads convertidos no Pós-Venda. Operacional não tem nenhuma das duas funções.</p>
-        <button id="eudSalvarPerfil" style="margin-top:12px;padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar perfil</button>
+        <button id="eudSalvarPerfil" style="margin-top:12px;padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar perfil</button>
 
         <div style="border-top:1px solid var(--line);margin-top:18px;padding-top:14px;" id="eudBlocoExcluir">
           <p style="font-size:11.5px;font-weight:700;margin:0 0 8px;color:var(--red);">Zona de risco</p>
@@ -1006,11 +991,11 @@
 
   <!-- CHAT INTERNO DO WHATSAPP (popup de conversa) -->
   <div id="chatModal" style="display:none;position:fixed;inset:0;z-index:76;background:rgba(17,24,39,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:480px;width:100%;height:min(640px,92vh);display:flex;flex-direction:column;box-shadow:var(--shadow-md);overflow:hidden;">
-      <div style="display:flex;align-items:center;gap:10px;padding:13px 16px;background:var(--sidebar);color:#fff;">
+    <div class="modal-card" style="max-width:480px;width:100%;height:min(640px,92vh);display:flex;flex-direction:column;box-shadow:var(--shadow-md);overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:10px;padding:13px 16px;background:var(--brand);background-image:var(--brand-gradient);color:var(--brand-ink);">
         <span class="uavatar" id="chAvatar">?</span>
         <div style="flex:1;min-width:0;">
-          <b id="chNome" style="display:block;font-size:14px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></b>
+          <b id="chNome" style="display:block;font-size:14px;color:var(--brand-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></b>
           <small id="chTel" style="opacity:.7;font-size:11.5px;"></small>
         </div>
         <button class="acao-btn" id="chVerLead" title="Abrir o Cartão do Lead" style="display:none;">Ver Lead</button>
@@ -1019,14 +1004,14 @@
       <div id="chMsgs" style="flex:1;overflow-y:auto;padding:14px;background:var(--bg-secondary);display:flex;flex-direction:column;gap:6px;"></div>
       <div style="display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:var(--card);">
         <input id="chInput" placeholder="Escreva uma mensagem..." style="flex:1;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--surface-input);color:var(--text);">
-        <button id="chEnviar" title="Enviar" style="padding:0 16px;border:none;border-radius:10px;background:var(--lime);color:var(--brand-ink);font-weight:700;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+        <button id="chEnviar" title="Enviar" style="padding:0 16px;border:none;border-radius:10px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
       </div>
     </div>
   </div>
 
   <!-- AGENDAR PELO PAINEL — tela do Cal.com embutida, em nome do lead -->
   <div id="calModal" style="display:none;position:fixed;inset:0;z-index:75;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:920px;width:100%;max-height:94vh;overflow:auto;padding:18px 20px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:920px;width:100%;max-height:94vh;overflow:auto;padding:18px 20px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
         <h2 id="cmTitulo" style="flex:1;margin:0;font-size:17px;min-width:200px;"></h2>
         <button class="acao-btn" id="cmFechar" title="Fechar">✕</button>
@@ -1038,7 +1023,7 @@
 
   <!-- CONEXÕES: popups de configuração (abertos a partir dos cards em Conexões) -->
   <div id="modalConexaoPlano" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:480px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:480px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 style="flex:1;margin:0;font-size:17px;">Meu Plano</h2>
         <button class="acao-btn" onclick="fecharModalConexao('modalConexaoPlano')" title="Fechar">✕</button>
@@ -1056,7 +1041,7 @@
   </div>
 
   <div id="modalConexaoDominio" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:520px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:520px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 style="flex:1;margin:0;font-size:17px;">Meu Domínio</h2>
         <button class="acao-btn" onclick="fecharModalConexao('modalConexaoDominio')" title="Fechar">✕</button>
@@ -1075,7 +1060,7 @@
   </div>
 
   <div id="modalConexaoWhatsapp" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:640px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:640px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 style="flex:1;margin:0;font-size:17px;">WhatsApp</h2>
         <button class="acao-btn" onclick="fecharModalConexao('modalConexaoWhatsapp')" title="Fechar">✕</button>
@@ -1112,7 +1097,7 @@
   </div>
 
   <div id="modalConexaoCalcom" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 style="flex:1;margin:0;font-size:17px;">Cal.com</h2>
         <button class="acao-btn" onclick="fecharModalConexao('modalConexaoCalcom')" title="Fechar">✕</button>
@@ -1131,7 +1116,7 @@
   </div>
 
   <div id="modalConexaoMentoriaHub" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:600px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:600px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 style="flex:1;margin:0;font-size:17px;">MentoriaHub</h2>
         <button class="acao-btn" onclick="fecharModalConexao('modalConexaoMentoriaHub')" title="Fechar">✕</button>
@@ -1154,7 +1139,7 @@
   </div>
 
   <div id="modalConexaoPagamento" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:600px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:600px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 style="flex:1;margin:0;font-size:17px;">Pagamentos (MAKE)</h2>
         <button class="acao-btn" onclick="fecharModalConexao('modalConexaoPagamento')" title="Fechar">✕</button>
@@ -1175,7 +1160,7 @@
   </div>
 
   <div id="modalConexaoGoogleAgenda" style="display:none;position:fixed;inset:0;z-index:78;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <h2 style="flex:1;margin:0;font-size:17px;">Google Agenda</h2>
         <button class="acao-btn" onclick="fecharModalConexao('modalConexaoGoogleAgenda')" title="Fechar">✕</button>
@@ -1204,14 +1189,14 @@
   <!-- POPUP GENÉRICO: substitui prompt()/window prompts por um formulário no padrão do sistema —
        usado por Kanban (novo quadro/coluna, renomear, atendente), Editor do Quiz, Produtos e Usuários -->
   <div id="promptModal" style="display:none;position:fixed;inset:0;z-index:85;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border-radius:16px;max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:22px 24px;box-shadow:var(--shadow);">
+    <div class="modal-card" style="max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:22px 24px;box-shadow:var(--shadow);">
       <h2 id="pmTitulo" style="font-size:16px;margin-bottom:4px;"></h2>
       <div id="pmSub" class="sub" style="margin:0 0 14px;white-space:pre-line;"></div>
       <div id="pmCampos" style="display:grid;gap:12px;"></div>
       <div class="muted-cell" id="pmErro" style="margin-top:8px;color:var(--red);min-height:15px;"></div>
       <div style="display:flex;gap:8px;margin-top:16px;">
         <button id="pmCancelar" style="flex:1;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface-card-2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;">Cancelar</button>
-        <button id="pmOk" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">Confirmar</button>
+        <button id="pmOk" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">Confirmar</button>
       </div>
     </div>
   </div>
@@ -1676,7 +1661,7 @@
           <textarea id="amMsg" rows="4" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;resize:vertical;background:var(--surface-input);color:var(--text);" placeholder="Oi {{nome}}! Nosso Encontro é hoje às {{horario}} 💚 Te espero aqui: {{link_reuniao}}"></textarea>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button id="amSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar automação</button>
+          <button id="amSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar automação</button>
           <button class="btn" id="amCancelar" style="display:none;">Cancelar edição</button>
           <span class="muted-cell" id="amStatus"></span>
         </div>
@@ -1709,7 +1694,7 @@
           <textarea id="dpMsg" rows="3" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;resize:vertical;background:var(--surface-input);color:var(--text);" placeholder="Mensagem a enviar..."></textarea>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button id="dpAgendar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Agendar disparo</button>
+          <button id="dpAgendar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Agendar disparo</button>
           <span class="muted-cell" id="dpStatus"></span>
         </div>
       </div>
@@ -1934,7 +1919,7 @@
         <button class="btn" id="qeNova">+ Nova pergunta</button>
         <span style="flex:1"></span>
         <button class="btn" id="qeRestaurar">Restaurar padrão</button>
-        <button id="qePublicar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Publicar</button>
+        <button id="qePublicar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Publicar</button>
       </div>
       <div class="muted-cell" id="qeStatus" style="margin-top:8px;"></div>
     </div>
@@ -1945,7 +1930,7 @@
       <div class="sub">Crie um link curto por origem (Instagram, Facebook, um grupo de WhatsApp...), quem entra no quiz por ele já chega marcado com essa origem no painel. Pode criar quantos quiser, ou nenhum.</div>
       <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;align-items:end;">
         <label style="font-size:11.5px;font-weight:600;">Nome<input id="lkNome" style="width:220px;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Ex: Instagram Bio"></label>
-        <button id="lkCriar" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">+ Criar link</button>
+        <button id="lkCriar" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">+ Criar link</button>
       </div>
       <span class="muted-cell" id="lkStatus"></span>
       <div class="tbl-wrap"><table id="lkTable"></table></div>
@@ -1964,7 +1949,7 @@
 
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
         <input id="eqBusca" placeholder="Buscar por nome ou e-mail..." style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);">
-        <button id="eqNovoBtn" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">+ Novo Usuário</button>
+        <button id="eqNovoBtn" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">+ Novo Usuário</button>
       </div>
       <span class="muted-cell" id="eqStatus"></span>
       <div id="eqLista" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
@@ -1996,7 +1981,7 @@
       </div>
 
       <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-        <button id="mNovaContaBtn" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">+ Nova conta</button>
+        <button id="mNovaContaBtn" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">+ Nova conta</button>
       </div>
       <span class="muted-cell" id="masterStatus"></span>
       <div class="tbl-wrap"><table id="masterTable"></table></div>
@@ -2592,7 +2577,7 @@ const DS_PATHS = {
   kanban: '<path d="M6 5v11"/><path d="M12 5v6"/><path d="M18 5v14"/>',
   lista: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
 };
-const DS_CORES = { azul: 'var(--blue)', verde: 'var(--green)', laranja: 'var(--amber)', lima: 'var(--lime-icon)', cinza: 'var(--text-muted)', roxo: '#A78BFA' };
+const DS_CORES = { azul: 'var(--blue)', verde: 'var(--green)', laranja: 'var(--amber)', lima: 'var(--lime-icon)', cinza: 'var(--text-muted)', roxo: 'var(--chart)' };
 const DS_CORES_SOFT = { azul: 'var(--blue-soft)', verde: 'var(--green-soft)', laranja: 'var(--amber-soft)', lima: 'var(--lime-soft)', cinza: 'var(--surface-card-2)', roxo: 'var(--chart-soft)' };
 const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verde · Vendas laranja · Usuários lima · Config cinza · gráficos roxo claro) */
   pFunil: ['grafico', 'roxo'], pRenda: ['carteira', 'verde'], pNicho: ['grafico', 'roxo'],
@@ -2608,7 +2593,7 @@ const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verd
 /* botões de ação secundária com "tinta" da cor (fundo pastel + borda + texto combinando) —
    usado em ações de linha de tabela (Master, Equipe) pra dar hierarquia sem virar botão sólido */
 const BTN_TINTS = {
-  lima: 'border:1px solid rgba(242,248,98,.35);background:var(--lime-soft);color:var(--lime);',
+  lima: 'border:1px solid rgba(47,111,237,.35);background:var(--lime-soft);color:var(--lime);',
   azul: 'border:1px solid rgba(139,133,240,.4);background:var(--blue-soft);color:var(--blue);',
   verde: 'border:1px solid rgba(74,222,128,.35);background:var(--green-soft);color:var(--green);',
   vermelho: 'border:1px solid rgba(242,115,94,.4);background:var(--red-soft);color:var(--red);',
@@ -2963,7 +2948,7 @@ function abrirLeadModal(r) {
   const ag = el('button');
   ag.textContent = 'Agendar';
   ag.title = 'Abre a agenda do Cal.com aqui dentro, já no nome deste lead, a confirmação é registrada no painel na hora';
-  ag.style.cssText = 'background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13px;padding:9px 16px;border-radius:9px;border:0;cursor:pointer;';
+  ag.style.cssText = 'background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;padding:9px 16px;border-radius:9px;border:0;cursor:pointer;';
   ag.onclick = () => abrirCalModal(r);
   acoes.appendChild(ag);
   if (!r.resultado) {
@@ -3047,7 +3032,7 @@ function abrirLeadModal(r) {
   bAdd.onclick = () => { LM_DRAFT.campos.push({ k: '', v: '' }); abrirLeadModal(r); };
   const bSalvar = el('button');
   bSalvar.textContent = 'Salvar anotações';
-  bSalvar.style.cssText = 'background:var(--lime);color:var(--brand-ink);border:none;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:9px;cursor:pointer;';
+  bSalvar.style.cssText = 'background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);border:none;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:9px;cursor:pointer;';
   bSalvar.onclick = () => salvarLeadCampos(r, { obs: LM_DRAFT.obs, campos_extras: LM_DRAFT.campos });
   rodape.append(bAdd, bSalvar);
   c.appendChild(rodape);
@@ -3773,7 +3758,7 @@ function qeRenderAparencia(box) {
 
   const btnRow = el('div'); btnRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:6px;';
   const btnSalvar = el('button'); btnSalvar.textContent = 'Salvar aparência';
-  btnSalvar.style.cssText = 'padding:10px 18px;border:none;border-radius:9px;background:var(--lime);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;';
+  btnSalvar.style.cssText = 'padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;';
   const status = el('span', 'muted-cell'); status.style.marginLeft = '4px';
   btnSalvar.onclick = async () => {
     status.textContent = 'salvando…';
@@ -4206,7 +4191,7 @@ async function kbCarregar() {
   if (!vis.find((b) => b.id === KB_BOARD)) KB_BOARD = vis.length ? vis[0].id : null;
   kbRender();
 }
-const KB_CORES = { verde: '#16a34a', roxo: '#7c3aed', azul: '#2563eb', vermelho: '#dc2626', laranja: '#ea580c', amarelo: '#ca8a04', rosa: '#db2777', turquesa: '#0d9488', cinza: '#64748b', preto: '#1f2937' };
+const KB_CORES = { verde: '#16a34a', roxo: '#7c3aed', azul: '#2f6fed', vermelho: '#dc2626', laranja: '#ea580c', amarelo: '#ca8a04', rosa: '#db2777', turquesa: '#0d9488', cinza: '#64748b', preto: '#1f2937' };
 const KB_BUSCA = new Map();      // col_id → texto da busca da coluna
 const KB_BUSCA_ON = new Set();   // colunas com a lupa aberta
 function kbRender() {
@@ -6203,7 +6188,7 @@ async function carregarChat(primeira) {
     const dt = new Date(m.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     b.style.cssText = 'max-width:78%;padding:8px 11px;border-radius:12px;font-size:13.5px;line-height:1.4;box-shadow:var(--shadow);'
       + (m.direcao === 'out'
-        ? 'align-self:flex-end;background:var(--lime-soft);border:1px solid rgba(242,248,98,.35);'
+        ? 'align-self:flex-end;background:var(--lime-soft);border:1px solid rgba(47,111,237,.35);'
         : 'align-self:flex-start;background:var(--surface-card-2);border:1px solid var(--line);');
     const tx = el('div'); tx.textContent = m.texto;
     const hs = el('div'); hs.textContent = (m.direcao === 'out' && m.quem ? m.quem + ' · ' : '') + dt;
@@ -6266,7 +6251,7 @@ function renderInbox() {
     dir.appendChild(hr);
     if (c.nao_lidas) {
       const bd = el('span'); bd.textContent = c.nao_lidas;
-      bd.style.cssText = 'display:inline-block;margin-top:3px;background:var(--lime);color:var(--brand-ink);font-size:11px;font-weight:800;border-radius:99px;padding:1px 8px;';
+      bd.style.cssText = 'display:inline-block;margin-top:3px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-size:11px;font-weight:800;border-radius:99px;padding:1px 8px;';
       dir.appendChild(bd);
     }
     row.append(av, meio, dir);
@@ -6364,7 +6349,7 @@ function dpRenderEscolhidos() {
   const box = $('#dpEscolhidos'); clear(box);
   DP_CONTATOS.forEach((c, i) => {
     const chip = el('span');
-    chip.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:var(--lime-soft);border:1px solid rgba(242,248,98,.35);border-radius:99px;padding:4px 11px;font-size:12.5px;font-weight:600;';
+    chip.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:var(--lime-soft);border:1px solid rgba(47,111,237,.35);border-radius:99px;padding:4px 11px;font-size:12.5px;font-weight:600;';
     chip.append(c.nome || c.telefone);
     const x = el('button'); x.textContent = '✕'; x.style.cssText = 'border:none;background:none;cursor:pointer;font-size:11px;color:var(--text-muted);';
     x.onclick = () => { DP_CONTATOS.splice(i, 1); dpRenderEscolhidos(); };
