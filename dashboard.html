@@ -418,7 +418,7 @@
   .dh-seg { width: 100%; }
   .dh-label { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 7px; white-space: nowrap; }
   .dh-legenda { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 11px; color: var(--text-dim); }
-  .dh-legenda .dh-gradiente { flex: 1; max-width: 220px; height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--accent-soft), var(--chart-dark)); }
+  .dh-legenda .dh-gradiente { flex: 1; max-width: 220px; height: 8px; border-radius: 99px; background: var(--brand-gradient); }
   /* gráfico de barras verticais (1 coluna por hora) — reaproveitado do "por horário" */
   .vb-chart { display: flex; align-items: flex-end; gap: 6px; padding: 6px 2px 0; overflow-x: auto; }
   .vb-col { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 22px; }
@@ -1406,7 +1406,7 @@
         <span><b>Período do filtro:</b> <span id="relatorioFiltro"></span></span>
       </div>
     </div>
-    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+    <div id="kpiInserirBox" style="text-align:right;margin-bottom:10px;">
       <button class="acao-btn" id="kpiInserirBtn">+ Inserir KPI</button>
     </div>
 
@@ -1421,28 +1421,8 @@
 
     <!-- Grupo 4 — Entrada de leads (dia e horário) -->
     <div class="panel" id="pEntradaDiaHora">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-        <div>
-          <h2>Entrada de leads — dia e horário</h2>
-          <div class="sub">Volume por dia e por horário de entrada · identifica os picos (tem filtro de período próprio, não muda com o filtro geral do topo)</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <select id="entradaPeriodoSel" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;background:var(--surface-input);color:var(--text);">
-            <option value="7">Últimos 7 dias</option>
-            <option value="hoje">Hoje</option>
-            <option value="15">Últimos 15 dias</option>
-            <option value="30">Últimos 30 dias</option>
-            <option value="mes">Este mês</option>
-            <option value="custom">Personalizado</option>
-          </select>
-          <span id="entradaCustomBox" style="display:none;gap:6px;align-items:center;">
-            <input type="date" id="entradaIni" style="padding:7px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;background:var(--surface-input);color:var(--text);">
-            <span class="sub">até</span>
-            <input type="date" id="entradaFim" style="padding:7px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;background:var(--surface-input);color:var(--text);">
-            <button class="acao-btn" id="entradaAplicar">Aplicar</button>
-          </span>
-        </div>
-      </div>
+      <h2>Entrada de leads — dia e horário</h2>
+      <div class="sub">Volume por dia e por horário de entrada · identifica os picos (segue o filtro de período do topo)</div>
       <div class="sub" style="margin-top:12px;font-weight:700;">Por dia e horário — cada barra é 1 dia, cada fatia é 1 hora daquele dia</div>
       <div id="entradaDiaHora"></div>
       <div class="dh-legenda"><span>00h</span><span class="dh-gradiente"></span><span>23h</span></div>
@@ -2476,7 +2456,7 @@ function render() {
   renderVendedores(rows);
   renderTrilha(rows);
   renderPerDay(rows);
-  renderEntradaDiaHora();
+  renderEntradaDiaHora(rows);
   renderUF(rows);
   renderUTM(rows);
   renderUpcoming();
@@ -2494,7 +2474,7 @@ function render() {
 const SECTIONS = {
   /* Visão Geral concentra TODOS os quadros analíticos; cada módulo fica
      só com o seu card essencial */
-  geral: ['#kpisGrupo1', '#kpisGrupo2', '#kpisGrupo3', '#pAgendaram', '#pEntradaDiaHora', '#kpisRestante', '#pFunil', '#pDiaUF', '#pOrigemUtm', '#pPorAtendente', '#kpisPersonalizados'],
+  geral: ['#kpiInserirBox', '#kpisGrupo1', '#kpisGrupo2', '#kpisGrupo3', '#pAgendaram', '#pEntradaDiaHora', '#kpisRestante', '#pFunil', '#pDiaUF', '#pOrigemUtm', '#pPorAtendente', '#kpisPersonalizados'],
   agendaDash: ['#pAgendaDash'],      // só o Calendário
   agendados: ['#pUpcoming'],         // só Leads Agendados
   reunioes: ['#pReunioes'],          // reuniões por data + presença
@@ -5117,38 +5097,17 @@ function renderPerDay() {
   barChart($('#perday'), items);
 }
 
-/* ===== Entrada de leads por dia e horário (filtro de período próprio) ===== */
-let ENTRADA_RANGE = { tipo: '7', ini: null, fim: null };
+/* ===== Entrada de leads por dia e horário (segue o filtro de período do topo) ===== */
 const fmtHoraBRT = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false });
-function entradaJanela() {
-  const hojeIni = inicioHojeBRT();
-  const amanha = hojeIni + 864e5;
-  if (ENTRADA_RANGE.tipo === 'hoje') return { ini: hojeIni, fim: amanha };
-  if (ENTRADA_RANGE.tipo === '15') return { ini: hojeIni - 14 * 864e5, fim: amanha };
-  if (ENTRADA_RANGE.tipo === '30') return { ini: hojeIni - 29 * 864e5, fim: amanha };
-  if (ENTRADA_RANGE.tipo === 'mes') {
-    const d = new Date();
-    const primeiroDia = diaBRT(new Date(d.getFullYear(), d.getMonth(), 1));
-    return { ini: new Date(primeiroDia + 'T00:00:00-03:00').getTime(), fim: amanha };
-  }
-  if (ENTRADA_RANGE.tipo === 'custom') {
-    const ini = ENTRADA_RANGE.ini ? new Date(ENTRADA_RANGE.ini + 'T00:00:00-03:00').getTime() : hojeIni - 6 * 864e5;
-    const fim = ENTRADA_RANGE.fim ? new Date(ENTRADA_RANGE.fim + 'T23:59:59-03:00').getTime() : amanha;
-    return { ini, fim };
-  }
-  return { ini: hojeIni - 6 * 864e5, fim: amanha };   // padrão: últimos 7 dias
-}
-function renderEntradaDiaHora() {
+function renderEntradaDiaHora(rows) {
   const boxHora = $('#entradaPorHora'); const picoEl = $('#entradaPico');
   const boxMatriz = $('#entradaDiaHora');
   if (!boxHora) return;
-  const { ini, fim } = entradaJanela();
-  const noPeriodo = ALL.filter((r) => { const t = new Date(r.created_at).getTime(); return t >= ini && t < fim; });
 
   // matriz dia×hora: 1 mapa por dia, cada um com as 24 contagens de hora —
   // base tanto do gráfico empilhado (por dia) quanto do total por horário
   const matriz = new Map();
-  noPeriodo.forEach((r) => {
+  rows.forEach((r) => {
     const k = diaBRT(new Date(r.created_at));
     const h = Number(fmtHoraBRT.format(new Date(r.created_at))) % 24;
     if (!matriz.has(k)) matriz.set(k, new Array(24).fill(0));
@@ -5183,7 +5142,7 @@ function barChartVertical(box, items) {
   box.appendChild(chart);
 }
 /* 1 barra vertical por dia (eixo X), empilhada em 24 fatias de hora (eixo
-   Y) — cor mais escura conforme a hora avança (00h claro → 23h escuro) */
+   Y) — degradê azul→teal da marca conforme a hora avança (00h azul → 23h teal) */
 function barChartEmpilhado(box, dias, matriz) {
   clear(box);
   if (!dias.length) { const e = el('div', 'empty'); e.textContent = 'Sem dados no período.'; box.appendChild(e); return; }
@@ -5200,7 +5159,7 @@ function barChartEmpilhado(box, dias, matriz) {
       if (!v) return;
       const seg = el('div', 'dh-seg');
       seg.style.height = (v / total * 100) + '%';
-      seg.style.background = 'color-mix(in srgb, var(--chart-dark) ' + Math.round(h / 23 * 100) + '%, var(--accent-soft))';
+      seg.style.background = 'color-mix(in srgb, #14B8A6 ' + Math.round(h / 23 * 100) + '%, var(--brand))';
       seg.title = String(h).padStart(2, '0') + 'h · ' + nf(v) + ' lead(s)';
       bar.appendChild(seg);
     });
@@ -5210,17 +5169,6 @@ function barChartEmpilhado(box, dias, matriz) {
   });
   box.appendChild(chart);
 }
-$('#entradaPeriodoSel').addEventListener('change', (e) => {
-  ENTRADA_RANGE.tipo = e.target.value;
-  $('#entradaCustomBox').style.display = ENTRADA_RANGE.tipo === 'custom' ? 'inline-flex' : 'none';
-  if (ENTRADA_RANGE.tipo !== 'custom') renderEntradaDiaHora();
-});
-$('#entradaAplicar').addEventListener('click', () => {
-  ENTRADA_RANGE.ini = $('#entradaIni').value || null;
-  ENTRADA_RANGE.fim = $('#entradaFim').value || null;
-  renderEntradaDiaHora();
-});
-
 function fmtDateTime(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
