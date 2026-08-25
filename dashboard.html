@@ -610,6 +610,32 @@
   }
   #sbHamburguer { display: none; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: var(--card); cursor: pointer; color: var(--text); flex-shrink: 0; }
   #sbHamburguer svg { width: 17px; height: 17px; }
+
+  /* ===== RELATÓRIO (botão "Relatório" → window.print → "Salvar como PDF") =====
+     .only-print fica invisível na tela o tempo todo; só aparece dentro de
+     @media print, junto com o resto do ajuste (esconde navegação/controles
+     interativos, preserva as cores dos cards, evita cortar cards ao meio
+     entre páginas). */
+  .only-print { display: none; }
+  #relatorioCabecalho.only-print { margin-bottom: 18px; }
+  #relatorioCabecalho h1 { margin: 0 0 2px; font-size: 22px; color: var(--text); }
+  .relatorio-meta { display: flex; gap: 22px; margin-top: 10px; font-size: 12.5px; color: var(--text-muted); }
+  #relatorioLegenda.only-print { margin-top: 24px; padding-top: 16px; border-top: 2px solid var(--line); }
+  #relatorioLegenda h2 { font-size: 15px; margin: 0 0 10px; }
+  #relatorioLegenda dl { margin: 0; }
+  #relatorioLegenda dt { font-weight: 700; font-size: 12.5px; margin-top: 8px; color: var(--text); }
+  #relatorioLegenda dd { margin: 2px 0 0; font-size: 12px; color: var(--text-muted); }
+
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .only-print { display: block; }
+    body { background: #fff; }
+    .sidenav, .topbar, .topsearch, [style*="position:fixed;inset:0"] { display: none !important; }
+    .layout { display: block; }
+    #app { max-width: none; padding: 0; }
+    .panel, .kpi, .grid2 { break-inside: avoid; }
+    .panel { box-shadow: none; border: 1px solid #ddd; }
+  }
 </style>
 </head>
 <body>
@@ -1252,8 +1278,16 @@
           <button data-d="30">30d</button>
           <button data-d="7">7d</button>
           <button data-d="1">Hoje</button>
+          <button data-d="custom">Personalizado</button>
         </div>
+        <span id="rangeCustomBox" style="display:none;gap:6px;align-items:center;">
+          <input type="date" id="rangeIni" style="padding:7px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;background:var(--surface-input);color:var(--text);">
+          <span class="sub">até</span>
+          <input type="date" id="rangeFim" style="padding:7px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;background:var(--surface-input);color:var(--text);">
+          <button class="acao-btn" id="rangeAplicar">Aplicar</button>
+        </span>
         <button class="btn" id="btn-refresh" title="Atualizar dados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
+        <button class="btn" id="btn-relatorio" title="Baixar a Visão Geral como relatório em PDF, com o filtro de período atual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg></button>
         <button class="btn" id="btn-csv" title="Exportar relatório CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></button>
         <button class="btn" id="btn-config" title="Configurações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
       </div>
@@ -1364,6 +1398,14 @@
     </div>
 
     <div id="tabFunil">
+    <div id="relatorioCabecalho" class="only-print">
+      <h1>Relatório — Visão Geral</h1>
+      <div class="sub">Painel de indicadores do quiz e do atendimento</div>
+      <div class="relatorio-meta">
+        <span><b>Gerado em:</b> <span id="relatorioData"></span></span>
+        <span><b>Período do filtro:</b> <span id="relatorioFiltro"></span></span>
+      </div>
+    </div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
       <button class="acao-btn" id="kpiInserirBtn">+ Inserir KPI</button>
     </div>
@@ -1454,36 +1496,10 @@
 
     <!-- (o quadro "Destino dos agendamentos" mudou para Agenda → Dashboard) -->
 
-    <div class="grid2" id="pFunil">
-      <div class="panel grid2-item">
-        <h2>Funil de conversão</h2>
-        <div class="sub">Cada etapa conta quem chegou nela <i>ou além</i>, o lead avança de forma acumulada.</div>
-        <div id="funnel"></div>
-      </div>
-      <div class="panel grid2-item" id="pRenda">
-        <h2>Renda familiar mensal</h2>
-        <div class="sub">Total por faixa de renda · <b>clique numa faixa</b> para ver todos os leads dela (clique de novo para recolher)</div>
-        <div id="renda"></div>
-      </div>
-    </div>
-
-    <div class="grid2" id="pNicho">
-      <div class="panel grid2-item">
-        <h2>Como se sentem cuidando</h2>
-        <div class="sub">Resposta da pergunta 2 · barra escura = quantas agendaram conversa</div>
-        <div id="nicho"></div>
-      </div>
-      <div class="panel grid2-item">
-        <h2>Faixa etária</h2>
-        <div class="sub">Idade informada no quiz</div>
-        <div id="seguidores"></div>
-      </div>
-    </div>
-
-    <div class="panel" id="pIdadeAreas">
-      <h2>Áreas da vida mais afetadas</h2>
-      <div class="sub"><b>Clique numa área</b> para ver todos os leads que a marcaram (clique de novo para recolher). Como a pergunta aceita várias escolhas, a mesma lead pode aparecer em mais de uma área.</div>
-      <div id="desafio"></div>
+    <div class="panel" id="pFunil">
+      <h2>Funil de conversão</h2>
+      <div class="sub">Cada etapa conta quem chegou nela <i>ou além</i>, o lead avança de forma acumulada.</div>
+      <div id="funnel"></div>
     </div>
 
     <!-- ===== PERSONALIZADO — opcional, escolhido em "+ Inserir KPI" ===== -->
@@ -1497,6 +1513,26 @@
     </div>
 
     <div id="kpisPersonalizados"></div>
+
+    <div id="relatorioLegenda" class="only-print">
+      <h2>Como interpretar os dados</h2>
+      <dl>
+        <dt>Total de leads</dt><dd>Todo mundo que entrou no quiz, dentro do período do filtro.</dd>
+        <dt>Completaram o quiz</dt><dd>Chegaram até o fim das perguntas.</dd>
+        <dt>Pararam no meio</dt><dd>Responderam só uma parte, ou foram cadastrados manualmente.</dd>
+        <dt>Em atendimento</dt><dd>Leads ativos agora (sem resultado definido) que já têm um atendente responsável.</dd>
+        <dt>Tempo até 1º atendimento</dt><dd>Tempo médio da entrada do lead até o primeiro contato (resposta no WhatsApp ou atribuição de atendente).</dd>
+        <dt>Leads Atendidos</dt><dd>Todo lead que já teve pelo menos 1 atendimento registrado, mesmo que hoje já esteja convertido ou perdido.</dd>
+        <dt>Leads convertidos</dt><dd>Marcados como venda fechada.</dd>
+        <dt>Taxa de conversão</dt><dd>Percentual de leads convertidos sobre o total do período.</dd>
+        <dt>Lead perdido / Taxa de perda</dt><dd>Leads marcados como perdidos, e o percentual correspondente sobre o total.</dd>
+        <dt>Ticket médio</dt><dd>Valor médio das vendas fechadas no período.</dd>
+        <dt>Tempo de conversão</dt><dd>Tempo médio, em dias, da entrada do lead até a compra (só leads convertidos).</dd>
+        <dt>Taxa de resposta (WhatsApp)</dt><dd>Dos leads que receberam mensagem nossa, quantos responderam — e o tempo médio de resposta.</dd>
+        <dt>Tipo de resposta (WhatsApp)</dt><dd>Formato mais comum das mensagens recebidas dos leads (texto, áudio, imagem, etc.) no período.</dd>
+        <dt>Personalizado</dt><dd>Painéis opcionais, ligados em "+ Inserir KPI": Agendamento de conversas e/ou contagens por resposta de perguntas específicas do quiz.</dd>
+      </dl>
+    </div>
 
     <div class="panel tem-banner" id="pUpcoming" hidden>
       <h2>Leads Agendados</h2>
@@ -2080,13 +2116,11 @@ const nf = (n) => Number(n || 0).toLocaleString('pt-BR');
 const pct = (a, b) => b ? Math.round((a / b) * 100) : 0;
 function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
 
-// faixas na ordem certa (espelham as constantes do funil)
-const ORD_RENDA = ['Entre R$ 1.500,00 e R$ 2.500,00', 'Entre R$ 2.500,00 e R$ 5.000,00', 'Entre R$ 5.000,00 e R$ 10.000,00', 'Entre R$ 10.000,00 e R$ 20.000,00', 'Acima de R$ 20.000,00'];
-const ORD_SEG = ['🌻 30-45', '🌳 46-60', '🕊️ 61+'];
 const STATUS_ORD = { parcial: 1, contato: 2, completo: 3, agendado: 4 };
 
 let ALL = [];      // todos os leads carregados
-let RANGE = 0;     // 0 = tudo; senão nº de dias
+let RANGE = 0;     // 0 = tudo; 'custom' = intervalo escolhido; senão nº de dias
+let RANGE_CUSTOM = { ini: null, fim: null };   // yyyy-mm-dd (só quando RANGE === 'custom')
 let IS_ADMIN = false;     // true = entrou com a senha da administradora
 let MUST_CHANGE = false;  // true = usuário precisa definir a própria senha
 let ATENDENTES = [];      // nomes da equipe (pro seletor de responsável)
@@ -2167,7 +2201,6 @@ async function doLogin(token) {
     $('#userPapel').textContent = IS_ADMIN ? 'Administradora' : (IS_CS ? 'Customer Success' : 'Equipe');
     render();
     carregarPrioridade();
-    carregarRendaCfg();   // faixas de renda atuais do quiz (pro quadro de renda)
     carregarQualificadoresOrigem();   // qualificadores + links de rastreio (pro filtro de Origem) + perguntas do quiz
     carregarWaMetricas();      // taxa/tempo de resposta + tipo de resposta no WhatsApp (Grupo 3)
     carregarKpisConfig();      // Agendamento opcional + painéis por pergunta escolhidos ("+ Inserir KPI")
@@ -2329,29 +2362,79 @@ $('#range').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   [...$('#range').children].forEach((x) => x.classList.remove('on'));
   b.classList.add('on');
-  RANGE = Number(b.dataset.d);
+  const d = b.dataset.d;
+  RANGE = d === 'custom' ? 'custom' : Number(d);
+  $('#rangeCustomBox').style.display = d === 'custom' ? 'inline-flex' : 'none';
+  if (d === 'custom') return;   // espera o clique em "Aplicar" com as datas
   render();
   if (CAL_BOOKINGS !== null) renderCal();   // o filtro de data também vale pra aba Cal
+  carregarWaMetricas();   // resposta no WhatsApp acompanha o mesmo filtro
 });
+$('#rangeAplicar').onclick = () => {
+  RANGE_CUSTOM.ini = $('#rangeIni').value || null;
+  RANGE_CUSTOM.fim = $('#rangeFim').value || null;
+  render();
+  if (CAL_BOOKINGS !== null) renderCal();
+  carregarWaMetricas();
+};
+
+// relatório em PDF (window.print → "Salvar como PDF") da Visão Geral com o filtro atual
+function descreverFiltroAtual() {
+  if (RANGE === 'custom') {
+    const ini = RANGE_CUSTOM.ini ? new Date(RANGE_CUSTOM.ini + 'T00:00:00-03:00').toLocaleDateString('pt-BR') : '—';
+    const fim = RANGE_CUSTOM.fim ? new Date(RANGE_CUSTOM.fim + 'T00:00:00-03:00').toLocaleDateString('pt-BR') : '—';
+    return 'Personalizado — ' + ini + ' até ' + fim;
+  }
+  if (!RANGE) return 'Tudo (sem filtro de período)';
+  if (RANGE === 1) return 'Hoje';
+  return 'Últimos ' + RANGE + ' dias';
+}
+function baixarRelatorio() {
+  navGo('geral');
+  $('#relatorioData').textContent = new Date().toLocaleString('pt-BR');
+  $('#relatorioFiltro').textContent = descreverFiltroAtual();
+  setTimeout(() => window.print(), 50);
+}
+$('#btn-relatorio').onclick = baixarRelatorio;
 
 // ================= AGREGAÇÃO + RENDER =================
 // data-calendário de Brasília (yyyy-mm-dd) — base de todo o filtro/agrupamento por data
 const fmtDiaBRT = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' });
 const diaBRT = (d) => fmtDiaBRT.format(d);
 const inicioHojeBRT = () => new Date(diaBRT(new Date()) + 'T00:00:00-03:00').getTime();
-function inRange(lead) {
-  if (!RANGE) return true;
-  const created = new Date(lead.created_at).getTime();
+// janela ativa do filtro de período do topo — fonte única de verdade pro
+// "Tudo"/7d/30d/Hoje/Personalizado. Retorna null pra "Tudo" (sem filtro).
+function rangeJanela() {
+  if (RANGE === 'custom') {
+    if (!RANGE_CUSTOM.ini && !RANGE_CUSTOM.fim) return null;
+    const ini = RANGE_CUSTOM.ini ? new Date(RANGE_CUSTOM.ini + 'T00:00:00-03:00').getTime() : -Infinity;
+    const fim = RANGE_CUSTOM.fim ? new Date(RANGE_CUSTOM.fim + 'T23:59:59-03:00').getTime() + 1 : Infinity;
+    return { ini, fim };
+  }
+  if (!RANGE) return null;
   // Hoje = desde 00:00 de hoje (Brasília); 7d/30d = últimos N dias-calendário incluindo hoje.
-  const cutoff = inicioHojeBRT() - (RANGE - 1) * 864e5;
-  return created >= cutoff;
+  return { ini: inicioHojeBRT() - (RANGE - 1) * 864e5, fim: Infinity };
+}
+function inRange(lead) {
+  const jan = rangeJanela();
+  if (!jan) return true;
+  const created = new Date(lead.created_at).getTime();
+  return created >= jan.ini && created < jan.fim;
 }
 // janela imediatamente ANTERIOR ao filtro atual, mesma duração — base dos
-// selos de tendência (↗/↘) dos KPIs. "Tudo" (RANGE=0) não tem "antes" → null.
+// selos de tendência (↗/↘) dos KPIs. "Tudo" não tem "antes" → null.
 function periodoAnterior() {
-  if (!RANGE) return null;
-  const iniAtual = inicioHojeBRT() - (RANGE - 1) * 864e5;
-  return { ini: iniAtual - RANGE * 864e5, fim: iniAtual };
+  const jan = rangeJanela();
+  if (!jan) return null;
+  if (jan.ini === -Infinity || jan.fim === Infinity) {
+    if (RANGE !== 'custom') {
+      const iniAtual = jan.ini;
+      return { ini: iniAtual - RANGE * 864e5, fim: iniAtual };
+    }
+    return null;   // Personalizado sem uma das duas pontas não tem "antes" bem definido
+  }
+  const duracao = jan.fim - jan.ini;
+  return { ini: jan.ini - duracao, fim: jan.ini };
 }
 function inPeriodoAnterior(lead) {
   const jan = periodoAnterior();
@@ -2359,14 +2442,14 @@ function inPeriodoAnterior(lead) {
   const t = new Date(lead.created_at).getTime();
   return t >= jan.ini && t < jan.fim;
 }
-// filtro de data da aba Cal: por DATA DO AGENDAMENTO (created), "últimos N dias"
-// — igual ao funil (Hoje = agendados hoje, 7d = agendados nos últimos 7 dias).
+// filtro de data da aba Cal: por DATA DO AGENDAMENTO (created), mesma janela
+// do topo (Hoje = agendados hoje, 7d = agendados nos últimos 7 dias, etc.).
 function inRangeCal(b) {
-  if (!RANGE) return true;
+  const jan = rangeJanela();
+  if (!jan) return true;
   const t = b.created ? new Date(b.created).getTime() : 0;
   if (!t) return false;
-  const cutoff = inicioHojeBRT() - (RANGE - 1) * 864e5;
-  return t >= cutoff;
+  return t >= jan.ini && t < jan.fim;
 }
 function countBy(rows, keyFn) {
   const m = new Map();
@@ -2392,10 +2475,6 @@ function render() {
   renderFunnel(rows);
   renderVendedores(rows);
   renderTrilha(rows);
-  renderRenda(rows);
-  renderNicho(rows);
-  renderSeguidores(rows);
-  renderDesafio(rows);
   renderPerDay(rows);
   renderEntradaDiaHora();
   renderUF(rows);
@@ -2415,7 +2494,7 @@ function render() {
 const SECTIONS = {
   /* Visão Geral concentra TODOS os quadros analíticos; cada módulo fica
      só com o seu card essencial */
-  geral: ['#kpisGrupo1', '#kpisGrupo2', '#kpisGrupo3', '#pAgendaram', '#pEntradaDiaHora', '#kpisRestante', '#pFunil', '#pNicho', '#pIdadeAreas', '#pDiaUF', '#pOrigemUtm', '#pDestino', '#pPorAtendente', '#kpisPersonalizados'],
+  geral: ['#kpisGrupo1', '#kpisGrupo2', '#kpisGrupo3', '#pAgendaram', '#pEntradaDiaHora', '#kpisRestante', '#pFunil', '#pDiaUF', '#pOrigemUtm', '#pPorAtendente', '#kpisPersonalizados'],
   agendaDash: ['#pAgendaDash'],      // só o Calendário
   agendados: ['#pUpcoming'],         // só Leads Agendados
   reunioes: ['#pReunioes'],          // reuniões por data + presença
@@ -2632,8 +2711,8 @@ const DS_PATHS = {
 const DS_CORES = { azul: 'var(--blue)', verde: 'var(--green)', laranja: 'var(--amber)', lima: 'var(--lime-icon)', cinza: 'var(--text-muted)', roxo: 'var(--chart)', vermelho: 'var(--red)' };
 const DS_CORES_SOFT = { azul: 'var(--blue-soft)', verde: 'var(--green-soft)', laranja: 'var(--amber-soft)', lima: 'var(--lime-soft)', cinza: 'var(--surface-card-2)', roxo: 'var(--chart-soft)', vermelho: 'var(--red-soft)' };
 const DS_MAPA = {   /* seção → [ícone, cor] (Agenda azul · Financeiro verde · Vendas laranja · Usuários lima · Config cinza · gráficos roxo claro) */
-  pFunil: ['grafico', 'roxo'], pRenda: ['carteira', 'verde'], pNicho: ['grafico', 'roxo'],
-  pIdadeAreas: ['grafico', 'roxo'], pDiaUF: ['grafico', 'roxo'], pEntradaDiaHora: ['grafico', 'roxo'], pOrigemUtm: ['grafico', 'roxo'], pDestino: ['envio', 'azul'],
+  pFunil: ['grafico', 'roxo'],
+  pDiaUF: ['grafico', 'roxo'], pEntradaDiaHora: ['grafico', 'roxo'], pOrigemUtm: ['grafico', 'roxo'], pDestino: ['envio', 'azul'],
   pAgendaram: ['calendario', 'azul'], pPorAtendente: ['usuarios', 'lima'],
   pAgendaDash: ['calendario', 'azul'], pUpcoming: ['calendario', 'azul'], pReunioes: ['usuarios', 'azul'],
   pQuadro: ['kanban', 'azul'], pLeads: ['usuarios', 'lima'],
@@ -3835,7 +3914,7 @@ $('#qePublicar').onclick = async () => {
     body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', ...QE }),
   }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
   $('#qeStatus').textContent = r.ok ? '✓ Publicado! O quiz já está usando a nova configuração.' : ('' + (r.error || 'Erro ao publicar.'));
-  if (r.ok) { qeCarregar(); carregarRendaCfg(); }   // o quadro de renda acompanha na hora
+  if (r.ok) { qeCarregar(); carregarQualificadoresOrigem(); }   // "+ Inserir KPI" acompanha as perguntas publicadas na hora
 };
 $('#qeRestaurar').onclick = async () => {
   if (!confirm('Voltar para a configuração PADRÃO do quiz? As personalizações publicadas serão descartadas.')) return;
@@ -4614,13 +4693,19 @@ function fmtDuracaoMin(min) {
 }
 function fmtDias(d) { return d == null ? '—' : d.toFixed(1) + ' dias'; }
 
-/* ===== Métricas de resposta no WhatsApp (endpoint próprio, não entra no
-   filtro de período do topo — mesmo espírito do "Leads por dia") ===== */
+/* ===== Métricas de resposta no WhatsApp (endpoint próprio) — acompanha o
+   filtro de período do topo, recarregado toda vez que ele muda ===== */
 let WA_METRICAS = null;
 async function carregarWaMetricas() {
+  const jan = rangeJanela();
+  const body = { token: localStorage.getItem(TKEY) || '' };
+  if (jan) {
+    if (jan.ini !== -Infinity) body.desde = new Date(jan.ini).toISOString();
+    if (jan.fim !== Infinity) body.ate = new Date(jan.fim).toISOString();
+  }
   const r = await fetch('/api/wa-metricas', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '' }),
+    body: JSON.stringify(body),
   }).then((x) => x.json()).catch(() => null);
   WA_METRICAS = (r && r.ok) ? r : { respondeu: { total: 0, responderam: 0, taxa: 0, tempoMedioMin: null }, tipos: {} };
   render();
@@ -4954,76 +5039,6 @@ function renderTrilha(rows) {
   box.append(stack, stats);
 }
 
-/* Renda familiar: grupos clicáveis — abre a lista de leads da faixa / recolhe.
-   As faixas vêm da pergunta-chave PUBLICADA no editor do quiz; faixas antigas
-   (de leads que responderam antes de uma mudança) aparecem como "(faixa antiga)". */
-const RENDA_ABERTAS = new Set();
-let RENDA_CFG = null;   // opções atuais da pergunta-chave publicada
-async function carregarRendaCfg() {
-  try {
-    const d = await fetch('/api/quiz-config', { headers: { 'x-dash-token': localStorage.getItem(TKEY) || '' } }).then((x) => x.json());
-    // a faixa de renda é sempre a pergunta marcada como critério de desempate
-    // (é o mesmo campo que o quiz usa pra preencher `faturamento` no lead)
-    const chave = (d.perguntas || []).find((p) => p.desempate);
-    if (chave) { RENDA_CFG = chave.opts.map((o) => o.t); render(); }
-  } catch (e) { /* mantém as faixas fixas */ }
-}
-function renderRenda(rows) {
-  const box = $('#renda'); clear(box);
-  const SEM_RENDA = 'Ainda não responderam a renda';
-  const labels = RENDA_CFG || ORD_RENDA;
-  /* aceita também valores antigos salvos cortados (ex: "...R$ 2.500,0") */
-  const bandaDe = (r) => {
-    const v = String(r.renda || '').trim();
-    if (!v) return null;
-    return labels.find((label) => label === v || label.startsWith(v)) || null;
-  };
-  const grupos = labels.map((label) => ({ label, leads: rows.filter((r) => bandaDe(r) === label) }));
-  /* respostas de faixas que não existem mais na configuração atual */
-  const antigas = new Set();
-  rows.forEach((r) => { const v = String(r.renda || '').trim(); if (v && !bandaDe(r)) antigas.add(v); });
-  [...antigas].sort().forEach((v) => grupos.push({
-    label: v + ' · (faixa antiga)',
-    leads: rows.filter((r) => String(r.renda || '').trim() === v),
-  }));
-  grupos.push({ label: SEM_RENDA, leads: rows.filter((r) => !String(r.renda || '').trim()) });
-  const max = Math.max(...grupos.map((g) => g.leads.length), 1);
-
-  grupos.forEach((g) => box.appendChild(grupoAcordeao(g, max, RENDA_ABERTAS)));
-}
-
-/* grupo clicável genérico (usado por Renda e Áreas): cabeçalho com barra
-   proporcional + lista de leads que abre/recolhe */
-function grupoAcordeao(g, max, abertas) {
-  const won = g.leads.filter((r) => r.agendado).length;
-  const wrap = el('div', 'renda-g');
-
-  const head = el('div', 'renda-g-head');
-  const bar = el('i', 'renda-g-bar'); bar.style.width = (g.leads.length / max * 100) + '%';
-  const seta = el('span', 'renda-g-seta'); seta.textContent = abertas.has(g.label) ? '▾' : '▸';
-  const lab = el('span', 'renda-g-lab'); lab.textContent = g.label;
-  const num = el('span', 'renda-g-num');
-  const b1 = el('b'); b1.textContent = nf(g.leads.length);
-  num.append(b1, ' lead(s)');
-  if (won) { const b2 = el('b'); b2.textContent = nf(won); b2.style.color = 'var(--green)'; num.append(' · ', b2, ' agendaram'); }
-  head.append(bar, seta, lab, num);
-
-  const det = el('div', 'renda-g-det');
-  det.hidden = !abertas.has(g.label);
-  if (!det.hidden) montarTabelaLeads(det, g.leads);
-
-  head.onclick = () => {
-    if (abertas.has(g.label)) { abertas.delete(g.label); det.hidden = true; seta.textContent = '▸'; }
-    else {
-      abertas.add(g.label);
-      if (!det.firstChild) montarTabelaLeads(det, g.leads);
-      det.hidden = false; seta.textContent = '▾';
-    }
-  };
-
-  wrap.append(head, det);
-  return wrap;
-}
 function montarTabelaLeads(det, leads) {
   clear(det);
   if (!leads.length) { const e = el('div', 'muted-cell'); e.textContent = 'Nenhum lead nessa faixa no período.'; e.style.padding = '10px 4px'; det.appendChild(e); return; }
@@ -5046,38 +5061,6 @@ function montarTabelaLeads(det, leads) {
   t.appendChild(tb);
   const wrapT = el('div', 'tbl-wrap'); wrapT.appendChild(t);
   det.appendChild(wrapT);
-}
-
-function renderNicho(rows) {
-  const map = new Map();
-  rows.forEach((r) => {
-    const k = r.nicho || r.nicho_detectado; if (!k) return;
-    if (!map.has(k)) map.set(k, { total: 0, won: 0 });
-    const o = map.get(k); o.total++; if (r.agendado) o.won++;
-  });
-  const items = [...map.entries()].sort((a, b) => b[1].total - a[1].total)
-    .map(([label, o]) => ({ label, value: o.total, won: o.won }));
-  barChart($('#nicho'), items, { won: true });
-}
-
-function renderSeguidores(rows) {
-  const items = ORD_SEG.map((label) => ({ label, value: rows.filter((r) => r.seguidores === label).length }));
-  barChart($('#seguidores'), items);
-}
-
-/* Áreas da vida afetadas: pergunta de múltipla escolha — a lead conta em
-   TODOS os grupos que marcou. Casa pela figurinha (), o que
-   recupera também os registros antigos salvos cortados. */
-const ORD_AREAS = ['Saúde física', 'Saúde mental', 'Relacionamentos', 'Carreira/Trabalho', 'Tempo livre/Hobbies'];
-const AREAS_ABERTAS = new Set();
-function renderDesafio(rows) {
-  const box = $('#desafio'); clear(box);
-  const temArea = (r, label) => String(r.dificuldade || '').includes(label.split(' ')[0]);
-  const grupos = ORD_AREAS.map((label) => ({ label, leads: rows.filter((r) => temArea(r, label)) }));
-  grupos.sort((a, b) => b.leads.length - a.leads.length);
-  grupos.push({ label: 'Ainda não responderam as áreas', leads: rows.filter((r) => !String(r.dificuldade || '').trim()) });
-  const max = Math.max(...grupos.map((g) => g.leads.length), 1);
-  grupos.forEach((g) => box.appendChild(grupoAcordeao(g, max, AREAS_ABERTAS)));
 }
 
 function renderUF(rows) {
