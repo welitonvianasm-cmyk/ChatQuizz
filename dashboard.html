@@ -1483,8 +1483,10 @@
     </div>
 
     <!-- ===== PERSONALIZADO — opcional, escolhido em "+ Inserir KPI" ===== -->
-    <h2 style="margin:24px 0 2px;font-size:15.5px;font-weight:700;display:flex;align-items:center;gap:8px;">Personalizado</h2>
-    <div class="sub" style="margin-bottom:14px;">KPIs opcionais — ligue ou desligue em <b>"+ Inserir KPI"</b>, no topo desta tela.</div>
+    <div id="tituloPersonalizado">
+      <h2 style="margin:24px 0 2px;font-size:15.5px;font-weight:700;display:flex;align-items:center;gap:8px;">Personalizado</h2>
+      <div class="sub" style="margin-bottom:14px;">KPIs opcionais — ligue ou desligue em <b>"+ Inserir KPI"</b>, no topo desta tela.</div>
+    </div>
 
     <div class="panel" id="pAgendaram" hidden>
       <h2>Agendaram conversas</h2>
@@ -2474,7 +2476,7 @@ function render() {
 const SECTIONS = {
   /* Visão Geral concentra TODOS os quadros analíticos; cada módulo fica
      só com o seu card essencial */
-  geral: ['#kpiInserirBox', '#kpisGrupo1', '#kpisGrupo2', '#kpisGrupo3', '#pAgendaram', '#pEntradaDiaHora', '#kpisRestante', '#pFunil', '#pDiaUF', '#pOrigemUtm', '#pPorAtendente', '#kpisPersonalizados'],
+  geral: ['#kpiInserirBox', '#kpisGrupo1', '#kpisGrupo2', '#kpisGrupo3', '#pAgendaram', '#pEntradaDiaHora', '#kpisRestante', '#pFunil', '#tituloPersonalizado', '#pDiaUF', '#pOrigemUtm', '#pPorAtendente', '#kpisPersonalizados'],
   agendaDash: ['#pAgendaDash'],      // só o Calendário
   agendados: ['#pUpcoming'],         // só Leads Agendados
   reunioes: ['#pReunioes'],          // reuniões por data + presença
@@ -4700,13 +4702,16 @@ async function carregarKpisConfig() {
   render();
 }
 /* liga/desliga o grupo de Agendamento (hero + #pAgendaram + #pPorAtendente)
-   e renderiza os painéis por pergunta escolhidos — chamado toda vez que a
-   Visão Geral atualiza (mesmo esquema de #pDestino/#pOrigemUtm: SECTIONS já
-   desconde tudo, isso aqui só reforça o estado real por cima). */
+   e renderiza os painéis por pergunta escolhidos — chamado toda vez que
+   render() roda, mesmo fora da Visão Geral (ex.: sincronizar() a cada 45s
+   em QUALQUER aba). Por isso só mexe em hidden quando a aba atual é
+   'geral' — senão reaparecia sozinho em outros módulos a cada sincronização. */
 function aplicarKpisPersonalizados(rows) {
-  // "Agendaram conversa" já é o 1º card dentro de #pAgendaram (renderAgendaram())
-  const ag = $('#pAgendaram'); if (ag) ag.hidden = !KPIS_CONFIG.agendamentoAtivo;
-  const pa = $('#pPorAtendente'); if (pa) pa.hidden = !KPIS_CONFIG.agendamentoAtivo;
+  if (NAV_ATUAL === 'geral') {
+    // "Agendaram conversa" já é o 1º card dentro de #pAgendaram (renderAgendaram())
+    const ag = $('#pAgendaram'); if (ag) ag.hidden = !KPIS_CONFIG.agendamentoAtivo;
+    const pa = $('#pPorAtendente'); if (pa) pa.hidden = !KPIS_CONFIG.agendamentoAtivo;
+  }
   renderKpisPersonalizados(rows);
 }
 function renderKpisPersonalizados(rows) {
