@@ -29,6 +29,13 @@ const AVISO_SQL = 'Falta rodar o setup-whatsapp.sql no Supabase (módulo WhatsAp
 const configurada = () => !!(EV_URL && EV_KEY);
 const ev = (path, opts = {}) => fetch(`${EV_URL}${path}`, { ...opts, headers: { apikey: EV_KEY, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
 export const soDigitos = (t) => String(t || '').replace(/\D/g, '');
+/* extrai o texto de erro real da Evolution (formato NestJS: {message} ou {response:{message}}) —
+   sem isso, todo erro virava só "recusou (400)" sem dizer o motivo */
+export function mensagemErroEvolution(d, status) {
+  const m = (d && (d.response?.message || d.message)) || null;
+  const detalhe = Array.isArray(m) ? m.join('; ') : m;
+  return 'Evolution recusou o envio (' + status + ')' + (detalhe ? ': ' + detalhe : '');
+}
 
 /* toggles Conversas/Disparos guardados no funnel_config (por conta) */
 async function lerToggles(contaId) {
@@ -55,10 +62,10 @@ export async function enviarWhats(contaId, telefone, texto, quem, lead_ref) {
   if (!configurada()) return { ok: false, error: 'WhatsApp não conectado (Evolution não configurada).' };
   const r = await ev(`/message/sendText/${EV_INST}`, {
     method: 'POST',
-    body: JSON.stringify({ number: tel, textMessage: { text: texto } }),
+    body: JSON.stringify({ number: tel, text: texto }),
   });
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) return { ok: false, error: 'Evolution recusou o envio (' + r.status + ')' };
+  if (!r.ok) return { ok: false, error: mensagemErroEvolution(d, r.status) };
   const wa_id = (d && d.key && d.key.id) || '';
   try {
     await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {

@@ -57,9 +57,13 @@ async function enviar(telefone, texto) {
   if (!EV_URL || !EV_KEY) return { ok: false, error: 'Evolution não configurada' };
   const r = await fetch(`${EV_URL}/message/sendText/${EV_INST}`, {
     method: 'POST', headers: { apikey: EV_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ number: telefone, textMessage: { text: texto } }),
+    body: JSON.stringify({ number: telefone, text: texto }),
   });
-  if (!r.ok) return { ok: false, error: 'Evolution recusou (' + r.status + ')' };
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    const m = (d && (d.response?.message || d.message)) || null;
+    return { ok: false, error: 'Evolution recusou (' + r.status + ')' + (m ? ': ' + (Array.isArray(m) ? m.join('; ') : m) : '') };
+  }
   return { ok: true };
 }
 
