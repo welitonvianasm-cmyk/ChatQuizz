@@ -17,7 +17,20 @@ const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const AVISO_SQL = 'Falta rodar o setup-whatsapp.sql no Supabase (módulo WhatsApp).';
+const AVISO_SQL_VIP = 'Falta rodar o setup-automacoes-vip.sql no Supabase (colunas do alerta de lead prioritário).';
 const GATILHOS = ['manual', 'reuniao_1h', 'lead_vip'];
+const COLS_VIP = ['destino', 'qualificador_alvo'];   // adicionadas por setup-automacoes-vip.sql, não por setup-whatsapp.sql
+
+// olha a mensagem de erro do Postgres pra apontar a coluna que falta de
+// verdade — sem isso, qualquer erro (mesmo um migration diferente, ainda
+// pendente) era rotulado como "falta o setup-whatsapp.sql"
+function colunaFaltando(errText) {
+  const m = errText.match(/column [\w."]+\.(\w+) does not exist/);
+  return m ? m[1] : null;
+}
+function avisoPara(faltando) {
+  return (faltando && COLS_VIP.includes(faltando)) ? AVISO_SQL_VIP : AVISO_SQL;
+}
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
@@ -35,9 +48,24 @@ export default async (req) => {
     const id = Number(body.id) || 0;
 
     if (a === 'listar') {
-      const r = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&select=id,nome,gatilho,mensagem,ativa,destino,qualificador_alvo,criado_em&order=criado_em.asc`, { headers: H });
-      if (!r.ok) return json({ ok: false, error: AVISO_SQL });
+      let colsAtivas = 'id,nome,gatilho,mensagem,ativa,destino,qualificador_alvo,criado_em';
+      let r = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&select=${colsAtivas}&order=criado_em.asc`, { headers: H });
+      if (!r.ok) {
+        const errText = await r.clone().text().catch(() => '');
+        const faltando = colunaFaltando(errText);
+        if (faltando && COLS_VIP.includes(faltando)) {
+          // ainda sem setup-automacoes-vip.sql: lista sem essas 2 colunas em vez de falhar tudo
+          colsAtivas = 'id,nome,gatilho,mensagem,ativa,criado_em';
+          r = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&select=${colsAtivas}&order=criado_em.asc`, { headers: H });
+        }
+      }
+      if (!r.ok) {
+        const errText = await r.text().catch(() => '');
+        console.error('automacoes listar error:', r.status, errText.slice(0, 200));
+        return json({ ok: false, error: avisoPara(colunaFaltando(errText)) });
+      }
       let automacoes = await r.json();
+      automacoes = automacoes.map((am) => ({ destino: '', qualificador_alvo: '', ...am }));
       // número de staff é dado sensível — só a administradora vê de verdade
       if (!auth.admin) automacoes = automacoes.map((am) => ({ ...am, destino: am.destino ? '••••••' : '' }));
       return json({ ok: true, automacoes });
@@ -63,7 +91,11 @@ export default async (req) => {
       const r = a === 'criar'
         ? await fetch(`${SB_URL}/rest/v1/automacoes`, { method: 'POST', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch) })
         : await fetch(`${SB_URL}/rest/v1/automacoes?id=eq.${id}&conta_id=eq.${contaId}`, { method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
-      if (!r.ok) return json({ ok: false, error: AVISO_SQL });
+      if (!r.ok) {
+        const errText = await r.text().catch(() => '');
+        console.error('automacoes salvar error:', r.status, errText.slice(0, 200));
+        return json({ ok: false, error: avisoPara(colunaFaltando(errText)) });
+      }
       return json({ ok: true });
     }
 
