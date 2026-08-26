@@ -28,6 +28,16 @@ const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const STATUS_VALIDOS = ['', 'concluido', 'reagendado', 'cancelado', 'compareceu', 'nao_compareceu'];
+/* número digitado sem DDI (10-11 dígitos = DDD + fixo/celular local) → assume
+   Brasil e completa o 55; sem isso a Evolution/WhatsApp recusa o envio por
+   número inválido (o quiz público já resolve isso sozinho com um seletor de
+   país — aqui é só o cadastro manual "+ Novo Lead", que não tem esse campo).
+   Guarda com "+" na frente, mesmo formato E.164 já usado por save-lead.mjs. */
+function comDDI(whatsapp) {
+  const d = String(whatsapp || '').replace(/\D/g, '');
+  if (!d) return '';
+  return '+' + ((d.length === 10 || d.length === 11) ? '55' + d : d);
+}
 const ETAPAS_VALIDAS = ['', 'novo', 'atribuido', 'conversa', 'agendado'];   // perdido/convertido vivem no `resultado`
 const AVISO_SQL = 'Falta rodar o setup-card.sql no Supabase (coluna de anotações da equipe).';
 const CAL_API = 'https://api.cal.com/v2';
@@ -108,7 +118,7 @@ export default async (req) => {
       };
       const novo = {
         conta_id: contaId, lead_ref, nome,
-        whatsapp: String(d.whatsapp || '').trim().slice(0, 40),
+        whatsapp: comDDI(d.whatsapp).slice(0, 40),
         email: String(d.email || '').trim().slice(0, 160),
         uf: String(d.uf || '').trim().slice(0, 2).toUpperCase(),
         renda: String(d.renda || '').trim().slice(0, 80),

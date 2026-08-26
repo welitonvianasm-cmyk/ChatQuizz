@@ -46,6 +46,11 @@ export default async (req) => {
     const body = await req.json().catch(() => ({}));
     const email = String(body.email || '').trim().toLowerCase().slice(0, 160);
     const telefone = String(body.telefone || '').replace(/\D/g, '');
+    // plataformas de pagamento costumam mandar só DDD+número, sem o 55 — sem
+    // isso o WhatsApp/Evolution recusa o envio por número inválido depois.
+    // Só usado pra GRAVAR o lead novo; o match por telefone (abaixo) já é por
+    // sufixo, então funciona igual com ou sem DDI.
+    const telefoneComDDI = telefone && (telefone.length === 10 || telefone.length === 11) ? '55' + telefone : telefone;
     const nome = String(body.nome || '').trim().slice(0, 160);
     const produtoRaw = String(body.produto || '').trim().slice(0, 120);
     const valor = Math.max(0, Number(body.valor) || 0);
@@ -79,7 +84,7 @@ export default async (req) => {
       const eq0 = { obs: '', campos: [], historico: [{ t: agora, quem: 'Webhook Pagamento', txt: 'Lead criado automaticamente por um pagamento confirmado (' + produtoRaw + ')' }] };
       const novo = {
         conta_id: contaId, lead_ref, nome: nome || 'Cliente sem nome',
-        whatsapp: telefone, email, status: 'completo', origem: 'webhook-pagamento',
+        whatsapp: telefoneComDDI, email, status: 'completo', origem: 'webhook-pagamento',
         equipe_json: JSON.stringify(eq0), created_at: agora, updated_at: agora,
       };
       const r = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads`, {
@@ -186,7 +191,7 @@ export default async (req) => {
        pra aprovação, sem depender do Lead nem do módulo Vendas de lá */
     if (!duplicado) {
       dispararMentoriaHub(contaId, 'conversao', {
-        nome: lead.nome || nome || '', email: lead.email || email || '', telefone: lead.whatsapp || telefone || '',
+        nome: lead.nome || nome || '', email: lead.email || email || '', telefone: lead.whatsapp || telefoneComDDI || '',
         produto: produtoFinal, valor, formaPagamento, chatquizzLeadRef: lead.lead_ref,
       });
     }

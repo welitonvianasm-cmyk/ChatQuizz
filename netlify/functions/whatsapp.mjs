@@ -29,11 +29,18 @@ const AVISO_SQL = 'Falta rodar o setup-whatsapp.sql no Supabase (módulo WhatsAp
 const configurada = () => !!(EV_URL && EV_KEY);
 const ev = (path, opts = {}) => fetch(`${EV_URL}${path}`, { ...opts, headers: { apikey: EV_KEY, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
 export const soDigitos = (t) => String(t || '').replace(/\D/g, '');
-/* extrai o texto de erro real da Evolution (formato NestJS: {message} ou {response:{message}}) —
-   sem isso, todo erro virava só "recusou (400)" sem dizer o motivo */
+/* extrai o texto de erro real da Evolution — o formato varia (string, array de
+   strings, ou objeto aninhado em response.message) — sem isso, todo erro virava
+   só "recusou (400)" ou literalmente "[object Object]", sem dizer o motivo */
+function textoDe(m) {
+  if (m == null) return null;
+  if (typeof m === 'string') return m;
+  if (Array.isArray(m)) return m.map((x) => textoDe(x) || JSON.stringify(x)).join('; ');
+  if (typeof m === 'object') return textoDe(m.message) || JSON.stringify(m);
+  return String(m);
+}
 export function mensagemErroEvolution(d, status) {
-  const m = (d && (d.response?.message || d.message)) || null;
-  const detalhe = Array.isArray(m) ? m.join('; ') : m;
+  const detalhe = textoDe(d && (d.response?.message ?? d.message ?? d.error));
   return 'Evolution recusou o envio (' + status + ')' + (detalhe ? ': ' + detalhe : '');
 }
 

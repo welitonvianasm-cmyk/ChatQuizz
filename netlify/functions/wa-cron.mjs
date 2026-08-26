@@ -53,6 +53,15 @@ function preencher(msg, lead) {
     .replaceAll('{{horario}}', horario).replaceAll('{{link_reuniao}}', link);
 }
 
+/* mesma extração de erro de whatsapp.mjs — duplicado de propósito (funções
+   Netlify não compartilham módulo entre si nesse projeto) */
+function textoDeErro(m) {
+  if (m == null) return null;
+  if (typeof m === 'string') return m;
+  if (Array.isArray(m)) return m.map((x) => textoDeErro(x) || JSON.stringify(x)).join('; ');
+  if (typeof m === 'object') return textoDeErro(m.message) || JSON.stringify(m);
+  return String(m);
+}
 async function enviar(telefone, texto) {
   if (!EV_URL || !EV_KEY) return { ok: false, error: 'Evolution não configurada' };
   const r = await fetch(`${EV_URL}/message/sendText/${EV_INST}`, {
@@ -61,8 +70,8 @@ async function enviar(telefone, texto) {
   });
   if (!r.ok) {
     const d = await r.json().catch(() => ({}));
-    const m = (d && (d.response?.message || d.message)) || null;
-    return { ok: false, error: 'Evolution recusou (' + r.status + ')' + (m ? ': ' + (Array.isArray(m) ? m.join('; ') : m) : '') };
+    const detalhe = textoDeErro(d && (d.response?.message ?? d.message ?? d.error));
+    return { ok: false, error: 'Evolution recusou (' + r.status + ')' + (detalhe ? ': ' + detalhe : '') };
   }
   return { ok: true };
 }
