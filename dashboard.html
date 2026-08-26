@@ -3194,12 +3194,6 @@ function abrirLeadModal(r) {
   ag.style.cssText = 'background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:12px;padding:6px 11px;border-radius:8px;border:0;cursor:pointer;';
   ag.onclick = () => abrirCalModal(r);
   stRow.appendChild(ag);
-  const editarBtn = el('button');
-  editarBtn.textContent = '✎ Editar';
-  editarBtn.title = 'Corrigir nome, WhatsApp, e-mail ou a data do agendamento';
-  editarBtn.style.cssText = 'background:var(--surface-card-2);color:var(--text);border:1.5px solid var(--line);font-weight:700;font-size:12px;padding:6px 10px;border-radius:8px;cursor:pointer;';
-  editarBtn.onclick = () => abrirEditarLead(r);
-  stRow.appendChild(editarBtn);
   if (!r.resultado) {
     const conv = el('button');
     conv.textContent = '✓ Convertido';
@@ -3346,13 +3340,18 @@ function abrirLeadModal(r) {
     }
   }));
 
-  /* excluir lead — ação de maior consequência, fica isolada no fim do cartão */
-  const zonaExcluir = el('div'); zonaExcluir.style.cssText = 'display:flex;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--line);';
+  /* editar + excluir — ações de rodapé, isoladas no fim do cartão */
+  const zonaExcluir = el('div'); zonaExcluir.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line);';
+  const editarBtn = el('button');
+  editarBtn.textContent = '✎ Editar';
+  editarBtn.title = 'Corrigir nome, WhatsApp ou e-mail';
+  editarBtn.style.cssText = 'background:var(--surface-card-2);color:var(--text);border:1.5px solid var(--line);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
+  editarBtn.onclick = () => abrirEditarLead(r);
   const bx = el('button');
   bx.textContent = 'Excluir lead';
   bx.style.cssText = 'background:var(--surface-card-2);color:var(--red);border:1.5px solid var(--red);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
   bx.onclick = () => excluirLead(r);
-  zonaExcluir.appendChild(bx);
+  zonaExcluir.append(editarBtn, bx);
   c.appendChild(zonaExcluir);
 
   $('#leadModal').style.display = 'flex';
