@@ -553,7 +553,7 @@
   /* ===== MODAIS — abertura suave + card/overlay unificados ===== */
   @keyframes dsPop { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
   #leadModal > div, #calModal > div, #vendaModal > div, #alertModal > div, #diaModal > div,
-  #novoLeadModal > div, #novoAgendamentoModal > div, #remarcarModal > div, #masterContaModal > div, #euNovoModal > div, #euDetModal > div, #chatModal > div,
+  #novoLeadModal > div, #novoAgendamentoModal > div, #remarcarModal > div, #masterContaModal > div, #euNovoModal > div, #euDetModal > div, #chatModal > div, #editarLeadModal > div,
   #modalConexaoPlano > div, #modalConexaoDominio > div, #modalConexaoWhatsapp > div, #modalConexaoCalcom > div,
   #modalConexaoMentoriaHub > div, #modalConexaoGoogleAgenda > div, #modalConexaoPagamento > div, #promptModal > div { animation: dsPop .18s ease; }
   #sinoLista { animation: dsPop .15s ease; }
@@ -783,6 +783,25 @@
         <button class="acao-btn" id="lmFechar" title="Fechar">✕</button>
       </div>
       <div id="lmCorpo"></div>
+    </div>
+  </div>
+
+  <!-- EDITAR LEAD — corrige nome/WhatsApp/e-mail (agendamento tem seu próprio
+       "Remarcar", que já sincroniza com o Cal.com de verdade — não duplicado aqui) -->
+  <div id="editarLeadModal" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(20,20,40,.5);align-items:center;justify-content:center;padding:16px;">
+    <div class="modal-card" style="max-width:440px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <h2 style="flex:1;margin:0;font-size:17px;">Editar Lead</h2>
+        <button class="acao-btn" id="elFechar" title="Fechar">✕</button>
+      </div>
+      <div style="display:grid;gap:10px;">
+        <label style="font-size:11.5px;font-weight:700;">Nome<input id="elNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+        <label style="font-size:11.5px;font-weight:700;">WhatsApp<input id="elWhats" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="(11) 99999-9999"></label>
+        <label style="font-size:11.5px;font-weight:700;">E-mail<input id="elEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+        <div class="muted-cell">Pra corrigir a data do agendamento, use "Remarcar" dentro da seção Agendamento — assim, se for uma reunião real do Cal.com, ela também é movida lá.</div>
+      </div>
+      <div class="muted-cell" id="elErr" style="color:var(--red);margin-top:8px;"></div>
+      <button id="elSalvar" style="margin-top:10px;width:100%;padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar alterações</button>
     </div>
   </div>
 
@@ -2897,6 +2916,9 @@ async function salvarLeadCampos(r, campos) {
     body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', lead_ref: r.lead_ref, campos }),
   }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
   if (res.ok) {
+    if (campos.nome !== undefined) r.nome = campos.nome;
+    if (campos.whatsapp !== undefined) r.whatsapp = res.whatsapp !== undefined ? res.whatsapp : campos.whatsapp;
+    if (campos.email !== undefined) r.email = campos.email;
     if (campos.atendente !== undefined) {
       r.atendente = campos.atendente;
       if (!r.resultado) r.etapa = campos.atendente ? 'atribuido' : '';
@@ -3130,11 +3152,13 @@ function abrirLeadModal(r) {
   if (r.resultado === 'convertido') { const p = el('span', 'pill agendado'); p.textContent = '✓ CONVERTIDO'; st.appendChild(p); }
   if (r.resultado === 'perdido') { const p = el('span', 'pill parcial'); p.textContent = '✕ PERDIDO'; st.appendChild(p); }
 
-  /* Status oficial do funil — editável; o card no Kanban acompanha sozinho */
-  const stRow = el('div'); stRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin:8px 0 2px;font-size:13px;font-weight:700;';
+  /* Status oficial do funil (editável) + botões principais — tudo numa linha
+     só, compacto o bastante pra caber (quebra pro renglão de baixo se faltar
+     espaço em telas estreitas, em vez de cortar ou rolar). */
+  const stRow = el('div'); stRow.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0 4px;font-size:12.5px;font-weight:700;';
   stRow.append('Status:');
   const stSel = el('select');
-  stSel.style.cssText = 'padding:7px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;';
+  stSel.style.cssText = 'padding:5px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;';
   [['novo', 'Novo'], ['atribuido', 'Atribuído'], ['conversa', 'Em Conversa'], ['agendado', 'Agendado'], ['convertido', '✓ Convertido'], ['perdido', '✕ Perdido']]
     .forEach(([v, tx]) => { const o = el('option'); o.value = v; o.textContent = tx; stSel.appendChild(o); });
   stSel.value = statusCRM(r);
@@ -3156,60 +3180,81 @@ function abrirLeadModal(r) {
     salvarLeadCampos(r, campos);
   };
   stRow.appendChild(stSel);
-  c.appendChild(stRow);
-
-  /* botões principais: Conversar · Agendar · Excluir — compactos, tudo numa linha só */
-  const acoes = el('div'); acoes.style.cssText = 'display:flex;gap:6px;flex-wrap:nowrap;align-items:center;margin:10px 0 4px;overflow-x:auto;';
   if (r.whatsapp) {
     const wa = el('button');
     wa.textContent = 'Conversar';
     wa.title = 'WhatsApp conectado + Conversas ativadas = chat aqui dentro; senão abre o WhatsApp Web';
-    wa.style.cssText = 'background:var(--success-bg);color:var(--success-text);font-weight:700;font-size:13px;padding:9px 16px;border-radius:9px;border:0;cursor:pointer;';
+    wa.style.cssText = 'background:var(--success-bg);color:var(--success-text);font-weight:700;font-size:12px;padding:6px 11px;border-radius:8px;border:0;cursor:pointer;';
     wa.onclick = () => abrirConversa(r);
-    acoes.appendChild(wa);
+    stRow.appendChild(wa);
   }
   const ag = el('button');
   ag.textContent = 'Agendar';
   ag.title = 'Abre a agenda do Cal.com aqui dentro, já no nome deste lead, a confirmação é registrada no painel na hora';
-  ag.style.cssText = 'background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;padding:9px 16px;border-radius:9px;border:0;cursor:pointer;';
+  ag.style.cssText = 'background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:12px;padding:6px 11px;border-radius:8px;border:0;cursor:pointer;';
   ag.onclick = () => abrirCalModal(r);
-  acoes.appendChild(ag);
+  stRow.appendChild(ag);
+  const editarBtn = el('button');
+  editarBtn.textContent = '✎ Editar';
+  editarBtn.title = 'Corrigir nome, WhatsApp, e-mail ou a data do agendamento';
+  editarBtn.style.cssText = 'background:var(--surface-card-2);color:var(--text);border:1.5px solid var(--line);font-weight:700;font-size:12px;padding:6px 10px;border-radius:8px;cursor:pointer;';
+  editarBtn.onclick = () => abrirEditarLead(r);
+  stRow.appendChild(editarBtn);
   if (!r.resultado) {
     const conv = el('button');
     conv.textContent = '✓ Convertido';
     conv.title = 'Marcar este lead como CONVERTIDO (sai dos ativos)';
-    conv.style.cssText = 'background:var(--surface-card-2);color:var(--green);border:1.5px solid var(--green);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
+    conv.style.cssText = 'background:var(--surface-card-2);color:var(--green);border:1.5px solid var(--green);font-weight:700;font-size:12px;padding:6px 10px;border-radius:8px;cursor:pointer;';
     conv.onclick = () => { if (confirm('Marcar ' + (r.nome || 'este lead') + ' como CONVERTIDO?')) salvarLeadCampos(r, { resultado: 'convertido' }); };
     const perd = el('button');
     perd.textContent = '✕ Perdido';
     perd.title = 'Marcar este lead como PERDIDO (sai dos ativos)';
-    perd.style.cssText = 'background:var(--surface-card-2);color:var(--amber);border:1.5px solid var(--amber);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
+    perd.style.cssText = 'background:var(--surface-card-2);color:var(--amber);border:1.5px solid var(--amber);font-weight:700;font-size:12px;padding:6px 10px;border-radius:8px;cursor:pointer;';
     perd.onclick = async () => {
       const m = await perguntarMotivoPerda();
       if (m === null) return;
       salvarLeadCampos(r, { resultado: 'perdido', resultado_motivo: m });
     };
-    acoes.append(conv, perd);
+    stRow.append(conv, perd);
   } else if (IS_ADMIN) {
     const rea = el('button');
     rea.textContent = 'Reativar lead';
     rea.title = 'Voltar este lead para os ativos (só administradora)';
-    rea.style.cssText = 'background:var(--surface-card-2);color:var(--accent-dark);border:1.5px solid var(--accent);font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer;';
+    rea.style.cssText = 'background:var(--surface-card-2);color:var(--accent-dark);border:1.5px solid var(--accent);font-weight:700;font-size:12px;padding:6px 10px;border-radius:8px;cursor:pointer;';
     rea.onclick = () => { if (confirm('Reativar ' + (r.nome || 'este lead') + '? Ele volta para os Leads Ativos.')) salvarLeadCampos(r, { resultado: '' }); };
-    acoes.appendChild(rea);
+    stRow.appendChild(rea);
   }
-  c.appendChild(acoes);
+  c.appendChild(stRow);
   if (r.resultado) {
     c.appendChild(lmLinha(r.resultado === 'convertido' ? '✓ Convertido em' : '✕ Perdido em', fmtDateTime(r.resultado_em)));
     c.appendChild(lmLinha('Marcado por', r.resultado_por));
     if (r.resultado === 'perdido') c.appendChild(lmLinha('Motivo da perda', r.resultado_motivo));
   }
 
-  const h1 = el('h2'); h1.textContent = 'Agendamento'; h1.style.marginTop = '12px'; c.appendChild(h1);
-  c.appendChild(lmLinha('Quando', r.agendamento_em ? fmtDateTime(r.agendamento_em) : '—'));
-  c.appendChild(lmLinha('Atendente', selAtendente(r)));
-  c.appendChild(lmLinha('Ações', acoesAgendamento(r)));
-  if (r.booking_uid && r.booking_uid !== 'confirmado_manual') c.appendChild(lmLinha('Código no Cal', r.booking_uid));
+  /* dados de cadastro do lead — sempre visível (não é seção recolhível) */
+  const hDados = el('h2'); hDados.textContent = 'Dados do Lead'; hDados.style.marginTop = '14px'; c.appendChild(hDados);
+  if (r.whatsapp) {
+    const aWa = el('a'); aWa.href = 'https://wa.me/' + String(r.whatsapp).replace(/\D/g, ''); aWa.target = '_blank'; aWa.rel = 'noopener';
+    aWa.textContent = r.whatsapp; aWa.style.cssText = 'font-weight:600;color:var(--text);';
+    c.appendChild(lmLinha('WhatsApp', aWa));
+  } else c.appendChild(lmLinha('WhatsApp', '—'));
+  c.appendChild(lmLinha('E-mail', r.email || '—'));
+  c.appendChild(lmLinha('UF', r.uf || '—'));
+  c.appendChild(lmLinha('Origem', r.origem || '—'));
+  if (r.instagram) {
+    const aIg = el('a'); aIg.href = 'https://instagram.com/' + String(r.instagram).replace(/^@/, ''); aIg.target = '_blank'; aIg.rel = 'noopener';
+    aIg.textContent = r.instagram; aIg.style.cssText = 'font-weight:600;color:var(--text);';
+    c.appendChild(lmLinha('Instagram', aIg));
+  }
+  c.appendChild(lmLinha('Entrou no quiz em', fmtDateTime(r.created_at)));
+  c.appendChild(lmLinha('Última atualização', fmtDateTime(r.updated_at)));
+
+  c.appendChild(lmSecao('Agendamento', (body) => {
+    body.appendChild(lmLinha('Quando', r.agendamento_em ? fmtDateTime(r.agendamento_em) : '—'));
+    body.appendChild(lmLinha('Atendente', selAtendente(r)));
+    body.appendChild(lmLinha('Ações', acoesAgendamento(r)));
+    if (r.booking_uid && r.booking_uid !== 'confirmado_manual') body.appendChild(lmLinha('Código no Cal', r.booking_uid));
+  }));
 
   /* cliente recorrente: mostra as compras anteriores, não só a última
      (a atual já aparece em "Vendeu"/Pós-Venda — aqui é só o histórico) */
@@ -3260,20 +3305,28 @@ function abrirLeadModal(r) {
   rodape.append(bAdd, bSalvar);
   c.appendChild(rodape);
 
+  /* dinâmico: 1 linha por pergunta ATUALMENTE cadastrada no quiz (não por
+     campo fixo do lead) — pergunta nova aparece sozinha pros próximos leads
+     que responderem; pergunta excluída some daqui também (não guardamos o
+     texto de perguntas já removidas do Editor do Quiz) */
   c.appendChild(lmSecao('Respostas do quiz', (body) => {
-    if (r.whatsapp) {
-      const a = el('a'); a.href = 'https://wa.me/' + String(r.whatsapp).replace(/\D/g, ''); a.target = '_blank'; a.rel = 'noopener';
-      a.textContent = r.whatsapp; a.style.cssText = 'font-weight:600;color:var(--text);';
-      body.appendChild(lmLinha('WhatsApp', a));
-    } else body.appendChild(lmLinha('WhatsApp', '—'));
-    body.appendChild(lmLinha('E-mail', r.email));
-    body.appendChild(lmLinha('Renda familiar', r.renda));
-    body.appendChild(lmLinha('Como se sente', r.nicho));
-    body.appendChild(lmLinha('Áreas afetadas', r.dificuldade));
-    body.appendChild(lmLinha('Faixa etária', r.seguidores));
-    body.appendChild(lmLinha('Buscou ajuda antes?', r.nicho_detectado));
-    body.appendChild(lmLinha('Entrou no quiz em', fmtDateTime(r.created_at)));
-    body.appendChild(lmLinha('Última atualização', fmtDateTime(r.updated_at)));
+    let respostas = null;
+    try { respostas = JSON.parse(r.respostas_json || ''); } catch { /* sem respostas salvas */ }
+    let alguma = false;
+    (QUIZ_PERGUNTAS_CACHE || []).forEach((pergunta) => {
+      if (!respostas) return;
+      const v = respostas[pergunta.id];
+      if (v == null) return;
+      const indices = Array.isArray(v) ? v : [v];
+      const textos = indices.map((i) => pergunta.opts && pergunta.opts[i] && pergunta.opts[i].t).filter(Boolean);
+      if (!textos.length) return;
+      alguma = true;
+      body.appendChild(lmLinha(pergunta.q, textos.join(', ')));
+    });
+    if (!alguma) {
+      const e2 = el('div', 'muted-cell'); e2.textContent = 'Este lead ainda não respondeu nenhuma pergunta do quiz atual.'; e2.style.padding = '6px 0';
+      body.appendChild(e2);
+    }
   }));
 
   /* histórico automático */
@@ -3326,6 +3379,31 @@ function lmSecao(titulo, montar) {
 }
 function fecharLeadModal() { $('#leadModal').style.display = 'none'; LM_ATUAL = null; LM_DRAFT = null; }
 $('#lmFechar').onclick = fecharLeadModal;
+
+/* ===== Editar Lead — corrige nome/WhatsApp/e-mail (dados de cadastro) ===== */
+let EL_ATUAL = null;
+function abrirEditarLead(r) {
+  if (!podeAcessarLead(r)) { avisarLeadBloqueado(r); return; }
+  EL_ATUAL = r;
+  $('#elNome').value = r.nome || '';
+  $('#elWhats').value = r.whatsapp || '';
+  $('#elEmail').value = r.email || '';
+  $('#elErr').textContent = '';
+  $('#editarLeadModal').style.display = 'flex';
+}
+function fecharEditarLead() { $('#editarLeadModal').style.display = 'none'; EL_ATUAL = null; }
+$('#elFechar').onclick = fecharEditarLead;
+$('#editarLeadModal').addEventListener('click', (e) => { if (e.target.id === 'editarLeadModal') fecharEditarLead(); });
+$('#elSalvar').onclick = async () => {
+  const r = EL_ATUAL; if (!r) return;
+  const nome = $('#elNome').value.trim();
+  if (!nome) { $('#elErr').textContent = 'O nome não pode ficar vazio.'; return; }
+  $('#elErr').textContent = '';
+  const res = await salvarLeadCampos(r, { nome, whatsapp: $('#elWhats').value.trim(), email: $('#elEmail').value.trim() });
+  if (!res || !res.ok) return;   // salvarLeadCampos já mostra o toast de erro
+  toast('success', 'Salvo!', 'Dados do lead atualizados.');
+  fecharEditarLead();
+};
 $('#leadModal').addEventListener('click', (e) => { if (e.target === $('#leadModal')) fecharLeadModal(); });
 
 /* ===== AGENDAR PELO PAINEL — Cal.com embutido, em nome do lead =====

@@ -376,14 +376,14 @@ export default async (req) => {
     // estado atual (pra mesclar anotações e montar o histórico)
     let temColunaResultado = true;
     let temColunaEtapa = true;
-    let rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,atendente,agendamento_status,agendamento_em,resultado,etapa,equipe_json&limit=1`, { headers: H });
+    let rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,atendente,agendamento_status,agendamento_em,resultado,etapa,equipe_json&limit=1`, { headers: H });
     if (!rc.ok) {
       temColunaEtapa = false;       // coluna etapa pode não existir ainda (setup-kanban3)
-      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,atendente,agendamento_status,agendamento_em,resultado,equipe_json&limit=1`, { headers: H });
+      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,atendente,agendamento_status,agendamento_em,resultado,equipe_json&limit=1`, { headers: H });
     }
     if (!rc.ok) {
       temColunaResultado = false;   // coluna resultado pode não existir ainda
-      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,atendente,agendamento_status,agendamento_em,equipe_json&limit=1`, { headers: H });
+      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,atendente,agendamento_status,agendamento_em,equipe_json&limit=1`, { headers: H });
     }
     let atual = {};
     let temColunaEquipe = true;
@@ -403,6 +403,20 @@ export default async (req) => {
 
     const patch = { updated_at: new Date().toISOString() };
     let mexeuEquipe = false;
+
+    if ('nome' in c) {
+      const novoNome = String(c.nome || '').trim().slice(0, 160);
+      if (!novoNome) return json({ ok: false, error: 'O nome não pode ficar vazio.' });
+      if (novoNome !== (atual.nome || '')) { patch.nome = novoNome; hist('Nome alterado para "' + novoNome + '"'); mexeuEquipe = true; }
+    }
+    if ('whatsapp' in c) {
+      const novoWhats = comDDI(c.whatsapp);
+      if (novoWhats !== (atual.whatsapp || '')) { patch.whatsapp = novoWhats; hist('WhatsApp corrigido'); mexeuEquipe = true; }
+    }
+    if ('email' in c) {
+      const novoEmail = String(c.email || '').trim().slice(0, 160);
+      if (novoEmail !== (atual.email || '')) { patch.email = novoEmail; hist('E-mail corrigido'); mexeuEquipe = true; }
+    }
 
     let mudouAtendente = false;
     if ('atendente' in c) {
@@ -546,6 +560,7 @@ export default async (req) => {
       resultado_em: patch.resultado_em !== undefined ? patch.resultado_em : undefined,
       resultado_por: patch.resultado_por !== undefined ? patch.resultado_por : undefined,
       resultado_motivo: patch.resultado_motivo !== undefined ? patch.resultado_motivo : undefined,
+      whatsapp: patch.whatsapp !== undefined ? patch.whatsapp : undefined,
     });
   } catch (e) {
     console.error('lead-admin:', e?.message || e);
