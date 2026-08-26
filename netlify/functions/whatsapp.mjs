@@ -55,7 +55,7 @@ export async function enviarWhats(contaId, telefone, texto, quem, lead_ref) {
   if (!configurada()) return { ok: false, error: 'WhatsApp não conectado (Evolution não configurada).' };
   const r = await ev(`/message/sendText/${EV_INST}`, {
     method: 'POST',
-    body: JSON.stringify({ number: tel, text: texto }),
+    body: JSON.stringify({ number: tel, textMessage: { text: texto } }),
   });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) return { ok: false, error: 'Evolution recusou o envio (' + r.status + ')' };
