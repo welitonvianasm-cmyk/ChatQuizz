@@ -6,8 +6,10 @@
  * Ações da ADMINISTRADORA (funcao_adm ou eh_dono):
  *   { token, action:'list' }                                   → { ok, users }  (sem senhas!)
  *   { token, action:'logs' }                                   → { ok, logs }
- *   { token, action:'create', nome, email, celular, validade } → { ok, senhaTemporaria }
- *   { token, action:'update', id, nome, email, celular, validade }
+ *   { token, action:'create', nome, email, celular, validade, permissoes? } → { ok, senhaTemporaria }
+ *   { token, action:'update', id, nome, email, celular, validade, permissoes? }
+ *     `permissoes: { tudo: bool, modulos: {chave: bool} }` — visibilidade de menu
+ *     por módulo (fora de funcao_adm/funcao_cs); não pode ser alterada em si mesma.
  *   { token, action:'reset',  id }                             → { ok, senhaTemporaria }
  *   { token, action:'delete', id }
  *
@@ -20,6 +22,11 @@ import { temConfig, autenticarToken, registrarLog, hashSenha } from '../_tokens.
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
+
+/* seções que um usuário não-admin pode ter liberadas individualmente (visibilidade
+   de menu, não escrita — mesma lista precisa bater com MODULOS_TOGGLE em dashboard.html) */
+const MODULOS_TOGGLE = ['quadro', 'leads', 'conversas', 'agendaDash', 'reunioes', 'agendados',
+  'automacoes', 'disparos', 'posConv', 'posAtend', 'posFin', 'posProdutos'];
 
 /* senha temporária legível, ex: quizzhub-K4TQ-7MX2 */
 function gerarSenhaTemp() {
@@ -62,7 +69,7 @@ export default async (req) => {
     if (!auth.admin) return json({ error: 'admin_only' }, 401);
 
     if (a === 'list') {
-      const r = await fetch(`${SB_URL}/rest/v1/usuarios?conta_id=eq.${contaId}&select=id,nome,email,celular,validade,trocar_senha,criado_em,funcao_cs,funcao_adm,eh_dono&order=criado_em.asc`, { headers: H });
+      const r = await fetch(`${SB_URL}/rest/v1/usuarios?conta_id=eq.${contaId}&select=id,nome,email,celular,validade,trocar_senha,criado_em,funcao_cs,funcao_adm,eh_dono,permissoes&order=criado_em.asc`, { headers: H });
       if (!r.ok) return json({ ok: false, error: 'Erro ao carregar a equipe.' });
       return json({ ok: true, users: await r.json() });
     }
@@ -74,6 +81,9 @@ export default async (req) => {
     }
 
     if (a === 'create' || a === 'update') {
+      if ('permissoes' in body && a === 'update' && Number(body.id) === auth.user.id) {
+        return json({ ok: false, error: 'Você não pode alterar as próprias permissões — peça a outra pessoa administradora.' });
+      }
       const u = {
         nome: String(body.nome || '').trim().slice(0, 120),
         email: String(body.email || '').trim().toLowerCase().slice(0, 200),
@@ -83,6 +93,12 @@ export default async (req) => {
       };
       if ('funcao_cs' in body) u.funcao_cs = !!body.funcao_cs;
       if ('funcao_adm' in body) u.funcao_adm = !!body.funcao_adm;
+      if ('permissoes' in body) {
+        const p = body.permissoes || {};
+        const modulos = {};
+        MODULOS_TOGGLE.forEach((k) => { if (k in (p.modulos || {})) modulos[k] = !!p.modulos[k]; });
+        u.permissoes = JSON.stringify({ tudo: !!p.tudo, modulos });
+      }
       if (!u.nome || !u.email) return json({ ok: false, error: 'Nome e e-mail são obrigatórios.' });
 
       let senhaTemporaria = null;

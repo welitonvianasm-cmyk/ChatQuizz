@@ -966,6 +966,18 @@
           <p class="muted-cell" style="margin-top:6px;">Administrador tem privilégios completos. Customer Success recebe leads convertidos no Pós-Venda. Operacional não tem nenhuma das duas funções.</p>
         </div>
 
+        <div id="eunModulosBox">
+          <label style="font-size:11.5px;font-weight:700;display:block;margin-bottom:6px;">Módulos visíveis <span class="muted-cell" style="font-weight:400;">(além do Perfil acima)</span></label>
+          <label style="display:flex;align-items:center;gap:9px;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;margin-bottom:10px;">
+            <input type="checkbox" id="eunModTudo" checked style="width:16px;height:16px;">
+            <div>
+              <b style="font-size:13px;">Permitir acesso a todos os módulos</b>
+              <div class="sub" style="margin:2px 0 0;">Desmarque para escolher módulo por módulo.</div>
+            </div>
+          </label>
+          <div id="eunModLista" style="display:none;gap:10px;max-height:220px;overflow:auto;"></div>
+        </div>
+
         <div class="muted-cell" id="eunErr" style="color:var(--red);"></div>
         <button id="eunSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Criar usuário</button>
       </div>
@@ -1025,6 +1037,20 @@
           <label style="display:flex;align-items:center;gap:6px;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;" id="eudPerfilOpOp"><input type="radio" name="eudPerfil" value="op" style="accent-color:var(--accent);">Operacional</label>
         </div>
         <p class="muted-cell" style="margin-top:6px;">Administrador tem privilégios completos. Customer Success recebe leads convertidos no Pós-Venda. Operacional não tem nenhuma das duas funções.</p>
+
+        <div id="eudModulosBox" style="margin-top:14px;">
+          <label style="font-size:11.5px;font-weight:700;display:block;margin-bottom:6px;">Módulos visíveis <span class="muted-cell" style="font-weight:400;">(além do Perfil acima)</span></label>
+          <label style="display:flex;align-items:center;gap:9px;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;margin-bottom:10px;">
+            <input type="checkbox" id="eudModTudo" style="width:16px;height:16px;">
+            <div>
+              <b style="font-size:13px;">Permitir acesso a todos os módulos</b>
+              <div class="sub" style="margin:2px 0 0;">Desmarque para escolher módulo por módulo.</div>
+            </div>
+          </label>
+          <div id="eudModLista" style="display:none;gap:10px;max-height:220px;overflow:auto;"></div>
+          <div class="muted-cell" id="eudModBloqueado" style="display:none;padding:10px 0;">Você não pode alterar suas próprias permissões — peça a outra pessoa administradora.</div>
+        </div>
+
         <button id="eudSalvarPerfil" style="margin-top:12px;padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar perfil</button>
 
         <div style="border-top:1px solid var(--line);margin-top:18px;padding-top:14px;" id="eudBlocoExcluir">
@@ -2192,10 +2218,14 @@ async function tryToken(token) {
   IS_SUPERADMIN = !!data.superadmin;
   IMPERSONANDO = !!data.impersonando;
   IMPERSONANDO_NOME = data.contaNome || '';
+  PERM_TUDO = !!(data.permissoes && data.permissoes.tudo);
+  PERM_MODULOS = new Set(Object.entries((data.permissoes && data.permissoes.modulos) || {}).filter(([, v]) => v).map(([k]) => k));
+  MEU_ID = data.usuarioId != null ? Number(data.usuarioId) : null;
   return data.leads || [];
 }
 function aplicarPerfil() {
   aplicarGatingPlano();        // mostra/esconde seções conforme o plano da conta
+  aplicarGatingModulos();      // mostra/esconde seções conforme as permissões do usuário
   navGo(NAV_ATUAL);           // reaplica a seção atual do menu lateral
   if (IS_ADMIN) carregarEquipe();
 }
@@ -2566,6 +2596,39 @@ function aplicarGatingPlano() {
     grupo.hidden = botoes.length > 0 && Array.from(botoes).every((b) => b.hidden);
   });
 }
+/* ===== Permissões por módulo — visibilidade de menu por usuário (separado de
+   funcao_adm/funcao_cs, que continuam governando regra de negócio/escrita).
+   Lista precisa bater com MODULOS_TOGGLE em netlify/functions/dash-users.mjs.
+   Administrador sempre vê tudo; "Visão Geral" e as 9 seções de SECOES_ADMIN
+   ficam fora desse eixo (sempre ligada / sempre só-admin, respectivamente). */
+const MODULOS_TOGGLE = ['quadro', 'leads', 'conversas', 'agendaDash', 'reunioes', 'agendados',
+  'automacoes', 'disparos', 'posConv', 'posAtend', 'posFin', 'posProdutos'];
+const MODULO_LABEL = {
+  quadro: 'Quadros (Funil)', leads: 'Leads', conversas: 'Conversas',
+  agendaDash: 'Dashboard', reunioes: 'Reuniões', agendados: 'Leads Agendados',
+  automacoes: 'Automações', disparos: 'Disparos Agendados',
+  posConv: 'Conversão', posAtend: 'Conversão por Atendente', posFin: 'Financeiro', posProdutos: 'Produtos',
+};
+const MODULO_GRUPO_LABEL = { gestao: 'Gestão', agenda: 'Agenda', automacao: 'Automação', posvenda: 'Pós-Venda' };
+let PERM_TUDO = true;
+let PERM_MODULOS = new Set();
+let MEU_ID = null;
+function podeVerModulo(sec) {
+  if (IS_ADMIN) return true;
+  if (!MODULOS_TOGGLE.includes(sec)) return true;   // geral / admin-only / master: governados em outro lugar
+  return PERM_TUDO || PERM_MODULOS.has(sec);
+}
+function aplicarGatingModulos() {
+  if (IS_ADMIN) return;   // administrador nunca é restringido por este eixo
+  document.querySelectorAll('#sidenav button[data-sec]').forEach((b) => {
+    if (!podeVerModulo(b.dataset.sec)) b.hidden = true;   // só adiciona hidden, nunca desfaz o gating de plano
+  });
+  document.querySelectorAll('#sidenav .sidenav-corpo > .nav-menu').forEach((grupo) => {
+    if (grupo.id === 'navMasterGrupo') return;
+    const botoes = grupo.querySelectorAll('button[data-sec]');
+    grupo.hidden = botoes.length > 0 && Array.from(botoes).every((b) => b.hidden);
+  });
+}
 const QE_TAB_POR_SEC = { qePerguntas: 'perguntas', qeQualificadores: 'qualificadores', qeNiveis: 'niveis', qeResultados: 'resultados', qeRoteamento: 'roteamento', qeAparencia: 'aparencia' };
 // a qual grupo (e sub-grupo, quando existir) do menu lateral cada `sec` pertence
 const SEC_MENU = {
@@ -2599,6 +2662,7 @@ function navGo(sec) {
   if (sec === 'masterContas' && !IS_SUPERADMIN) { navGo('geral'); return; }
   if (SECOES_ADMIN.has(sec) && !IS_ADMIN) { navGo('geral'); return; }
   if (SECOES_SO_COMPLETO.has(sec) && CONTA_PLANO === 'lite') { navGo('leads'); return; }
+  if (!podeVerModulo(sec)) { navGo('geral'); return; }   // 'geral' nunca entra em MODULOS_TOGGLE: sem risco de loop
   NAV_ATUAL = sec;
   document.querySelectorAll('#sidenav button[data-sec]').forEach((b) => b.classList.toggle('on', b.dataset.sec === sec));
   sincronizarMenu(sec);
@@ -5585,7 +5649,8 @@ async function trocarPlano(plano) {
   CONTA_PLANO_DEFINIDO = true;
   msg.textContent = '✓ Plano atualizado!';
   renderPlanoInfo();
-  aplicarGatingPlano();
+  aplicarGatingPlano();     // reseta hidden conforme o novo plano...
+  aplicarGatingModulos();   // ...e reaplica por cima as restrições de permissão do usuário
 }
 $('#planoBtnLite').onclick = () => trocarPlano('lite');
 $('#planoBtnCompleto').onclick = () => trocarPlano('completo');
@@ -7013,11 +7078,56 @@ function renderEqLista(res, logs) {
 $('#eqBusca').addEventListener('input', () => renderEqLista({ ok: true, users: EQ_USERS_CACHE }, EQ_LOGS_CACHE));
 
 /* ---------- Modal: novo usuário ---------- */
+/* checklist de módulos (create/edit) — mesmo espírito visual do #kikPerguntas */
+function parsePermissoes(u) {
+  try {
+    const p = JSON.parse(u.permissoes || '');
+    return { tudo: !!p.tudo, modulos: (p.modulos && typeof p.modulos === 'object') ? p.modulos : {} };
+  } catch { return { tudo: true, modulos: {} }; }
+}
+function renderModulosChecklist(listaSel, ativos) {
+  const box = $(listaSel); clear(box);
+  let grupoAtual = null, grupoBox = null;
+  MODULOS_TOGGLE.forEach((chave) => {
+    const grupo = SEC_MENU[chave];
+    if (grupo !== grupoAtual) {
+      grupoAtual = grupo;
+      const tit = el('div'); tit.textContent = MODULO_GRUPO_LABEL[grupo] || grupo;
+      tit.style.cssText = 'font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.02em;margin-top:8px;';
+      box.appendChild(tit);
+      grupoBox = el('div'); grupoBox.style.cssText = 'display:grid;gap:6px;margin-top:4px;';
+      box.appendChild(grupoBox);
+    }
+    const lab = el('label');
+    lab.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:600;';
+    const chk = el('input'); chk.type = 'checkbox'; chk.dataset.modulo = chave;
+    chk.style.cssText = 'width:15px;height:15px;flex-shrink:0;';
+    chk.checked = ativos.has(chave);
+    lab.append(chk, MODULO_LABEL[chave]);
+    grupoBox.appendChild(lab);
+  });
+}
+function lerModulosChecklist(listaSel) {
+  const modulos = {};
+  $(listaSel).querySelectorAll('input[data-modulo]').forEach((chk) => { modulos[chk.dataset.modulo] = chk.checked; });
+  return modulos;
+}
 function eunPerfilSelecionado() { return document.querySelector('input[name="eunPerfil"]:checked').value; }
+function eunAtualizarModulosVisibilidade() {
+  const adm = eunPerfilSelecionado() === 'adm';
+  $('#eunModulosBox').style.opacity = adm ? '.45' : '1';
+  $('#eunModulosBox').style.pointerEvents = adm ? 'none' : 'auto';
+}
+document.querySelectorAll('input[name="eunPerfil"]').forEach((r) => r.addEventListener('change', eunAtualizarModulosVisibilidade));
+$('#eunModTudo').onchange = () => { $('#eunModLista').style.display = $('#eunModTudo').checked ? 'none' : 'grid'; };
 function euAbrirNovo() {
   ['#eunNome', '#eunEmail', '#eunCel', '#eunVal'].forEach((s) => { $(s).value = ''; });
   document.querySelector('input[name="eunPerfil"][value="op"]').checked = true;
   $('#eunErr').textContent = '';
+  $('#eunModTudo').checked = true;
+  renderModulosChecklist('#eunModLista', new Set());
+  $('#eunModLista').style.display = 'none';
+  eunAtualizarModulosVisibilidade();
   $('#euNovoForm').style.display = 'grid';
   $('#euNovoResultado').style.display = 'none';
   $('#euNovoModal').style.display = 'flex';
@@ -7034,11 +7144,13 @@ $('#eunSalvar').onclick = async () => {
   const perfil = eunPerfilSelecionado();
   $('#eunErr').textContent = '';
   $('#eunSalvar').disabled = true; $('#eunSalvar').textContent = 'Criando...';
-  const r = await eqApi({
+  const payloadNovo = {
     action: 'create', nome, email,
     celular: $('#eunCel').value.trim(), validade: $('#eunVal').value || null,
     funcao_adm: perfil === 'adm', funcao_cs: perfil === 'cs',
-  });
+  };
+  if (perfil !== 'adm') payloadNovo.permissoes = { tudo: $('#eunModTudo').checked, modulos: lerModulosChecklist('#eunModLista') };
+  const r = await eqApi(payloadNovo);
   $('#eunSalvar').disabled = false; $('#eunSalvar').textContent = 'Criar usuário';
   if (!r.ok) { $('#eunErr').textContent = r.error || 'Erro ao criar usuário.'; return; }
   $('#euNovoForm').style.display = 'none';
@@ -7057,6 +7169,18 @@ $('#eunResFechar').onclick = euFecharNovo;
 
 /* ---------- Modal: detalhe / editar usuário ---------- */
 function eudPerfilSelecionado() { return document.querySelector('input[name="eudPerfil"]:checked').value; }
+function eudAtualizarModulosVisibilidade() {
+  const souEu = EQ_DET_ID === MEU_ID;
+  $('#eudModTudo').closest('label').hidden = souEu;
+  $('#eudModBloqueado').style.display = souEu ? 'block' : 'none';
+  if (souEu) { $('#eudModLista').style.display = 'none'; return; }
+  const adm = eudPerfilSelecionado() === 'adm';
+  $('#eudModulosBox').style.opacity = adm ? '.45' : '1';
+  $('#eudModulosBox').style.pointerEvents = adm ? 'none' : 'auto';
+  $('#eudModLista').style.display = $('#eudModTudo').checked ? 'none' : 'grid';
+}
+document.querySelectorAll('input[name="eudPerfil"]').forEach((r) => r.addEventListener('change', eudAtualizarModulosVisibilidade));
+$('#eudModTudo').onchange = () => { $('#eudModLista').style.display = $('#eudModTudo').checked ? 'none' : 'grid'; };
 function euDetTrocarAba(aba) {
   document.querySelectorAll('.euDetAba').forEach((b) => {
     const ativo = b.dataset.aba === aba;
@@ -7087,6 +7211,11 @@ function euAbrirDetalhe(id) {
   document.querySelector('input[name="eudPerfil"][value="' + (u.funcao_adm ? 'adm' : u.funcao_cs ? 'cs' : 'op') + '"]').checked = true;
   $('#eudBlocoExcluir').style.display = u.eh_dono ? 'none' : 'block';
 
+  const perm = parsePermissoes(u);
+  $('#eudModTudo').checked = perm.tudo;
+  renderModulosChecklist('#eudModLista', new Set(Object.entries(perm.modulos).filter(([, v]) => v).map(([k]) => k)));
+  eudAtualizarModulosVisibilidade();
+
   euDetTrocarAba('dados');
   $('#euDetModal').style.display = 'flex';
 }
@@ -7106,7 +7235,11 @@ $('#eudSalvar').onclick = async () => {
 };
 $('#eudSalvarPerfil').onclick = async () => {
   const perfil = eudPerfilSelecionado();
-  const r = await eqApi({ action: 'update', id: EQ_DET_ID, funcao_adm: perfil === 'adm', funcao_cs: perfil === 'cs' });
+  const payloadPerfil = { action: 'update', id: EQ_DET_ID, funcao_adm: perfil === 'adm', funcao_cs: perfil === 'cs' };
+  if (perfil !== 'adm' && EQ_DET_ID !== MEU_ID) {
+    payloadPerfil.permissoes = { tudo: $('#eudModTudo').checked, modulos: lerModulosChecklist('#eudModLista') };
+  }
+  const r = await eqApi(payloadPerfil);
   if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao salvar perfil.'); return; }
   await carregarEquipe();
   euFecharDetalhe();

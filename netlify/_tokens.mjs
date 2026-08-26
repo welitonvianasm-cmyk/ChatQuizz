@@ -71,7 +71,7 @@ export async function autenticar(email, senhaPlana) {
 
   try {
     const r = await fetch(
-      `${SB_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(emailNorm)}&select=id,nome,email,celular,validade,senha_hash,trocar_senha,funcao_adm,funcao_cs,eh_dono,eh_superadmin,conta_id&limit=1`,
+      `${SB_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(emailNorm)}&select=id,nome,email,celular,validade,senha_hash,trocar_senha,funcao_adm,funcao_cs,eh_dono,eh_superadmin,conta_id,permissoes&limit=1`,
       { headers: SB_HEADERS }
     );
     if (!r.ok) { console.error('autenticar: select usuarios falhou', r.status, await r.text().catch(() => '')); return { ok: false }; }
@@ -88,11 +88,21 @@ export async function autenticar(email, senhaPlana) {
     if (!conta) return { ok: false };
     if (conta.status !== 'ativa') return { ok: false, contaSuspensa: true };
 
+    // visibilidade de menu por módulo (eixo separado de funcao_adm/funcao_cs —
+    // ver dash-users.mjs, mesma lista MODULOS_TOGGLE precisa bater com a do dashboard.html)
+    let permissoes;
+    try { permissoes = JSON.parse(u.permissoes || ''); } catch { permissoes = {}; }
+    permissoes = {
+      tudo: !!(permissoes && permissoes.tudo),
+      modulos: (permissoes && typeof permissoes.modulos === 'object' && permissoes.modulos) ? permissoes.modulos : {},
+    };
+
     return {
       ok: true,
       admin: !!u.funcao_adm || !!u.eh_dono,
       cs: !!u.funcao_cs,
       superadmin: !!u.eh_superadmin,
+      permissoes,
       trocarSenha: !!u.trocar_senha,
       contaId: u.conta_id,
       contaPlano: conta.plano,
