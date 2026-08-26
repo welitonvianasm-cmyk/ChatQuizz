@@ -798,6 +798,11 @@
         <label style="font-size:11.5px;font-weight:700;">Nome<input id="elNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
         <label style="font-size:11.5px;font-weight:700;">WhatsApp<input id="elWhats" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="(11) 99999-9999"></label>
         <label style="font-size:11.5px;font-weight:700;">E-mail<input id="elEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+        <div style="border-top:1px solid var(--line);padding-top:10px;display:grid;gap:10px;">
+          <label style="font-size:11.5px;font-weight:700;">Instagram<input id="elInsta" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="@usuario"></label>
+          <label style="font-size:11.5px;font-weight:700;">TikTok<input id="elTiktok" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="@usuario"></label>
+          <label style="font-size:11.5px;font-weight:700;">Facebook<input id="elFacebook" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="usuario ou link"></label>
+        </div>
         <div class="muted-cell">Pra corrigir a data do agendamento, use "Remarcar" dentro da seção Agendamento — assim, se for uma reunião real do Cal.com, ela também é movida lá.</div>
       </div>
       <div class="muted-cell" id="elErr" style="color:var(--red);margin-top:8px;"></div>
@@ -2919,6 +2924,9 @@ async function salvarLeadCampos(r, campos) {
     if (campos.nome !== undefined) r.nome = campos.nome;
     if (campos.whatsapp !== undefined) r.whatsapp = res.whatsapp !== undefined ? res.whatsapp : campos.whatsapp;
     if (campos.email !== undefined) r.email = campos.email;
+    if (campos.instagram !== undefined) r.instagram = campos.instagram;
+    if (campos.tiktok !== undefined) r.tiktok = campos.tiktok;
+    if (campos.facebook !== undefined) r.facebook = campos.facebook;
     if (campos.atendente !== undefined) {
       r.atendente = campos.atendente;
       if (!r.resultado) r.etapa = campos.atendente ? 'atribuido' : '';
@@ -3128,6 +3136,22 @@ function lmLinha(rotulo, valor) {
   else { const v = el('span'); v.textContent = (valor == null || valor === '') ? '—' : String(valor); row.appendChild(v); }
   return row;
 }
+/* acha, entre as perguntas ATUAIS do quiz, uma cujo texto contém a palavra-chave
+   (ex.: "instagram") e devolve a resposta desse lead pra ela — usado pra
+   auto-preencher Instagram/TikTok/Facebook no Cartão do Lead quando não há
+   valor cadastrado direto. */
+function respostaPorPalavraChave(r, palavraChave) {
+  let respostas = null;
+  try { respostas = JSON.parse(r.respostas_json || ''); } catch { return { valor: '', perguntaId: null }; }
+  if (!respostas) return { valor: '', perguntaId: null };
+  const pergunta = (QUIZ_PERGUNTAS_CACHE || []).find((p) => String(p.q || '').toLowerCase().includes(palavraChave));
+  if (!pergunta) return { valor: '', perguntaId: null };
+  const v = respostas[pergunta.id];
+  if (v == null) return { valor: '', perguntaId: null };
+  const indices = Array.isArray(v) ? v : [v];
+  const textos = indices.map((i) => pergunta.opts && pergunta.opts[i] && pergunta.opts[i].t).filter(Boolean);
+  return { valor: textos.join(', '), perguntaId: textos.length ? pergunta.id : null };
+}
 function leadEquipe(r) {
   try {
     const p = JSON.parse(r.equipe_json || '');
@@ -3235,11 +3259,28 @@ function abrirLeadModal(r) {
   c.appendChild(lmLinha('E-mail', r.email || '—'));
   c.appendChild(lmLinha('UF', r.uf || '—'));
   c.appendChild(lmLinha('Origem', r.origem || '—'));
-  if (r.instagram) {
-    const aIg = el('a'); aIg.href = 'https://instagram.com/' + String(r.instagram).replace(/^@/, ''); aIg.target = '_blank'; aIg.rel = 'noopener';
-    aIg.textContent = r.instagram; aIg.style.cssText = 'font-weight:600;color:var(--text);';
-    c.appendChild(lmLinha('Instagram', aIg));
-  }
+
+  /* Instagram/TikTok/Facebook: usa o valor cadastrado direto (via "Editar")
+     se tiver; senão procura uma pergunta do quiz com esse nome e usa a
+     resposta dela — a pergunta usada assim some de "Respostas do quiz" pra
+     não mostrar a mesma informação duas vezes. */
+  const PERGUNTAS_USADAS_REDE = new Set();
+  const redeSocial = (colValor, palavraChave) => {
+    if (colValor) return colValor;
+    const achado = respostaPorPalavraChave(r, palavraChave);
+    if (achado.perguntaId) PERGUNTAS_USADAS_REDE.add(achado.perguntaId);
+    return achado.valor;
+  };
+  const linkRede = (rotulo, valor, montarUrl) => {
+    if (!valor) return;
+    const a = el('a'); a.href = montarUrl(valor); a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = valor; a.style.cssText = 'font-weight:600;color:var(--text);';
+    c.appendChild(lmLinha(rotulo, a));
+  };
+  linkRede('Instagram', redeSocial(r.instagram, 'instagram'), (v) => 'https://instagram.com/' + String(v).replace(/^@/, ''));
+  linkRede('TikTok', redeSocial(r.tiktok, 'tiktok'), (v) => 'https://tiktok.com/@' + String(v).replace(/^@/, ''));
+  linkRede('Facebook', redeSocial(r.facebook, 'facebook'), (v) => 'https://facebook.com/' + String(v).replace(/^@/, ''));
+
   c.appendChild(lmLinha('Entrou no quiz em', fmtDateTime(r.created_at)));
   c.appendChild(lmLinha('Última atualização', fmtDateTime(r.updated_at)));
 
@@ -3309,6 +3350,7 @@ function abrirLeadModal(r) {
     let alguma = false;
     (QUIZ_PERGUNTAS_CACHE || []).forEach((pergunta) => {
       if (!respostas) return;
+      if (PERGUNTAS_USADAS_REDE.has(pergunta.id)) return;   // já mostrada em Instagram/TikTok/Facebook acima
       const v = respostas[pergunta.id];
       if (v == null) return;
       const indices = Array.isArray(v) ? v : [v];
@@ -3387,6 +3429,10 @@ function abrirEditarLead(r) {
   $('#elNome').value = r.nome || '';
   $('#elWhats').value = r.whatsapp || '';
   $('#elEmail').value = r.email || '';
+  // pré-preenche já com o valor detectado por pergunta do quiz, se não tiver cadastro direto
+  $('#elInsta').value = r.instagram || respostaPorPalavraChave(r, 'instagram').valor;
+  $('#elTiktok').value = r.tiktok || respostaPorPalavraChave(r, 'tiktok').valor;
+  $('#elFacebook').value = r.facebook || respostaPorPalavraChave(r, 'facebook').valor;
   $('#elErr').textContent = '';
   $('#editarLeadModal').style.display = 'flex';
 }
@@ -3398,7 +3444,10 @@ $('#elSalvar').onclick = async () => {
   const nome = $('#elNome').value.trim();
   if (!nome) { $('#elErr').textContent = 'O nome não pode ficar vazio.'; return; }
   $('#elErr').textContent = '';
-  const res = await salvarLeadCampos(r, { nome, whatsapp: $('#elWhats').value.trim(), email: $('#elEmail').value.trim() });
+  const res = await salvarLeadCampos(r, {
+    nome, whatsapp: $('#elWhats').value.trim(), email: $('#elEmail').value.trim(),
+    instagram: $('#elInsta').value.trim(), tiktok: $('#elTiktok').value.trim(), facebook: $('#elFacebook').value.trim(),
+  });
   if (!res || !res.ok) return;   // salvarLeadCampos já mostra o toast de erro
   toast('success', 'Salvo!', 'Dados do lead atualizados.');
   fecharEditarLead();

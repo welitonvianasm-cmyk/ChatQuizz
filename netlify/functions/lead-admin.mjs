@@ -376,14 +376,19 @@ export default async (req) => {
     // estado atual (pra mesclar anotações e montar o histórico)
     let temColunaResultado = true;
     let temColunaEtapa = true;
-    let rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,atendente,agendamento_status,agendamento_em,resultado,etapa,equipe_json&limit=1`, { headers: H });
+    let temColunasRedes = true;   // tiktok/facebook — setup-redes-sociais-lead.sql
+    let rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,instagram,tiktok,facebook,atendente,agendamento_status,agendamento_em,resultado,etapa,equipe_json&limit=1`, { headers: H });
+    if (!rc.ok) {
+      temColunasRedes = false;
+      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,instagram,atendente,agendamento_status,agendamento_em,resultado,etapa,equipe_json&limit=1`, { headers: H });
+    }
     if (!rc.ok) {
       temColunaEtapa = false;       // coluna etapa pode não existir ainda (setup-kanban3)
-      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,atendente,agendamento_status,agendamento_em,resultado,equipe_json&limit=1`, { headers: H });
+      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,instagram,atendente,agendamento_status,agendamento_em,resultado,equipe_json&limit=1`, { headers: H });
     }
     if (!rc.ok) {
       temColunaResultado = false;   // coluna resultado pode não existir ainda
-      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,atendente,agendamento_status,agendamento_em,equipe_json&limit=1`, { headers: H });
+      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,instagram,atendente,agendamento_status,agendamento_em,equipe_json&limit=1`, { headers: H });
     }
     let atual = {};
     let temColunaEquipe = true;
@@ -416,6 +421,18 @@ export default async (req) => {
     if ('email' in c) {
       const novoEmail = String(c.email || '').trim().slice(0, 160);
       if (novoEmail !== (atual.email || '')) { patch.email = novoEmail; hist('E-mail corrigido'); mexeuEquipe = true; }
+    }
+    if ('instagram' in c) {
+      const novo = String(c.instagram || '').trim().slice(0, 60);
+      if (novo !== (atual.instagram || '')) { patch.instagram = novo; hist('Instagram atualizado'); mexeuEquipe = true; }
+    }
+    if ('tiktok' in c && temColunasRedes) {
+      const novo = String(c.tiktok || '').trim().slice(0, 60);
+      if (novo !== (atual.tiktok || '')) { patch.tiktok = novo; hist('TikTok atualizado'); mexeuEquipe = true; }
+    }
+    if ('facebook' in c && temColunasRedes) {
+      const novo = String(c.facebook || '').trim().slice(0, 60);
+      if (novo !== (atual.facebook || '')) { patch.facebook = novo; hist('Facebook atualizado'); mexeuEquipe = true; }
     }
 
     let mudouAtendente = false;
@@ -561,6 +578,9 @@ export default async (req) => {
       resultado_por: patch.resultado_por !== undefined ? patch.resultado_por : undefined,
       resultado_motivo: patch.resultado_motivo !== undefined ? patch.resultado_motivo : undefined,
       whatsapp: patch.whatsapp !== undefined ? patch.whatsapp : undefined,
+      instagram: patch.instagram !== undefined ? patch.instagram : undefined,
+      tiktok: patch.tiktok !== undefined ? patch.tiktok : undefined,
+      facebook: patch.facebook !== undefined ? patch.facebook : undefined,
     });
   } catch (e) {
     console.error('lead-admin:', e?.message || e);
