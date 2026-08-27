@@ -28,6 +28,20 @@ const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const COLS_LEAD = 'lead_ref,nome,whatsapp,email,atendente,resultado,venda_json,equipe_json';
 const fmtBRL = (n) => Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+/* mesma normalização de whatsapp.mjs/wa-webhook.mjs/lead-admin.mjs — completa
+   DDI e o 9º dígito do celular quando faltam. */
+function normalizarTelefoneBR(raw) {
+  const d = String(raw || '').replace(/\D/g, '');
+  if (!d) return '';
+  let resto;
+  if (d.startsWith('55') && (d.length === 12 || d.length === 13)) resto = d.slice(2);
+  else if (d.length === 10 || d.length === 11) resto = d;
+  else return d;
+  const ddd = resto.slice(0, 2);
+  let numero = resto.slice(2);
+  if (numero.length === 8) numero = '9' + numero;
+  return '55' + ddd + numero;
+}
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
@@ -46,11 +60,12 @@ export default async (req) => {
     const body = await req.json().catch(() => ({}));
     const email = String(body.email || '').trim().toLowerCase().slice(0, 160);
     const telefone = String(body.telefone || '').replace(/\D/g, '');
-    // plataformas de pagamento costumam mandar só DDD+número, sem o 55 — sem
-    // isso o WhatsApp/Evolution recusa o envio por número inválido depois.
+    // plataformas de pagamento costumam mandar só DDD+número, às vezes sem o
+    // 55 e/ou sem o 9º dígito do celular — sem isso o WhatsApp/Evolution
+    // recusa o envio depois, ou o mesmo contato vira 2 números diferentes.
     // Só usado pra GRAVAR o lead novo; o match por telefone (abaixo) já é por
     // sufixo, então funciona igual com ou sem DDI.
-    const telefoneComDDI = telefone && (telefone.length === 10 || telefone.length === 11) ? '55' + telefone : telefone;
+    const telefoneComDDI = normalizarTelefoneBR(telefone);
     const nome = String(body.nome || '').trim().slice(0, 160);
     const produtoRaw = String(body.produto || '').trim().slice(0, 120);
     const valor = Math.max(0, Number(body.valor) || 0);

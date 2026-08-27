@@ -28,15 +28,25 @@ const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const STATUS_VALIDOS = ['', 'concluido', 'reagendado', 'cancelado', 'compareceu', 'nao_compareceu'];
-/* número digitado sem DDI (10-11 dígitos = DDD + fixo/celular local) → assume
-   Brasil e completa o 55; sem isso a Evolution/WhatsApp recusa o envio por
-   número inválido (o quiz público já resolve isso sozinho com um seletor de
-   país — aqui é só o cadastro manual "+ Novo Lead", que não tem esse campo).
-   Guarda com "+" na frente, mesmo formato E.164 já usado por save-lead.mjs. */
+/* normaliza número BR pro formato canônico 55+DDD+9 dígitos: completa o DDI
+   quando falta (cadastro manual "+ Novo Lead"/"Editar", sem seletor de país
+   — o quiz público já resolve isso sozinho) e completa o 9º dígito do
+   celular quando falta (mesmo número pode chegar como 12 ou 13 dígitos
+   dependendo de quem digitou/mandou — sem isso a Evolution/WhatsApp recusa
+   o envio, ou o número não bate com o que já tá salvo). Guarda com "+" na
+   frente, mesmo formato E.164 já usado por save-lead.mjs. Mesma lógica
+   (sem o "+") em whatsapp.mjs/wa-webhook.mjs/webhook-pagamento.mjs. */
 function comDDI(whatsapp) {
   const d = String(whatsapp || '').replace(/\D/g, '');
   if (!d) return '';
-  return '+' + ((d.length === 10 || d.length === 11) ? '55' + d : d);
+  let resto;
+  if (d.startsWith('55') && (d.length === 12 || d.length === 13)) resto = d.slice(2);
+  else if (d.length === 10 || d.length === 11) resto = d;
+  else return '+' + d;   // formato não reconhecido (outro país, ou incompleto) — não mexe
+  const ddd = resto.slice(0, 2);
+  let numero = resto.slice(2);
+  if (numero.length === 8) numero = '9' + numero;
+  return '+55' + ddd + numero;
 }
 const ETAPAS_VALIDAS = ['', 'novo', 'atribuido', 'conversa', 'agendado'];   // perdido/convertido vivem no `resultado`
 const AVISO_SQL = 'Falta rodar o setup-card.sql no Supabase (coluna de anotações da equipe).';

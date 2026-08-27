@@ -26,6 +26,25 @@ const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': '
 const SECRET = process.env.WA_WEBHOOK_SECRET || '';
 const SDR_WEBHOOK_URL = process.env.AGENTE_SDR_WEBHOOK_URL || '';
 
+/* normaliza número BR pro formato canônico 55+DDD+9 dígitos — o WhatsApp
+   às vezes reporta o mesmo contato com ou sem o 9º dígito do celular
+   (ex.: 556796068167 vs 5567996068167), o que sem isso vira dois "telefone"
+   diferentes em wa_mensagens (conversa duplicada) e pode até falhar o
+   vínculo com o lead. Duplicado em whatsapp.mjs/lead-admin.mjs/
+   webhook-pagamento.mjs (funções Netlify não compartilham módulo aqui). */
+function normalizarTelefoneBR(raw) {
+  const d = String(raw || '').replace(/\D/g, '');
+  if (!d) return '';
+  let resto;
+  if (d.startsWith('55') && (d.length === 12 || d.length === 13)) resto = d.slice(2);
+  else if (d.length === 10 || d.length === 11) resto = d;
+  else return d;   // formato não reconhecido (outro país, ou incompleto) — não mexe
+  const ddd = resto.slice(0, 2);
+  let numero = resto.slice(2);
+  if (numero.length === 8) numero = '9' + numero;   // celular sem o 9 → completa
+  return '55' + ddd + numero;
+}
+
 let CONTA_PADRAO_CACHE = null;
 async function contaPadrao() {
   if (CONTA_PADRAO_CACHE) return CONTA_PADRAO_CACHE;
@@ -52,7 +71,8 @@ export default async (req) => {
       if (!d || !d.key) continue;
       const jid = String(d.key.remoteJid || '');
       if (!jid.endsWith('@s.whatsapp.net')) continue;      // só conversas 1:1 (ignora grupos)
-      const telefone = jid.replace(/\D/g, '');
+      const telefone = normalizarTelefoneBR(jid.replace(/\D/g, ''));
+      const pushName = String(d.pushName || '').trim().slice(0, 120);
       // tipo da mensagem (formato da resposta do lead) — texto tem o conteúdo
       // extraído normalmente; os demais tipos são gravados sem texto (só a
       // contagem por tipo importa pro KPI, não o conteúdo em si por enquanto).
@@ -83,10 +103,24 @@ export default async (req) => {
       if (!contaId) contaId = await contaPadrao();
       if (!contaId) continue;   // nenhuma conta cadastrada ainda — nada a fazer
 
-      await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
+      const linhaMsg = { conta_id: contaId, telefone, lead_ref, direcao, tipo, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out', push_name: pushName };
+      const rIns = await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
         method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
-        body: JSON.stringify({ conta_id: contaId, telefone, lead_ref, direcao, tipo, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out' }),
+        body: JSON.stringify(linhaMsg),
       });
+      if (!rIns.ok) {
+        // coluna push_name pode não existir ainda (falta rodar setup-wa-nome-contato.sql)
+        const errText = await rIns.text().catch(() => '');
+        if (/push_name/i.test(errText)) {
+          delete linhaMsg.push_name;
+          await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
+            method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
+            body: JSON.stringify(linhaMsg),
+          });
+        } else {
+          console.error('wa-webhook insert error:', rIns.status, errText.slice(0, 200));
+        }
+      }
       if (lead_ref) marcarPrimeiroAtendimento(contaId, lead_ref, 'conversa');
 
       // encaminha mensagens de TEXTO recebidas pro agente externo (SDR/IA),

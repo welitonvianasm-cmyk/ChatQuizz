@@ -6636,7 +6636,7 @@ function renderInbox() {
   const porTel = new Map(ALL.filter((l) => telefoneDe(l)).map((l) => [telefoneDe(l).slice(-10), l]));
   let lista = CV_LISTA.map((c) => {
     const lead = byRef.get(c.lead_ref) || porTel.get(String(c.telefone).slice(-10)) || null;
-    return { ...c, lead, nome: (lead && lead.nome) || '+' + c.telefone };
+    return { ...c, lead, nome: (lead && lead.nome) || c.pushName || '+' + c.telefone };
   });
   const q = CV_BUSCA.trim().toLowerCase();
   if (q) lista = lista.filter((c) => c.nome.toLowerCase().includes(q) || c.telefone.includes(q.replace(/\D/g, '') || '§'));

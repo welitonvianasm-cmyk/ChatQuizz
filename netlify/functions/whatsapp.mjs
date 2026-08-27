@@ -29,6 +29,22 @@ const AVISO_SQL = 'Falta rodar o setup-whatsapp.sql no Supabase (módulo WhatsAp
 const configurada = () => !!(EV_URL && EV_KEY);
 const ev = (path, opts = {}) => fetch(`${EV_URL}${path}`, { ...opts, headers: { apikey: EV_KEY, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
 export const soDigitos = (t) => String(t || '').replace(/\D/g, '');
+/* normaliza número BR pro formato canônico 55+DDD+9 dígitos — o WhatsApp às
+   vezes reporta o mesmo contato com ou sem o 9º dígito do celular, o que sem
+   isso vira dois "telefone" diferentes (conversa duplicada na lista). Mesma
+   função em wa-webhook.mjs/lead-admin.mjs/webhook-pagamento.mjs. */
+export function normalizarTelefoneBR(raw) {
+  const d = soDigitos(raw);
+  if (!d) return '';
+  let resto;
+  if (d.startsWith('55') && (d.length === 12 || d.length === 13)) resto = d.slice(2);
+  else if (d.length === 10 || d.length === 11) resto = d;
+  else return d;
+  const ddd = resto.slice(0, 2);
+  let numero = resto.slice(2);
+  if (numero.length === 8) numero = '9' + numero;
+  return '55' + ddd + numero;
+}
 /* extrai o texto de erro real da Evolution — o formato varia (string, array de
    strings, ou objeto aninhado em response.message) — sem isso, todo erro virava
    só "recusou (400)" ou literalmente "[object Object]", sem dizer o motivo */
@@ -64,7 +80,7 @@ async function salvarToggles(contaId, t) {
    todas as contas compartilham o mesmo número de WhatsApp até virar uma
    conexão por conta (mesmo padrão já usado pro Cal.com/MentoriaHub). */
 export async function enviarWhats(contaId, telefone, texto, quem, lead_ref) {
-  const tel = soDigitos(telefone);
+  const tel = normalizarTelefoneBR(telefone);
   if (!tel || !texto) return { ok: false, error: 'telefone/mensagem vazios' };
   if (!configurada()) return { ok: false, error: 'WhatsApp não conectado (Evolution não configurada).' };
   const r = await ev(`/message/sendText/${EV_INST}`, {
@@ -150,21 +166,27 @@ export default async (req) => {
     }
 
     if (a === 'inbox') {
-      const r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&select=telefone,lead_ref,direcao,texto,lida,criado_em&order=criado_em.desc&limit=1200`, { headers: H });
+      let colsInbox = 'telefone,lead_ref,direcao,texto,lida,criado_em,push_name';
+      let r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&select=${colsInbox}&order=criado_em.desc&limit=1200`, { headers: H });
+      if (!r.ok) {
+        colsInbox = 'telefone,lead_ref,direcao,texto,lida,criado_em';   // falta rodar setup-wa-nome-contato.sql
+        r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&select=${colsInbox}&order=criado_em.desc&limit=1200`, { headers: H });
+      }
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       const msgs = await r.json();
       const conv = new Map();
       msgs.forEach((m) => {
-        if (!conv.has(m.telefone)) conv.set(m.telefone, { telefone: m.telefone, lead_ref: m.lead_ref || '', ultima: m.texto, quando: m.criado_em, nao_lidas: 0 });
+        if (!conv.has(m.telefone)) conv.set(m.telefone, { telefone: m.telefone, lead_ref: m.lead_ref || '', ultima: m.texto, quando: m.criado_em, nao_lidas: 0, pushName: m.push_name || '' });
         const c = conv.get(m.telefone);
         if (!c.lead_ref && m.lead_ref) c.lead_ref = m.lead_ref;
+        if (!c.pushName && m.push_name) c.pushName = m.push_name;
         if (m.direcao === 'in' && !m.lida) c.nao_lidas++;
       });
       return json({ ok: true, conversas: [...conv.values()] });
     }
 
     if (a === 'historico') {
-      const tel = soDigitos(body.telefone);
+      const tel = normalizarTelefoneBR(body.telefone);
       if (!tel) return json({ ok: false, error: 'telefone obrigatório' });
       const r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&telefone=eq.${tel}&select=direcao,texto,quem,criado_em&order=criado_em.asc&limit=500`, { headers: H });
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
