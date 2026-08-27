@@ -43,10 +43,6 @@ export default async (req) => {
     if (!SECRET || url.searchParams.get('t') !== SECRET) return new Response('unauthorized', { status: 401 });
     const body = await req.json().catch(() => ({}));
 
-    // DIAGNÓSTICO TEMPORÁRIO (2026-08-26): confirmar o formato real do payload
-    // nesta versão da Evolution antes de decidir se o parser abaixo precisa mudar.
-    console.log('wa-webhook payload:', JSON.stringify(body).slice(0, 3000));
-
     // interessa o evento de mensagem (messages.upsert); o resto é ignorado
     const ev = String(body.event || '').toLowerCase();
     if (!ev.includes('messages')) return new Response('ok');
