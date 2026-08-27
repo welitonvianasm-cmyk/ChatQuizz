@@ -133,6 +133,7 @@ export default async (req) => {
         uf: String(d.uf || '').trim().slice(0, 2).toUpperCase(),
         renda: String(d.renda || '').trim().slice(0, 80),
         atendente,
+        call_track: String(d.qualificador || '').trim().slice(0, 60),
         status: 'completo',
         origem: 'painel-crm',
         equipe_json: JSON.stringify(eq),
@@ -387,18 +388,18 @@ export default async (req) => {
     let temColunaResultado = true;
     let temColunaEtapa = true;
     let temColunasRedes = true;   // tiktok/facebook — setup-redes-sociais-lead.sql
-    let rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,instagram,tiktok,facebook,atendente,agendamento_status,agendamento_em,resultado,etapa,equipe_json&limit=1`, { headers: H });
+    let rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,instagram,tiktok,facebook,atendente,agendamento_status,agendamento_em,resultado,etapa,call_track,equipe_json&limit=1`, { headers: H });
     if (!rc.ok) {
       temColunasRedes = false;
-      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,instagram,atendente,agendamento_status,agendamento_em,resultado,etapa,equipe_json&limit=1`, { headers: H });
+      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,instagram,atendente,agendamento_status,agendamento_em,resultado,etapa,call_track,equipe_json&limit=1`, { headers: H });
     }
     if (!rc.ok) {
       temColunaEtapa = false;       // coluna etapa pode não existir ainda (setup-kanban3)
-      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,instagram,atendente,agendamento_status,agendamento_em,resultado,equipe_json&limit=1`, { headers: H });
+      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,instagram,atendente,agendamento_status,agendamento_em,resultado,call_track,equipe_json&limit=1`, { headers: H });
     }
     if (!rc.ok) {
       temColunaResultado = false;   // coluna resultado pode não existir ainda
-      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,instagram,atendente,agendamento_status,agendamento_em,equipe_json&limit=1`, { headers: H });
+      rc = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${refUrl}&select=nome,whatsapp,email,instagram,atendente,agendamento_status,agendamento_em,call_track,equipe_json&limit=1`, { headers: H });
     }
     let atual = {};
     let temColunaEquipe = true;
@@ -443,6 +444,10 @@ export default async (req) => {
     if ('facebook' in c && temColunasRedes) {
       const novo = String(c.facebook || '').trim().slice(0, 60);
       if (novo !== (atual.facebook || '')) { patch.facebook = novo; hist('Facebook atualizado'); mexeuEquipe = true; }
+    }
+    if ('qualificador' in c) {
+      const novo = String(c.qualificador || '').trim().slice(0, 60);
+      if (novo !== (atual.call_track || '')) { patch.call_track = novo; hist('Qualificador atualizado'); mexeuEquipe = true; }
     }
 
     let mudouAtendente = false;

@@ -628,8 +628,8 @@
   .cv-chat-envio input { flex: 1; padding: 11px 13px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 13.5px; outline: none; background: var(--surface-input); color: var(--text); }
   .cv-chat-envio button { padding: 0 16px; border: none; border-radius: 10px; background: var(--lime); background-image: var(--brand-gradient); color: var(--brand-ink); font-weight: 700; cursor: pointer; }
   .cv-col-info { width: 0; flex-shrink: 0; overflow: hidden; transition: width .18s ease; }
-  .cv-col-info.aberto { width: 280px; border-left: 1px solid var(--line); }
-  .cv-info-corpo { width: 280px; padding: 16px; overflow-y: auto; height: 100%; }
+  .cv-col-info.aberto { width: 380px; border-left: 1px solid var(--line); }
+  .cv-info-corpo { width: 380px; padding: 16px; overflow-y: auto; height: 100%; }
 
   /* ===== RELATÓRIO (botão "Relatório" → window.print → "Salvar como PDF") =====
      .only-print fica invisível na tela o tempo todo; só aparece dentro de
@@ -803,6 +803,7 @@
           <label style="font-size:11.5px;font-weight:700;">TikTok<input id="elTiktok" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="@usuario"></label>
           <label style="font-size:11.5px;font-weight:700;">Facebook<input id="elFacebook" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="usuario ou link"></label>
         </div>
+        <label style="font-size:11.5px;font-weight:700;">Qualificador<select id="elQualificador" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— sem qualificador —</option></select></label>
         <div class="muted-cell">Pra corrigir a data do agendamento, use "Remarcar" dentro da seção Agendamento — assim, se for uma reunião real do Cal.com, ela também é movida lá.</div>
       </div>
       <div class="muted-cell" id="elErr" style="color:var(--red);margin-top:8px;"></div>
@@ -858,7 +859,10 @@
           <label style="font-size:11.5px;font-weight:700;">Estado (UF)<input id="nlUf" maxlength="2" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;text-transform:uppercase;background:var(--surface-input);color:var(--text);" placeholder="SP"></label>
           <label style="font-size:11.5px;font-weight:700;">Renda familiar<input id="nlRenda" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Ex: Entre R$ 5.000,00 e R$ 10.000,00"></label>
         </div>
-        <label style="font-size:11.5px;font-weight:700;">Atendente responsável<select id="nlAtendente" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— sem responsável —</option></select></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label style="font-size:11.5px;font-weight:700;">Atendente responsável<select id="nlAtendente" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— sem responsável —</option></select></label>
+          <label style="font-size:11.5px;font-weight:700;">Qualificador<select id="nlQualificador" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— sem qualificador —</option></select></label>
+        </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
         <button id="nlSalvar" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Cadastrar lead</button>
@@ -2927,6 +2931,7 @@ async function salvarLeadCampos(r, campos) {
     if (campos.instagram !== undefined) r.instagram = campos.instagram;
     if (campos.tiktok !== undefined) r.tiktok = campos.tiktok;
     if (campos.facebook !== undefined) r.facebook = campos.facebook;
+    if (campos.qualificador !== undefined) r.call_track = campos.qualificador;
     if (campos.atendente !== undefined) {
       r.atendente = campos.atendente;
       if (!r.resultado) r.etapa = campos.atendente ? 'atribuido' : '';
@@ -2952,7 +2957,7 @@ async function salvarLeadCampos(r, campos) {
     renderUpcoming(); drawLeads(); renderAgendaCal(); renderAgDia();
     renderAgendaram(); renderPorAtendente(); renderReunioes();
     if (campos.agendamento_status !== undefined) carregarAlertas(false);   // presença pode ter gerado alerta
-    if (LM_ATUAL === r) abrirLeadModal(r);   // cartão aberto acompanha a mudança
+    refrescarCartaoLead(r);   // cartão aberto acompanha a mudança (modal ou painel lateral, o que estiver de fato aberto)
   } else toast('error', 'Aviso', res.error || 'Erro ao salvar.');
   return res;
 }
@@ -2966,6 +2971,7 @@ async function excluirLead(r) {
   if (!res.ok) { toast('error', 'Aviso', res.error || 'Erro ao excluir.'); return; }
   const i = ALL.indexOf(r); if (i >= 0) ALL.splice(i, 1);
   fecharLeadModal();
+  if (CV_ATIVO && CV_ATIVO.lead === r) { CV_ATIVO.lead = null; renderCvInfoPanel(); carregarInbox(); }
   render();
   if (KB_CARREGADO) kbCarregar();
 }
@@ -3058,7 +3064,7 @@ $('#rmSalvar').onclick = async () => {
   toast('success', 'Remarcado!', 'Novo horário salvo.');
   fecharRemarcarModal();
   drawLeads(); renderAgendaCal(); renderAgDia(); renderAgendaram(); renderReunioes();
-  if (LM_ATUAL === r) abrirLeadModal(r);   // cartão aberto acompanha a mudança
+  refrescarCartaoLead(r);   // cartão aberto acompanha a mudança (modal ou painel lateral)
 };
 
 /* ===== filtro de período do módulo Leads ===== */
@@ -3128,6 +3134,8 @@ function agCardEl(r) {
 let LM_ATUAL = null;
 let LM_DRAFT = null;   // rascunho das anotações em edição (obs + campos)
 let LM_ABERTAS = new Set();   // seções recolhíveis abertas (Respostas do quiz/Histórico) — reseta ao trocar de lead
+let LM_RERENDER = null;   // callback pra redesenhar o cartão aberto por último (modal OU painel lateral de Conversas)
+function refrescarCartaoLead(r) { if (LM_ATUAL === r && LM_RERENDER) LM_RERENDER(); }
 function lmLinha(rotulo, valor) {
   const row = el('div'); row.style.cssText = 'display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;align-items:center;';
   const l = el('span'); l.textContent = rotulo; l.style.cssText = 'color:var(--text-muted);font-weight:600;min-width:135px;flex-shrink:0;';
@@ -3159,22 +3167,24 @@ function leadEquipe(r) {
   } catch (e) { /* vazio */ }
   return { obs: '', campos: [], historico: [] };
 }
-function abrirLeadModal(r) {
-  if (!podeAcessarLead(r)) { avisarLeadBloqueado(r); return; }
+/* Corpo completo do Cartão do Lead — compartilhado pelo modal (#leadModal)
+   e pelo painel lateral "Infos do Lead" dentro de Conversas: os dois "são
+   o cartão do lead", só muda o container onde é montado. `opts.rerender`
+   é chamado depois de qualquer ação que precise redesenhar (ex.: adicionar/
+   remover campo personalizado) — o modal reabre a si mesmo, o painel
+   lateral só re-renderiza a si mesmo. `opts.mostrarConversar` desliga o
+   botão "Conversar" quando já se está dentro da própria conversa. */
+function montarCartaoLead(r, container, opts = {}) {
+  const rerender = opts.rerender || (() => {});
+  const mostrarConversar = opts.mostrarConversar !== false;
   if (LM_ATUAL !== r || !LM_DRAFT) {
     const eq = leadEquipe(r);
     LM_DRAFT = { obs: eq.obs, campos: eq.campos.map((f) => ({ k: f.k, v: f.v })) };
     LM_ABERTAS = new Set();
   }
   LM_ATUAL = r;
-  $('#lmTitulo').textContent = '' + (r.nome || '(sem nome)');
-  const c = $('#lmCorpo'); clear(c);
-
-  // selos de status ficam no cabeçalho amarelo, ao lado do nome (não mais no corpo)
-  const st = $('#lmTituloPills'); clear(st);
-  st.append(trilhaPill(r.call_track), agendPill(r.agendamento_status), respostaPill(r));
-  if (r.resultado === 'convertido') { const p = el('span', 'pill agendado'); p.textContent = '✓ CONVERTIDO'; st.appendChild(p); }
-  if (r.resultado === 'perdido') { const p = el('span', 'pill parcial'); p.textContent = '✕ PERDIDO'; st.appendChild(p); }
+  LM_RERENDER = rerender;
+  const c = container; clear(c);
 
   /* Status oficial do funil (editável) + botões principais — tudo numa linha
      só, compacto o bastante pra caber (quebra pro renglão de baixo se faltar
@@ -3204,7 +3214,7 @@ function abrirLeadModal(r) {
     salvarLeadCampos(r, campos);
   };
   stRow.appendChild(stSel);
-  if (r.whatsapp) {
+  if (r.whatsapp && mostrarConversar) {
     const wa = el('button');
     wa.textContent = 'Conversar';
     wa.title = 'WhatsApp conectado + Conversas ativadas = chat aqui dentro; senão abre o WhatsApp Web';
@@ -3326,13 +3336,13 @@ function abrirLeadModal(r) {
     iv.style.cssText = 'flex:1;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;';
     iv.oninput = () => { f.v = iv.value; };
     const del = el('button', 'acao-btn'); del.textContent = '✕';
-    del.onclick = () => { LM_DRAFT.campos.splice(fi, 1); abrirLeadModal(r); };
+    del.onclick = () => { LM_DRAFT.campos.splice(fi, 1); rerender(); };
     row.append(ik, iv, del);
     c.appendChild(row);
   });
   const rodape = el('div'); rodape.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;';
   const bAdd = el('button', 'acao-btn'); bAdd.textContent = '+ Adicionar campo';
-  bAdd.onclick = () => { LM_DRAFT.campos.push({ k: '', v: '' }); abrirLeadModal(r); };
+  bAdd.onclick = () => { LM_DRAFT.campos.push({ k: '', v: '' }); rerender(); };
   const bSalvar = el('button');
   bSalvar.textContent = 'Salvar anotações';
   bSalvar.style.cssText = 'background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);border:none;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:9px;cursor:pointer;';
@@ -3395,7 +3405,15 @@ function abrirLeadModal(r) {
   bx.onclick = () => excluirLead(r);
   zonaExcluir.append(editarBtn, bx);
   c.appendChild(zonaExcluir);
-
+}
+function abrirLeadModal(r) {
+  if (!podeAcessarLead(r)) { avisarLeadBloqueado(r); return; }
+  $('#lmTitulo').textContent = '' + (r.nome || '(sem nome)');
+  const st = $('#lmTituloPills'); clear(st);
+  st.append(trilhaPill(r.call_track), agendPill(r.agendamento_status), respostaPill(r));
+  if (r.resultado === 'convertido') { const p = el('span', 'pill agendado'); p.textContent = '✓ CONVERTIDO'; st.appendChild(p); }
+  if (r.resultado === 'perdido') { const p = el('span', 'pill parcial'); p.textContent = '✕ PERDIDO'; st.appendChild(p); }
+  montarCartaoLead(r, $('#lmCorpo'), { rerender: () => abrirLeadModal(r) });
   $('#leadModal').style.display = 'flex';
 }
 /* seção recolhível do Cartão do Lead (▸/▾) — fica lembrado enquanto o
@@ -3433,6 +3451,8 @@ function abrirEditarLead(r) {
   $('#elInsta').value = r.instagram || respostaPorPalavraChave(r, 'instagram').valor;
   $('#elTiktok').value = r.tiktok || respostaPorPalavraChave(r, 'tiktok').valor;
   $('#elFacebook').value = r.facebook || respostaPorPalavraChave(r, 'facebook').valor;
+  popularSelectQualificador($('#elQualificador'));
+  $('#elQualificador').value = r.call_track || '';
   $('#elErr').textContent = '';
   $('#editarLeadModal').style.display = 'flex';
 }
@@ -3447,6 +3467,7 @@ $('#elSalvar').onclick = async () => {
   const res = await salvarLeadCampos(r, {
     nome, whatsapp: $('#elWhats').value.trim(), email: $('#elEmail').value.trim(),
     instagram: $('#elInsta').value.trim(), tiktok: $('#elTiktok').value.trim(), facebook: $('#elFacebook').value.trim(),
+    qualificador: $('#elQualificador').value,
   });
   if (!res || !res.ok) return;   // salvarLeadCampos já mostra o toast de erro
   toast('success', 'Salvo!', 'Dados do lead atualizados.');
@@ -3467,11 +3488,19 @@ let CM_NS = 0;   // o embed do Cal não é reaproveitável: namespace novo a cad
 function abrirCalModal(r) {
   if (!podeAcessarLead(r)) { avisarLeadBloqueado(r); return; }
   const rota = ROTEAMENTO_CACHE[r.call_track] || {};
-  if (rota.tipo !== 'calcom' || !rota.calLink) {
-    toast('error', 'Aviso', 'Este lead não tem um qualificador com roteamento Cal.com configurado (Configurações → Editor do Quiz → Roteamento).');
-    return;
+  let link = (rota.tipo === 'calcom') ? rota.calLink : '';
+  if (!link) {
+    // lead sem qualificador roteado (ex.: cadastrado manualmente sem Qualificador
+    // definido) — em vez de travar o agendamento, cai na primeira agenda Cal.com
+    // configurada em Roteamento, avisando que foi um fallback.
+    link = primeiroCalLinkConfigurado();
+    if (!link) {
+      toast('error', 'Aviso', 'Nenhuma agenda Cal.com configurada ainda (Configurações → Editor do Quiz → Roteamento).');
+      return;
+    }
+    toast('info', 'Agenda padrão', 'Este lead não tem qualificador com roteamento próprio — usando a primeira agenda Cal.com configurada.');
   }
-  CM_LINK = rota.calLink;
+  CM_LINK = link;
   CM_LEAD = r;
   $('#cmTitulo').textContent = 'Agendar Encontro · ' + (r.nome || '(sem nome)');
   $('#calModal').style.display = 'flex';
@@ -3480,8 +3509,8 @@ function abrirCalModal(r) {
 function fecharCalModal() {
   $('#calModal').style.display = 'none';
   clear($('#cmSlot'));
-  // cartão do lead aberto por trás? re-desenha pra mostrar o agendamento novo
-  if (CM_LEAD && LM_ATUAL === CM_LEAD && $('#leadModal').style.display === 'flex') abrirLeadModal(CM_LEAD);
+  // cartão do lead aberto por trás (modal ou painel lateral de Conversas)? re-desenha pra mostrar o agendamento novo
+  if (CM_LEAD) refrescarCartaoLead(CM_LEAD);
   CM_LEAD = null;
 }
 $('#cmFechar').onclick = fecharCalModal;
@@ -4768,26 +4797,37 @@ $('#kbExcluirQuadro').onclick = async () => {
   kbCarregar();
 };
 
-/* ===== NOVO LEAD — cadastro manual pelo painel ===== */
-function abrirNovoLeadModal() {
-  $('#nlNome').value = ''; $('#nlWhats').value = ''; $('#nlEmail').value = '';
+/* ===== NOVO LEAD — cadastro manual pelo painel (ou a partir de uma
+   conversa do WhatsApp que ainda não tem lead vinculado) ===== */
+function popularSelectQualificador(sel) {
+  clear(sel);
+  const o0 = el('option'); o0.value = ''; o0.textContent = '— sem qualificador —'; sel.appendChild(o0);
+  qualificadoresOuFallback().forEach((q) => { const o = el('option'); o.value = q.chave; o.textContent = q.nome || q.chave; sel.appendChild(o); });
+}
+let NL_DE_CONVERSA = false;   // true = este cadastro foi aberto a partir de uma conversa (vincula de volta ao salvar)
+function abrirNovoLeadModal(prefill) {
+  const p = (prefill && typeof prefill === 'object' && !(prefill instanceof Event)) ? prefill : {};
+  NL_DE_CONVERSA = !!p.deConversa;
+  $('#nlNome').value = p.nome || ''; $('#nlWhats').value = p.whatsapp || ''; $('#nlEmail').value = '';
   $('#nlUf').value = ''; $('#nlRenda').value = ''; $('#nlStatus').textContent = '';
   const sel = $('#nlAtendente'); clear(sel);
   const o0 = el('option'); o0.value = ''; o0.textContent = '— sem responsável —'; sel.appendChild(o0);
   (ATENDENTES || []).forEach((n) => { const o = el('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
   if (!IS_ADMIN && USUARIO) sel.value = USUARIO;
+  popularSelectQualificador($('#nlQualificador'));
   $('#novoLeadModal').style.display = 'flex';
-  $('#nlNome').focus();
+  (p.nome ? $('#nlWhats') : $('#nlNome')).focus();
 }
 function fecharNovoLeadModal() { $('#novoLeadModal').style.display = 'none'; }
-$('#kbNovoLead').onclick = abrirNovoLeadModal;
-$('#leadsNovoLead').onclick = abrirNovoLeadModal;
+$('#kbNovoLead').onclick = () => abrirNovoLeadModal();
+$('#leadsNovoLead').onclick = () => abrirNovoLeadModal();
 $('#nlFechar').onclick = fecharNovoLeadModal;
 $('#novoLeadModal').addEventListener('click', (e) => { if (e.target === $('#novoLeadModal')) fecharNovoLeadModal(); });
 $('#nlSalvar').onclick = async () => {
   const nome = $('#nlNome').value.trim();
   if (!nome) { $('#nlStatus').textContent = 'Informe o nome do lead.'; $('#nlNome').focus(); return; }
   $('#nlStatus').textContent = 'salvando…';
+  const deConversa = NL_DE_CONVERSA;
   const r = await fetch('/api/lead-admin', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -4795,6 +4835,7 @@ $('#nlSalvar').onclick = async () => {
       lead: {
         nome, whatsapp: $('#nlWhats').value.trim(), email: $('#nlEmail').value.trim(),
         uf: $('#nlUf').value.trim(), renda: $('#nlRenda').value.trim(), atendente: $('#nlAtendente').value,
+        qualificador: $('#nlQualificador').value,
       },
     }),
   }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
@@ -4802,6 +4843,13 @@ $('#nlSalvar').onclick = async () => {
   fecharNovoLeadModal();
   await refresh();
   if (KB_CARREGADO) kbCarregar();
+  // veio de "Transformar em Lead" dentro de Conversas? vincula o lead recém-criado
+  // à conversa que está aberta, sem precisar que o usuário procure ele na lista.
+  if (deConversa && r.lead && CV_ATIVO && CV_ATIVO.tel === telefoneDe(r.lead)) {
+    CV_ATIVO.lead = r.lead;
+    renderCvInfoPanel();
+    carregarInbox();
+  }
 };
 
 /* ===== navegação horizontal fluida do Kanban =====
@@ -6742,20 +6790,17 @@ function renderCvInfoPanel() {
     const v = el('div', 'muted-cell'); v.style.padding = '16px 0';
     v.textContent = 'Este contato ainda não está vinculado a um lead do funil.';
     box.appendChild(v);
+    const b = el('button');
+    b.textContent = '+ Transformar em Lead';
+    b.style.cssText = 'width:100%;padding:10px 14px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;';
+    b.onclick = () => abrirNovoLeadModal({ nome: (CV_ATIVO && CV_ATIVO.nome) || '', whatsapp: (CV_ATIVO && CV_ATIVO.tel) || '', deConversa: true });
+    box.appendChild(b);
     return;
   }
-  const h1 = el('h2'); h1.textContent = 'Ações do Lead'; h1.style.cssText = 'font-size:13px;margin:0 0 8px;'; box.appendChild(h1);
-  const acoes = el('div'); acoes.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:18px;';
-  const bAbrir = el('button', 'acao-btn'); bAbrir.textContent = 'Abrir Cartão do Lead'; bAbrir.onclick = () => abrirLeadModal(lead);
-  const bAgendar = el('button', 'acao-btn'); bAgendar.textContent = 'Agendar compromisso'; bAgendar.onclick = () => abrirCalModal(lead);
-  acoes.append(bAbrir, bAgendar);
-  box.appendChild(acoes);
-  const h2t = el('h2'); h2t.textContent = 'Informações do Lead'; h2t.style.cssText = 'font-size:13px;margin:0 0 4px;'; box.appendChild(h2t);
-  box.appendChild(lmLinha('Status', statusPill(statusCRM(lead))));
-  box.appendChild(lmLinha('Origem', lead.origem || '—'));
-  box.appendChild(lmLinha('Responsável', selAtendente(lead)));
-  if (lead.qualificador) box.appendChild(lmLinha('Qualificador', lead.qualificador));
-  if (lead.uf) box.appendChild(lmLinha('Estado (UF)', lead.uf));
+  // painel lateral "também é o cartão do lead" — mesmo conteúdo do modal
+  // (dados, agendamento, anotações, respostas do quiz, editar/excluir), só
+  // sem o botão "Conversar" (já se está dentro da conversa) e sem popup.
+  montarCartaoLead(lead, box, { mostrarConversar: false, rerender: renderCvInfoPanel });
 }
 $('#cvChInfoBtn').onclick = toggleCvInfoPanel;
 
