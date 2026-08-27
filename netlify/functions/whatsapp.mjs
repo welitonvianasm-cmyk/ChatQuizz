@@ -200,7 +200,14 @@ export default async (req) => {
     }
 
     if (a === 'excluir_conversa') {
-      const tel = normalizarTelefoneBR(body.telefone);
+      // propositalmente NÃO usa normalizarTelefoneBR aqui: o telefone chega
+      // exatamente como está gravado em wa_mensagens (a lista/inbox mostra o
+      // valor cru da coluna). Uma conversa duplicada pelo bug do 9º dígito
+      // (ex.: 556796068167 vs 5567996068167) tem DUAS linhas com telefone
+      // diferente pro mesmo contato — normalizar aqui faria o "errado" virar
+      // o "certo" antes de comparar, e a exclusão nunca acertaria a linha
+      // realmente duplicada (excluía sempre a outra, a certa, por engano).
+      const tel = soDigitos(body.telefone);
       if (!tel) return json({ ok: false, error: 'telefone obrigatório' });
       const r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&telefone=eq.${tel}`, {
         method: 'DELETE', headers: { ...H, Prefer: 'return=minimal' },
