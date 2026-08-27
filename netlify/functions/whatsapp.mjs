@@ -7,6 +7,7 @@
  *   { token, action:'send', telefone, texto, lead_ref? }
  *   { token, action:'inbox' }                    → { ok, conversas }   (agrupado por telefone)
  *   { token, action:'historico', telefone }      → { ok, mensagens }   (e marca como lidas)
+ *   { token, action:'excluir_conversa', telefone } → { ok }   (apaga o histórico; some da lista e, se voltar a mandar mensagem, começa do zero)
  *
  * Env (preencher quando o servidor da Evolution estiver no ar):
  *   EVOLUTION_URL      — ex.: https://sua-evolution-api.com
@@ -196,6 +197,16 @@ export default async (req) => {
         method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify({ lida: true }),
       }).catch(() => {});
       return json({ ok: true, mensagens });
+    }
+
+    if (a === 'excluir_conversa') {
+      const tel = normalizarTelefoneBR(body.telefone);
+      if (!tel) return json({ ok: false, error: 'telefone obrigatório' });
+      const r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&telefone=eq.${tel}`, {
+        method: 'DELETE', headers: { ...H, Prefer: 'return=minimal' },
+      });
+      if (!r.ok) return json({ ok: false, error: 'Erro ao excluir a conversa.' });
+      return json({ ok: true });
     }
 
     return json({ error: 'unknown_action' }, 400);

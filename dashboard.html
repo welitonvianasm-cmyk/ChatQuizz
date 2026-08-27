@@ -1781,6 +1781,7 @@
                 <small id="cvChTel" class="cv-chat-tel"></small>
               </div>
               <button class="acao-btn" id="cvChInfoBtn" title="Ver informações e ações deste lead">Infos do Lead</button>
+              <button class="acao-btn" id="cvChExcluirBtn" title="Excluir esta conversa (o histórico some; se a pessoa mandar mensagem de novo, começa do zero)" style="color:var(--red);">Excluir conversa</button>
             </div>
             <div class="cv-chat-msgs" id="cvChMsgs"></div>
             <div class="cv-chat-envio">
@@ -6803,6 +6804,19 @@ function renderCvInfoPanel() {
   montarCartaoLead(lead, box, { mostrarConversar: false, rerender: renderCvInfoPanel });
 }
 $('#cvChInfoBtn').onclick = toggleCvInfoPanel;
+$('#cvChExcluirBtn').onclick = async () => {
+  if (!CV_ATIVO) return;
+  if (!confirm('Excluir esta conversa? O histórico de mensagens some da lista. Se essa pessoa mandar mensagem de novo (ou o lead voltar a conversar), a conversa começa do zero.')) return;
+  const r = await waApi({ action: 'excluir_conversa', telefone: CV_ATIVO.tel });
+  if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao excluir a conversa.'); return; }
+  if (CV_TIMER) clearInterval(CV_TIMER);
+  CV_ATIVO = null;
+  $('#cvChatAtivo').style.display = 'none';
+  $('#cvChatVazio').style.display = 'flex';
+  fecharCvInfoPanel();
+  toast('success', 'Excluída', 'Conversa removida.');
+  carregarInbox();
+};
 
 /* ===================== AUTOMAÇÕES ===================== */
 function inserirVar(ta, v) {
