@@ -2241,6 +2241,7 @@ async function tryToken(token) {
   EQUIPE_CS = data.equipeCS || [];
   USUARIO = (data.usuario || '').trim();
   CONTA_PLANO = data.contaPlano || 'completo';
+  MENTORIAHUB_ATIVO = !!data.mentoriahubAtivo;
   CONTA_PLANO_DEFINIDO = !!data.contaPlanoDefinido;
   CONTA_DOMINIO = data.contaDominio || '';
   CONTA_DOMINIO_STATUS = data.contaDominioStatus || '';
@@ -2255,6 +2256,7 @@ async function tryToken(token) {
 function aplicarPerfil() {
   aplicarGatingPlano();        // mostra/esconde seções conforme o plano da conta
   aplicarGatingModulos();      // mostra/esconde seções conforme as permissões do usuário
+  aplicarGatingMentoriaHub();  // mostra/esconde seções conforme a integração MentoriaHub
   navGo(NAV_ATUAL);           // reaplica a seção atual do menu lateral
   if (IS_ADMIN) carregarEquipe();
 }
@@ -2625,6 +2627,24 @@ function aplicarGatingPlano() {
     grupo.hidden = botoes.length > 0 && Array.from(botoes).every((b) => b.hidden);
   });
 }
+/* seções que somem quando a conta tem integração MentoriaHub ativa — a partir
+   daí o QuizzHub vira só quiz+qualificador+roteamento, o resto (gestão do
+   funil, conversa, automação, pós-venda) passa a ser 100% do MentoriaHub */
+const MENTORIAHUB_GATED = new Set([
+  'quadro', 'conversas', 'automacoes', 'disparos',
+  'posConv', 'posAtend', 'posFin', 'posProdutos',
+]);
+function aplicarGatingMentoriaHub() {
+  if (!MENTORIAHUB_ATIVO) return;
+  document.querySelectorAll('#sidenav button[data-sec]').forEach((b) => {
+    if (MENTORIAHUB_GATED.has(b.dataset.sec)) b.hidden = true;   // só adiciona hidden, nunca desfaz
+  });
+  document.querySelectorAll('#sidenav .sidenav-corpo > .nav-menu').forEach((grupo) => {
+    if (grupo.id === 'navMasterGrupo') return;
+    const botoes = grupo.querySelectorAll('button[data-sec]');
+    grupo.hidden = botoes.length > 0 && Array.from(botoes).every((b) => b.hidden);
+  });
+}
 /* ===== Permissões por módulo — visibilidade de menu por usuário (separado de
    funcao_adm/funcao_cs, que continuam governando regra de negócio/escrita).
    Lista precisa bater com MODULOS_TOGGLE em netlify/functions/dash-users.mjs.
@@ -2642,6 +2662,7 @@ const MODULO_GRUPO_LABEL = { gestao: 'Gestão', agenda: 'Agenda', automacao: 'Au
 let PERM_TUDO = true;
 let PERM_MODULOS = new Set();
 let MEU_ID = null;
+let MENTORIAHUB_ATIVO = false;   // conta com integração MentoriaHub ligada — vira só captação (ver aplicarGatingMentoriaHub)
 function podeVerModulo(sec) {
   if (IS_ADMIN) return true;
   if (!MODULOS_TOGGLE.includes(sec)) return true;   // geral / admin-only / master: governados em outro lugar
@@ -2691,6 +2712,7 @@ function navGo(sec) {
   if (sec === 'masterContas' && !IS_SUPERADMIN) { navGo('geral'); return; }
   if (SECOES_ADMIN.has(sec) && !IS_ADMIN) { navGo('geral'); return; }
   if (SECOES_SO_COMPLETO.has(sec) && CONTA_PLANO === 'lite') { navGo('leads'); return; }
+  if (MENTORIAHUB_GATED.has(sec) && MENTORIAHUB_ATIVO) { navGo('leads'); return; }   // 'leads' nunca entra em MENTORIAHUB_GATED: sem risco de loop
   if (!podeVerModulo(sec)) { navGo('geral'); return; }   // 'geral' nunca entra em MODULOS_TOGGLE: sem risco de loop
   NAV_ATUAL = sec;
   document.querySelectorAll('#sidenav button[data-sec]').forEach((b) => b.classList.toggle('on', b.dataset.sec === sec));
@@ -5948,7 +5970,10 @@ $('#mhBtnSalvar').onclick = async () => {
     body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'salvar_mentoriahub', url, secret, ativo: $('#mhAtivo').checked }),
   }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
   $('#mhMsg').textContent = r.ok ? '✓ Salvo!' : ('' + (r.error || 'Erro ao salvar.'));
-  if (r.ok) { $('#mhUrl').value = ''; $('#mhSecret').value = ''; carregarConexaoMentoriaHub(); }
+  if (r.ok) {
+    $('#mhUrl').value = ''; $('#mhSecret').value = ''; carregarConexaoMentoriaHub();
+    MENTORIAHUB_ATIVO = $('#mhAtivo').checked; aplicarPerfil();
+  }
 };
 $('#mhBtnRemover').onclick = async () => {
   if (!confirm('Remover a conexão com o MentoriaHub? Leads deixam de ser espelhados lá.')) return;
@@ -5958,7 +5983,10 @@ $('#mhBtnRemover').onclick = async () => {
     body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'remover_mentoriahub' }),
   }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
   $('#mhMsg').textContent = r.ok ? 'Removida.' : ('' + (r.error || 'Erro ao remover.'));
-  if (r.ok) carregarConexaoMentoriaHub();
+  if (r.ok) {
+    carregarConexaoMentoriaHub();
+    MENTORIAHUB_ATIVO = false; aplicarPerfil();
+  }
 };
 
 /* ===== Webhook de Pagamento (MAKE) — segredo GERADO pelo painel, a URL

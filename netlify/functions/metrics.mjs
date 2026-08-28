@@ -17,6 +17,7 @@
  *   SUPABASE_DIAG_URL     — URL do projeto dedicado.
  */
 import { temConfig, autenticarToken, registrarLog } from '../_tokens.mjs';
+import { obterConexaoMentoriaHub } from '../_conexoes.mjs';
 const SUPABASE_URL = (process.env.SUPABASE_DIAG_URL || 'https://aktktxizmpwckvxbdjzf.supabase.co').replace(/\/+$/, '');
 const TABLE = 'diag_instagram_leads';
 
@@ -137,7 +138,12 @@ export default async (req) => {
       }
     } catch { /* melhor-esforço */ }
 
-    return json({ ok: true, admin: !!auth.admin, cs: !!auth.cs, superadmin: !!auth.superadmin, permissoes: auth.permissoes || { tudo: true, modulos: {} }, usuarioId: auth.user.id, impersonando: !!auth.impersonando, contaNome: auth.contaNome || '', trocar_senha: !!auth.trocarSenha, usuario: auth.user.nome || '', contaId, contaPlano: auth.contaPlano, contaPlanoDefinido: !!auth.contaPlanoDefinido, contaDominio: auth.contaDominio || '', contaDominioStatus: auth.contaDominioStatus || '', atendentes, equipeCS, total: total ?? rows.length, count: rows.length, leads: rows });
+    // integração MentoriaHub ativa? (conta vira só captação — Quadro/Conversas/
+    // Automações/Pós-Venda somem do menu, ver aplicarGatingMentoriaHub no dashboard)
+    let mentoriahubAtivo = false;
+    try { mentoriahubAtivo = !!(await obterConexaoMentoriaHub(contaId)); } catch { /* melhor-esforço */ }
+
+    return json({ ok: true, admin: !!auth.admin, cs: !!auth.cs, superadmin: !!auth.superadmin, permissoes: auth.permissoes || { tudo: true, modulos: {} }, usuarioId: auth.user.id, impersonando: !!auth.impersonando, contaNome: auth.contaNome || '', trocar_senha: !!auth.trocarSenha, usuario: auth.user.nome || '', contaId, contaPlano: auth.contaPlano, contaPlanoDefinido: !!auth.contaPlanoDefinido, contaDominio: auth.contaDominio || '', contaDominioStatus: auth.contaDominioStatus || '', atendentes, equipeCS, mentoriahubAtivo, total: total ?? rows.length, count: rows.length, leads: rows });
   } catch (err) {
     console.error('metrics error:', err);
     return json({ error: err.message }, 500);

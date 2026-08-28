@@ -24,7 +24,7 @@
  *   SUPABASE_DIAG_URL — URL do projeto dedicado.
  */
 import { votar, interpolar, carregarConfigPublicada } from '../_quiz.mjs';
-import { dispararMentoriaHub } from '../_conexoes.mjs';
+import { dispararMentoriaHub, obterConexaoMentoriaHub } from '../_conexoes.mjs';
 import { resolverContaPorHost } from '../_tenant.mjs';
 import { enviarWhats } from './whatsapp.mjs';
 import { sincronizarEventoGoogle } from '../_googleAgenda.mjs';
@@ -124,7 +124,10 @@ export default async (req) => {
       const rota = qualificador && doc.roteamento ? doc.roteamento[qualificador] : null;
       if (rota) {
         row.roteamento_tipo = txt(rota.tipo, 20);
-        if (rota.tipo === 'whatsapp' && rota.auto && e164 && rota.mensagem) {
+        // com integração MentoriaHub ativa, o disparo automático de WhatsApp
+        // é responsabilidade de lá (automação "lead_novo") — mandar também
+        // por aqui duplicaria a mensagem pro lead.
+        if (rota.tipo === 'whatsapp' && rota.auto && e164 && rota.mensagem && !(await obterConexaoMentoriaHub(contaId))) {
           row.roteamento_disparado_em = new Date().toISOString();
           disparoWhats = {
             telefone: digits,
