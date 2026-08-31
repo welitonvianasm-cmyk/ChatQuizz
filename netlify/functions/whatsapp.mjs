@@ -11,8 +11,11 @@
  *   { token, action:'toggles', conversas?, disparos? }  (só admin)
  *   { token, action:'send', telefone, texto, lead_ref? }
  *   { token, action:'inbox' }                    → { ok, conversas }   (agrupado por telefone)
- *   { token, action:'historico', telefone }      → { ok, mensagens }   (e marca como lidas)
+ *   { token, action:'historico', telefone }      → { ok, mensagens, iaPausada }   (e marca como lidas)
  *   { token, action:'excluir_conversa', telefone } → { ok }   (apaga o histórico; some da lista e, se voltar a mandar mensagem, começa do zero)
+ *   { token, action:'ia_estado', telefone }      → { ok, iaPausada }
+ *   { token, action:'ia_pausar', telefone }      → { ok }   (Agente IA para de responder esse lead)
+ *   { token, action:'ia_retomar', telefone }     → { ok }   (volta a responder a partir da PRÓXIMA mensagem nova)
  *
  * Env:
  *   EVOLUTION_URL/EVOLUTION_KEY — servidor Evolution (compartilhado; cada conta
@@ -26,6 +29,7 @@ import {
   removerInstancia, definirPadrao, atualizarEstadoLocal, obterInstanciaDaConversa,
   enviarTexto,
 } from '../_evolution.mjs';
+import { lerEstadoConversa, definirPausaConversa } from '../_agenteIa.mjs';
 
 export { soDigitos, normalizarTelefoneBR, mensagemErroEvolution };   // outros módulos ainda importam daqui
 
@@ -182,7 +186,29 @@ export default async (req) => {
       fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&telefone=eq.${tel}&direcao=eq.in&lida=eq.false`, {
         method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify({ lida: true }),
       }).catch(() => {});
-      return json({ ok: true, mensagens });
+      const estadoIa = await lerEstadoConversa(contaId, tel).catch(() => ({ ia_pausada: false }));
+      return json({ ok: true, mensagens, iaPausada: !!estadoIa.ia_pausada });
+    }
+
+    if (a === 'ia_estado') {
+      const tel = normalizarTelefoneBR(body.telefone);
+      if (!tel) return json({ ok: false, error: 'telefone obrigatório' });
+      const estadoIa = await lerEstadoConversa(contaId, tel);
+      return json({ ok: true, iaPausada: !!estadoIa.ia_pausada });
+    }
+
+    if (a === 'ia_pausar') {
+      const tel = normalizarTelefoneBR(body.telefone);
+      if (!tel) return json({ ok: false, error: 'telefone obrigatório' });
+      await definirPausaConversa(contaId, tel, true, quem);
+      return json({ ok: true });
+    }
+
+    if (a === 'ia_retomar') {
+      const tel = normalizarTelefoneBR(body.telefone);
+      if (!tel) return json({ ok: false, error: 'telefone obrigatório' });
+      await definirPausaConversa(contaId, tel, false, quem);
+      return json({ ok: true });
     }
 
     if (a === 'excluir_conversa') {

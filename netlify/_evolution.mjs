@@ -213,3 +213,25 @@ export async function enviarTexto(nomeInstancia, telefone, texto) {
   const wa_id = (d && d.key && d.key.id) || '';
   return { ok: true, wa_id };
 }
+
+/* envia mídia (imagem/documento) por UMA instância específica. `media` é a
+   URL do arquivo (link assinado do Supabase Storage, curto prazo) — a
+   própria Evolution busca o arquivo por trás, não precisamos mandar bytes.
+   Endpoint/corpo conferidos direto no código-fonte real da Evolution API
+   (mesma prática já usada pro sendText nesse projeto): POST
+   /message/sendMedia/:instance, {number, mediatype, mimetype, caption?,
+   fileName?, media}. */
+export async function enviarMidia(nomeInstancia, telefone, mediaUrl, mimetype, nomeArquivo, legenda) {
+  const tel = normalizarTelefoneBR(telefone);
+  if (!tel || !mediaUrl) return { ok: false, error: 'telefone/arquivo vazios' };
+  if (!configurada()) return { ok: false, error: 'WhatsApp não conectado (Evolution não configurada).' };
+  const mediatype = String(mimetype || '').startsWith('image/') ? 'image' : 'document';
+  const r = await ev(`/message/sendMedia/${nomeInstancia}`, {
+    method: 'POST',
+    body: JSON.stringify({ number: tel, mediatype, mimetype, media: mediaUrl, fileName: nomeArquivo || undefined, caption: legenda || undefined }),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) return { ok: false, error: mensagemErroEvolution(d, r.status) };
+  const wa_id = (d && d.key && d.key.id) || '';
+  return { ok: true, wa_id };
+}

@@ -1,8 +1,9 @@
 /**
  * AGENTE IA — configuração, base de conhecimento, perguntas-e-respostas e
- * produtos do painel de treinamento, por conta. Fase 2 (só dados) do
- * Agente de IA de Atendimento — a chamada de verdade pro LLM entra na
- * Fase 3, em netlify/_llm.mjs.
+ * produtos do painel de treinamento, por conta, mais o estado de
+ * pausa/retomada por conversa (Fase 3). A chamada de verdade pro LLM mora
+ * em netlify/_llm.mjs; o loop de resposta em si em
+ * netlify/functions/agente-processar.mjs.
  */
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -100,4 +101,27 @@ export function montarSystemPrompt(agente, qa, produtos, arquivos) {
   }
 
   return partes.join('\n');
+}
+
+/* ==================== pausa/retomada da IA por conversa (Fase 3) ====================
+   Um humano assumindo a conversa pausa a IA só pra esse telefone; ao
+   retomar, a IA volta a responder a partir da PRÓXIMA mensagem nova — nunca
+   reprocessa retroativamente o que chegou enquanto estava pausada, porque o
+   disparo pra IA só acontece no instante em que cada mensagem chega
+   (wa-webhook.mjs), nunca por uma fila revisitada depois. */
+export async function lerEstadoConversa(contaId, telefone) {
+  const r = await fetch(`${SB_URL}/rest/v1/wa_conversas_estado?conta_id=eq.${contaId}&telefone=eq.${encodeURIComponent(telefone)}&limit=1`, { headers: H });
+  if (!r.ok) return { ia_pausada: false };
+  const rows = await r.json();
+  return rows[0] || { ia_pausada: false };
+}
+
+export async function definirPausaConversa(contaId, telefone, pausada, quem) {
+  const patch = { conta_id: contaId, telefone, ia_pausada: !!pausada, atualizado_em: new Date().toISOString() };
+  if (pausada) { patch.pausada_em = new Date().toISOString(); patch.pausada_por = quem || ''; }
+  else { patch.pausada_em = null; patch.pausada_por = ''; }
+  await fetch(`${SB_URL}/rest/v1/wa_conversas_estado?on_conflict=conta_id,telefone`, {
+    method: 'POST', headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(patch),
+  });
 }

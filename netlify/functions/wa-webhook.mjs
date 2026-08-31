@@ -19,6 +19,15 @@
  * RECEBIDA (direção 'in') é encaminhada pra essa URL, fire-and-forget,
  * pra um agente externo de SDR/IA poder responder por fora do painel.
  * Sem essa env, esse encaminhamento simplesmente não acontece.
+ *
+ * AGENTE IA PRÓPRIO (Fase 3): toda mensagem de TEXTO recebida também é
+ * despachada, fire-and-forget, pro netlify/functions/agente-processar.mjs
+ * do próprio site — ele decide sozinho se tem agente ativo/não pausado
+ * pra essa conta e responde por conta própria. Não é awaited de propósito:
+ * assim o processamento (chamada da Claude + ferramentas + envio) roda
+ * numa invocação de function separada, com seu PRÓPRIO orçamento de tempo,
+ * em vez de somar ao tempo deste webhook (que precisa responder rápido
+ * pra Evolution não re-tentar a entrega).
  */
 import { marcarPrimeiroAtendimento } from '../_kpi.mjs';
 import { normalizarTelefoneBR, obterContaPorInstancia } from '../_evolution.mjs';
@@ -28,6 +37,7 @@ const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const SECRET = process.env.WA_WEBHOOK_SECRET || '';
 const SDR_WEBHOOK_URL = process.env.AGENTE_SDR_WEBHOOK_URL || '';
+const SITE_URL = (process.env.URL || '').replace(/\/+$/, '');
 
 let CONTA_PADRAO_CACHE = null;
 async function contaPadrao() {
@@ -81,18 +91,20 @@ export default async (req) => {
       // 2) sem bater (instância não cadastrada, ou ainda em transição): casa
       //    pelo telefone já vinculado a um lead (sufixo de 10-11 dígitos cobre DDI/9º dígito)
       let lead_ref = '';
+      let nomeLead = '';
+      let emailLead = '';
       if (!contaId) {
         try {
           const fim = telefone.slice(-10);
-          const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?whatsapp=ilike.*${fim}&select=lead_ref,conta_id&limit=1`, { headers: H });
-          if (rl.ok) { const rows = await rl.json(); if (rows[0]) { lead_ref = rows[0].lead_ref || ''; contaId = rows[0].conta_id; } }
+          const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?whatsapp=ilike.*${fim}&select=lead_ref,conta_id,nome,email&limit=1`, { headers: H });
+          if (rl.ok) { const rows = await rl.json(); if (rows[0]) { lead_ref = rows[0].lead_ref || ''; contaId = rows[0].conta_id; nomeLead = rows[0].nome || ''; emailLead = rows[0].email || ''; } }
         } catch { /* sem vínculo */ }
       } else {
         // achou pela instância — ainda assim tenta achar o lead_ref, só que já escopado pela conta certa
         try {
           const fim = telefone.slice(-10);
-          const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&whatsapp=ilike.*${fim}&select=lead_ref&limit=1`, { headers: H });
-          if (rl.ok) { const rows = await rl.json(); if (rows[0]) lead_ref = rows[0].lead_ref || ''; }
+          const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&whatsapp=ilike.*${fim}&select=lead_ref,nome,email&limit=1`, { headers: H });
+          if (rl.ok) { const rows = await rl.json(); if (rows[0]) { lead_ref = rows[0].lead_ref || ''; nomeLead = rows[0].nome || ''; emailLead = rows[0].email || ''; } }
         } catch { /* sem vínculo */ }
       }
       if (!contaId) contaId = await contaPadrao();
@@ -131,6 +143,16 @@ export default async (req) => {
         fetch(SDR_WEBHOOK_URL, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ telefone, texto, wa_id, contaId, lead_ref }),
+        }).catch(() => {});
+      }
+
+      // Agente IA próprio (Fase 3) — despacha em paralelo, sem esperar
+      // (ver nota no topo do arquivo). agente-processar.mjs decide sozinho
+      // se tem agente ativo/não pausado; aqui só entrega o necessário.
+      if (direcao === 'in' && texto && nomeInstancia && SITE_URL) {
+        fetch(`${SITE_URL}/api/agente-processar`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contaId, telefone, leadRef: lead_ref, texto, instanciaNome: nomeInstancia, nomeLead, emailLead }),
         }).catch(() => {});
       }
     }

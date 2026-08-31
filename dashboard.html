@@ -1098,6 +1098,8 @@
           <b id="chNome" style="display:block;font-size:14px;color:var(--brand-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></b>
           <small id="chTel" style="opacity:.7;font-size:11.5px;"></small>
         </div>
+        <span class="pill" id="chIaPill" style="display:none;font-size:10.5px;"></span>
+        <button class="acao-btn" id="chIaBtn" title="Pausar/retomar o Agente IA nesta conversa" style="display:none;"></button>
         <button class="acao-btn" id="chVerLead" title="Abrir o Cartão do Lead" style="display:none;">Ver Lead</button>
         <button class="acao-btn" id="chFechar" title="Fechar">✕</button>
       </div>
@@ -1786,6 +1788,8 @@
                 <b id="cvChNome" class="cv-chat-nome"></b>
                 <small id="cvChTel" class="cv-chat-tel"></small>
               </div>
+              <span class="pill" id="cvIaPill" style="display:none;font-size:10.5px;"></span>
+              <button class="acao-btn" id="cvIaBtn" title="Pausar/retomar o Agente IA nesta conversa" style="display:none;"></button>
               <button class="acao-btn" id="cvChInfoBtn" title="Ver informações e ações deste lead">Infos do Lead</button>
               <button class="acao-btn" id="cvChExcluirBtn" title="Excluir esta conversa (o histórico some; se a pessoa mandar mensagem de novo, começa do zero)" style="color:var(--red);">Excluir conversa</button>
             </div>
@@ -7009,6 +7013,23 @@ async function carregarChat(primeira) {
     box.appendChild(v);
   }
   if (noFim) box.scrollTop = box.scrollHeight;
+  renderSeloIa('chIaPill', 'chIaBtn', CH.tel, r.iaPausada);
+}
+/* selo "IA ativa/pausada" + botão de pausar/retomar, usado no popup e no
+   chat interno — o Agente IA só some da conversa a partir da PRÓXIMA
+   mensagem depois de pausado, nunca retroativo (ver agente-processar.mjs) */
+function renderSeloIa(pillId, btnId, tel, pausada) {
+  const pill = $('#' + pillId), btn = $('#' + btnId);
+  if (!pill || !btn || pausada == null) return;
+  pill.style.display = ''; btn.style.display = '';
+  pill.className = 'pill ' + (pausada ? 'parcial' : 'agendado');
+  pill.textContent = pausada ? 'IA pausada' : 'IA ativa';
+  btn.textContent = pausada ? 'Retomar IA' : 'Pausar IA';
+  btn.onclick = async () => {
+    const r = await waApi({ action: pausada ? 'ia_retomar' : 'ia_pausar', telefone: tel });
+    if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro.'); return; }
+    renderSeloIa(pillId, btnId, tel, !pausada);
+  };
 }
 async function chMandar() {
   const texto = $('#chInput').value.trim();
@@ -7114,6 +7135,7 @@ async function carregarChatCv(primeira) {
     box.appendChild(v);
   }
   if (noFim) box.scrollTop = box.scrollHeight;
+  renderSeloIa('cvIaPill', 'cvIaBtn', CV_ATIVO.tel, r.iaPausada);
 }
 async function cvChMandar() {
   const texto = $('#cvChInput').value.trim();

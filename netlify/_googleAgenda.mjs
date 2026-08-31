@@ -141,6 +141,29 @@ export async function listarEventosGoogle(contaId, mes, ano) {
   }
 }
 
+/* checa os blocos OCUPADOS num intervalo (freebusy) — usado pelo Agente IA
+   (Fase 3) pra achar horário livre antes de agendar de verdade. O chamador
+   subtrai esses blocos do horário comercial configurado pra saber o que
+   sobra livre; aqui só devolve o cru do Google. null = sem conexão/erro
+   (mesmo padrão melhor-esforço das outras funções deste arquivo). */
+export async function consultarDisponibilidade(contaId, { inicioISO, fimISO }) {
+  try {
+    const client = await obterClienteGoogle(contaId);
+    if (!client) return null;
+    const conexao = await lerConexaoGoogleAgenda(contaId);
+    const calendarId = conexao.calendarId || 'primary';
+    const calendar = google.calendar({ version: 'v3', auth: client });
+    const { data } = await calendar.freebusy.query({
+      requestBody: { timeMin: inicioISO, timeMax: fimISO, items: [{ id: calendarId }] },
+    });
+    const ocupados = (data.calendars && data.calendars[calendarId] && data.calendars[calendarId].busy) || [];
+    return ocupados.map((b) => ({ inicio: b.start, fim: b.end }));
+  } catch (e) {
+    console.warn('[google-agenda] consultarDisponibilidade falhou (seguindo normal):', e?.message || e);
+    return null;
+  }
+}
+
 /* lista os calendários da conta Google conectada, pra administradora
    escolher em qual gravar (painel → Conexões → Google Agenda). */
 export async function listarCalendariosGoogle(contaId) {
