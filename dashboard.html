@@ -4586,7 +4586,8 @@ function alertaLinha(a) {
   tag.style.marginLeft = '6px';
   l1.append(b, tag);
   const l2 = el('div'); l2.style.cssText = 'font-size:12px;color:var(--text-muted);margin-top:2px;';
-  l2.textContent = (a.tipo === 'presenca' ? 'Presença registrada' : a.tipo) + ' · ' +
+  const ROTULO_TIPO_ALERTA = { presenca: 'Presença registrada', agente_ia: 'Agente IA' };
+  l2.textContent = (ROTULO_TIPO_ALERTA[a.tipo] || a.tipo) + ' · ' +
     new Date(a.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) +
     (a.atendente ? ' · para: ' + a.atendente : ' · para toda a equipe');
   const l3 = el('div'); l3.style.cssText = 'font-size:12.5px;margin-top:3px;';
