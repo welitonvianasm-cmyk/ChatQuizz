@@ -483,6 +483,14 @@ export default async (req) => {
     if ('agendamento_status' in c) {
       const st = String(c.agendamento_status || '').trim();
       if (!STATUS_VALIDOS.includes(st)) return json({ ok: false, error: 'status inválido' });
+      // ARMADILHA (não é bug hoje — nada aqui chama a API do Cal.com, é só
+      // status local): se um dia "cancelado" passar a cancelar de verdade a
+      // reserva no Cal.com, tomar cuidado com Encontros em grupo (agenda.mjs
+      // já lida com "seats" — várias pessoas compartilhando UM booking_uid).
+      // Cancelar pelo uid derruba todo mundo do grupo, não só esse lead.
+      // Ver o fix real desse mesmo bug no reagendar do quiz-suavitatis
+      // (commit bc1ee2a, 2026-08-31): só cancela no Cal.com se nenhum outro
+      // lead com esse booking_uid ainda tiver agendamento_status ativo.
       patch.agendamento_status = st;
       if (st !== (atual.agendamento_status || '')) {
         const rotulos = { '': 'confirmado', concluido: 'concluído', reagendado: 'reagendado', cancelado: 'cancelado', compareceu: 'COMPARECEU ✓', nao_compareceu: 'NÃO COMPARECEU ✕' };
