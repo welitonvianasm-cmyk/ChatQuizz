@@ -7,11 +7,13 @@
  * Grava cada mensagem em wa_mensagens e tenta casar o telefone com um lead.
  * Env: WA_WEBHOOK_SECRET (segredo do webhook — recusa chamadas sem ele).
  *
- * MULTI-TENANT: a instância Evolution ainda é global (uma só pra todas as
- * contas — ver nota em whatsapp.mjs/wa-cron.mjs), então a mensagem em si
- * não vem marcada com conta nenhuma. Resolve pelo lead já cadastrado com
- * esse telefone (o lead JÁ tem conta_id); sem lead conhecido, cai na
- * primeira conta ativa (mesmo fallback usado nos endpoints públicos).
+ * MULTI-TENANT: desde o WhatsApp virar multi-instância (cada conta conecta
+ * seu(s) próprio(s) número(s), ver netlify/_evolution.mjs), o tenant é
+ * resolvido primeiro pelo campo "instance" que a própria Evolution manda no
+ * payload do webhook (nome da instância → conta_id, via wa_instancias).
+ * Só cai no fallback antigo (achar por telefone já cadastrado num lead, ou
+ * "primeira conta ativa") se a instância não bater com nenhuma cadastrada
+ * — não deveria acontecer no uso normal, é rede de segurança.
  *
  * Env opcional: AGENTE_SDR_WEBHOOK_URL — se configurada, toda mensagem
  * RECEBIDA (direção 'in') é encaminhada pra essa URL, fire-and-forget,
@@ -19,31 +21,13 @@
  * Sem essa env, esse encaminhamento simplesmente não acontece.
  */
 import { marcarPrimeiroAtendimento } from '../_kpi.mjs';
+import { normalizarTelefoneBR, obterContaPorInstancia } from '../_evolution.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const SECRET = process.env.WA_WEBHOOK_SECRET || '';
 const SDR_WEBHOOK_URL = process.env.AGENTE_SDR_WEBHOOK_URL || '';
-
-/* normaliza número BR pro formato canônico 55+DDD+9 dígitos — o WhatsApp
-   às vezes reporta o mesmo contato com ou sem o 9º dígito do celular
-   (ex.: 556796068167 vs 5567996068167), o que sem isso vira dois "telefone"
-   diferentes em wa_mensagens (conversa duplicada) e pode até falhar o
-   vínculo com o lead. Duplicado em whatsapp.mjs/lead-admin.mjs/
-   webhook-pagamento.mjs (funções Netlify não compartilham módulo aqui). */
-function normalizarTelefoneBR(raw) {
-  const d = String(raw || '').replace(/\D/g, '');
-  if (!d) return '';
-  let resto;
-  if (d.startsWith('55') && (d.length === 12 || d.length === 13)) resto = d.slice(2);
-  else if (d.length === 10 || d.length === 11) resto = d;
-  else return d;   // formato não reconhecido (outro país, ou incompleto) — não mexe
-  const ddd = resto.slice(0, 2);
-  let numero = resto.slice(2);
-  if (numero.length === 8) numero = '9' + numero;   // celular sem o 9 → completa
-  return '55' + ddd + numero;
-}
 
 let CONTA_PADRAO_CACHE = null;
 async function contaPadrao() {
@@ -90,29 +74,44 @@ export default async (req) => {
       if (!telefone || !d.message) continue;   // antes também exigia texto, o que descartava áudio/mídia antes até de gravar
       const direcao = d.key.fromMe ? 'out' : 'in';
       const wa_id = String(d.key.id || '');
+      const nomeInstancia = String(body.instance || '').trim();
 
-      // casa o telefone com um lead (sufixo de 10-11 dígitos cobre DDI/9º dígito)
-      // — o lead já vem com a conta_id certa, é o que resolve o tenant da mensagem
+      // 1) tenant pelo nome da instância (o normal, desde o multi-instância)
+      let contaId = nomeInstancia ? await obterContaPorInstancia(nomeInstancia) : null;
+      // 2) sem bater (instância não cadastrada, ou ainda em transição): casa
+      //    pelo telefone já vinculado a um lead (sufixo de 10-11 dígitos cobre DDI/9º dígito)
       let lead_ref = '';
-      let contaId = null;
-      try {
-        const fim = telefone.slice(-10);
-        const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?whatsapp=ilike.*${fim}&select=lead_ref,conta_id&limit=1`, { headers: H });
-        if (rl.ok) { const rows = await rl.json(); if (rows[0]) { lead_ref = rows[0].lead_ref || ''; contaId = rows[0].conta_id; } }
-      } catch { /* sem vínculo */ }
+      if (!contaId) {
+        try {
+          const fim = telefone.slice(-10);
+          const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?whatsapp=ilike.*${fim}&select=lead_ref,conta_id&limit=1`, { headers: H });
+          if (rl.ok) { const rows = await rl.json(); if (rows[0]) { lead_ref = rows[0].lead_ref || ''; contaId = rows[0].conta_id; } }
+        } catch { /* sem vínculo */ }
+      } else {
+        // achou pela instância — ainda assim tenta achar o lead_ref, só que já escopado pela conta certa
+        try {
+          const fim = telefone.slice(-10);
+          const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&whatsapp=ilike.*${fim}&select=lead_ref&limit=1`, { headers: H });
+          if (rl.ok) { const rows = await rl.json(); if (rows[0]) lead_ref = rows[0].lead_ref || ''; }
+        } catch { /* sem vínculo */ }
+      }
       if (!contaId) contaId = await contaPadrao();
       if (!contaId) continue;   // nenhuma conta cadastrada ainda — nada a fazer
 
-      const linhaMsg = { conta_id: contaId, telefone, lead_ref, direcao, tipo, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out', push_name: pushName };
+      const linhaMsg = { conta_id: contaId, telefone, lead_ref, direcao, tipo, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out', push_name: pushName, instancia: nomeInstancia };
       const rIns = await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
         method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
         body: JSON.stringify(linhaMsg),
       });
       if (!rIns.ok) {
-        // coluna push_name pode não existir ainda (falta rodar setup-wa-nome-contato.sql)
         const errText = await rIns.text().catch(() => '');
-        if (/push_name/i.test(errText)) {
-          delete linhaMsg.push_name;
+        // colunas push_name/instancia podem não existir ainda (falta rodar
+        // setup-wa-nome-contato.sql / setup-wa-multi-instancia.sql) — tira a
+        // que faltar e tenta de novo, sem perder a mensagem por causa disso
+        let mexeu = false;
+        if (/push_name/i.test(errText) && 'push_name' in linhaMsg) { delete linhaMsg.push_name; mexeu = true; }
+        if (/instancia/i.test(errText) && 'instancia' in linhaMsg) { delete linhaMsg.instancia; mexeu = true; }
+        if (mexeu) {
           await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
             method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
             body: JSON.stringify(linhaMsg),

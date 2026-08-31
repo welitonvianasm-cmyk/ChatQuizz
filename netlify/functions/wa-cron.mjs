@@ -14,16 +14,14 @@
  *
  * NADA é enviado com o toggle Disparos desligado (por conta).
  *
- * NOTA: a instância Evolution (EV_URL/EV_KEY/EV_INST) ainda é global —
- * todas as contas compartilham o mesmo número de WhatsApp até virar uma
- * conexão por conta (mesmo padrão já usado pro Cal.com/MentoriaHub).
+ * Cada conta manda pela sua própria instância padrão (ver netlify/_evolution.mjs
+ * — desde a Fase 1 do WhatsApp multi-instância, não é mais um número global).
  */
+import { obterInstanciaPadrao, enviarTexto } from '../_evolution.mjs';
+
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
-const EV_URL = (process.env.EVOLUTION_URL || '').replace(/\/+$/, '');
-const EV_KEY = process.env.EVOLUTION_KEY || '';
-const EV_INST = process.env.EVOLUTION_INSTANCE || 'quizzhub';
 // URL pública do site — Netlify preenche isso automaticamente (URL de produção)
 const SITE = (process.env.URL || '').replace(/\/+$/, '');
 
@@ -51,29 +49,6 @@ function preencher(msg, lead) {
   return String(msg || '')
     .replaceAll('{{nome}}', nome).replaceAll('{{data}}', data)
     .replaceAll('{{horario}}', horario).replaceAll('{{link_reuniao}}', link);
-}
-
-/* mesma extração de erro de whatsapp.mjs — duplicado de propósito (funções
-   Netlify não compartilham módulo entre si nesse projeto) */
-function textoDeErro(m) {
-  if (m == null) return null;
-  if (typeof m === 'string') return m;
-  if (Array.isArray(m)) return m.map((x) => textoDeErro(x) || JSON.stringify(x)).join('; ');
-  if (typeof m === 'object') return textoDeErro(m.message) || JSON.stringify(m);
-  return String(m);
-}
-async function enviar(telefone, texto) {
-  if (!EV_URL || !EV_KEY) return { ok: false, error: 'Evolution não configurada' };
-  const r = await fetch(`${EV_URL}/message/sendText/${EV_INST}`, {
-    method: 'POST', headers: { apikey: EV_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ number: telefone, text: texto }),
-  });
-  if (!r.ok) {
-    const d = await r.json().catch(() => ({}));
-    const detalhe = textoDeErro(d && (d.response?.message ?? d.message ?? d.error));
-    return { ok: false, error: 'Evolution recusou (' + r.status + ')' + (detalhe ? ': ' + detalhe : '') };
-  }
-  return { ok: true };
 }
 
 /* roda o ciclo (lembretes + fila) pra UMA conta */
@@ -106,12 +81,15 @@ async function rodarConta(contaId) {
     }
   }
 
-  /* 2) fila: envia os pendentes vencidos (uma vez só) */
+  /* 2) fila: envia os pendentes vencidos (uma vez só), pela instância padrão da conta */
+  const inst = await obterInstanciaPadrao(contaId);
+  if (!inst) return { ok, falha };   // conta sem nenhum número conectado ainda
+
   const limite = new Date(agora + 60000).toISOString();
   const rp = await sb(`disparos?conta_id=eq.${contaId}&status=eq.pendente&enviar_em=lte.${limite}&select=id,telefone,mensagem&order=enviar_em.asc&limit=60`);
   const fila = rp.ok ? await rp.json() : [];
   for (const d of fila) {
-    const res = await enviar(d.telefone, d.mensagem);
+    const res = await enviarTexto(inst.nome_instancia, d.telefone, d.mensagem);
     await sb(`disparos?id=eq.${d.id}&conta_id=eq.${contaId}`, {
       method: 'PATCH', headers: { Prefer: 'return=minimal' },
       body: JSON.stringify(res.ok

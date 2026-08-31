@@ -1,65 +1,38 @@
 /**
- * WHATSAPP (Evolution API) — status, conexão, toggles, envio e inbox.
+ * WHATSAPP (Evolution API) — status, instâncias (números conectados por
+ * conta), toggles, envio e inbox.
  *
- *   { token, action:'status' }                   → { ok, configurada, estado, conversas, disparos }
- *   { token, action:'qr' }                       → { ok, qr }          (base64 pra conectar)
+ *   { token, action:'status' }                        → { ok, configurada, estado, conversas, disparos }
+ *   { token, action:'instancias_listar' }              → { ok, instancias }  (com estado ao vivo de cada uma)
+ *   { token, action:'instancias_criar', rotulo }       → { ok, instancia }   (só admin)
+ *   { token, action:'instancias_qr', id }              → { ok, qr }          (só admin)
+ *   { token, action:'instancias_definir_padrao', id }  → { ok }              (só admin)
+ *   { token, action:'instancias_remover', id }         → { ok }              (só admin)
  *   { token, action:'toggles', conversas?, disparos? }  (só admin)
  *   { token, action:'send', telefone, texto, lead_ref? }
  *   { token, action:'inbox' }                    → { ok, conversas }   (agrupado por telefone)
  *   { token, action:'historico', telefone }      → { ok, mensagens }   (e marca como lidas)
  *   { token, action:'excluir_conversa', telefone } → { ok }   (apaga o histórico; some da lista e, se voltar a mandar mensagem, começa do zero)
  *
- * Env (preencher quando o servidor da Evolution estiver no ar):
- *   EVOLUTION_URL      — ex.: https://sua-evolution-api.com
- *   EVOLUTION_KEY      — apikey global da Evolution
- *   EVOLUTION_INSTANCE — nome da instância (padrão: quizzhub)
+ * Env:
+ *   EVOLUTION_URL/EVOLUTION_KEY — servidor Evolution (compartilhado; cada conta
+ *   conecta sua(s) própria(s) instância(s) nele — ver netlify/_evolution.mjs)
  * Sem essas envs, tudo responde configurada:false e o painel cai no WhatsApp Web.
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
+import {
+  configurada, soDigitos, normalizarTelefoneBR, mensagemErroEvolution,
+  listarInstancias, criarInstancia, qrInstancia, statusInstancia,
+  removerInstancia, definirPadrao, atualizarEstadoLocal, obterInstanciaDaConversa,
+  enviarTexto,
+} from '../_evolution.mjs';
+
+export { soDigitos, normalizarTelefoneBR, mensagemErroEvolution };   // outros módulos ainda importam daqui
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
-const EV_URL = (process.env.EVOLUTION_URL || '').replace(/\/+$/, '');
-const EV_KEY = process.env.EVOLUTION_KEY || '';
-const EV_INST = process.env.EVOLUTION_INSTANCE || 'quizzhub';
-// URL pública do site — Netlify preenche isso automaticamente (URL de produção)
-const SITE_URL = (process.env.URL || '').replace(/\/+$/, '');
 const AVISO_SQL = 'Falta rodar o setup-whatsapp.sql no Supabase (módulo WhatsApp).';
-
-const configurada = () => !!(EV_URL && EV_KEY);
-const ev = (path, opts = {}) => fetch(`${EV_URL}${path}`, { ...opts, headers: { apikey: EV_KEY, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
-export const soDigitos = (t) => String(t || '').replace(/\D/g, '');
-/* normaliza número BR pro formato canônico 55+DDD+9 dígitos — o WhatsApp às
-   vezes reporta o mesmo contato com ou sem o 9º dígito do celular, o que sem
-   isso vira dois "telefone" diferentes (conversa duplicada na lista). Mesma
-   função em wa-webhook.mjs/lead-admin.mjs/webhook-pagamento.mjs. */
-export function normalizarTelefoneBR(raw) {
-  const d = soDigitos(raw);
-  if (!d) return '';
-  let resto;
-  if (d.startsWith('55') && (d.length === 12 || d.length === 13)) resto = d.slice(2);
-  else if (d.length === 10 || d.length === 11) resto = d;
-  else return d;
-  const ddd = resto.slice(0, 2);
-  let numero = resto.slice(2);
-  if (numero.length === 8) numero = '9' + numero;
-  return '55' + ddd + numero;
-}
-/* extrai o texto de erro real da Evolution — o formato varia (string, array de
-   strings, ou objeto aninhado em response.message) — sem isso, todo erro virava
-   só "recusou (400)" ou literalmente "[object Object]", sem dizer o motivo */
-function textoDe(m) {
-  if (m == null) return null;
-  if (typeof m === 'string') return m;
-  if (Array.isArray(m)) return m.map((x) => textoDe(x) || JSON.stringify(x)).join('; ');
-  if (typeof m === 'object') return textoDe(m.message) || JSON.stringify(m);
-  return String(m);
-}
-export function mensagemErroEvolution(d, status) {
-  const detalhe = textoDe(d && (d.response?.message ?? d.message ?? d.error));
-  return 'Evolution recusou o envio (' + status + ')' + (detalhe ? ': ' + detalhe : '');
-}
 
 /* toggles Conversas/Disparos guardados no funnel_config (por conta) */
 async function lerToggles(contaId) {
@@ -76,25 +49,19 @@ async function salvarToggles(contaId, t) {
   });
 }
 
-/* envia UMA mensagem de texto pela Evolution e grava no histórico.
-   NOTA: a instância Evolution (EV_URL/EV_KEY/EV_INST) ainda é global —
-   todas as contas compartilham o mesmo número de WhatsApp até virar uma
-   conexão por conta (mesmo padrão já usado pro Cal.com/MentoriaHub). */
+/* envia UMA mensagem de texto pela instância certa da conversa (mesmo número
+   que o lead já está falando) e grava no histórico. */
 export async function enviarWhats(contaId, telefone, texto, quem, lead_ref) {
   const tel = normalizarTelefoneBR(telefone);
   if (!tel || !texto) return { ok: false, error: 'telefone/mensagem vazios' };
-  if (!configurada()) return { ok: false, error: 'WhatsApp não conectado (Evolution não configurada).' };
-  const r = await ev(`/message/sendText/${EV_INST}`, {
-    method: 'POST',
-    body: JSON.stringify({ number: tel, text: texto }),
-  });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) return { ok: false, error: mensagemErroEvolution(d, r.status) };
-  const wa_id = (d && d.key && d.key.id) || '';
+  const inst = await obterInstanciaDaConversa(contaId, tel);
+  if (!inst) return { ok: false, error: 'Nenhum WhatsApp conectado nesta conta ainda (Conexões → WhatsApp).' };
+  const r = await enviarTexto(inst.nome_instancia, tel, texto);
+  if (!r.ok) return r;
   try {
     await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
       method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
-      body: JSON.stringify({ conta_id: contaId, telefone: tel, lead_ref: lead_ref || '', direcao: 'out', texto: String(texto).slice(0, 4000), quem: quem || '', wa_id, lida: true }),
+      body: JSON.stringify({ conta_id: contaId, telefone: tel, lead_ref: lead_ref || '', direcao: 'out', texto: String(texto).slice(0, 4000), quem: quem || '', wa_id: r.wa_id || '', lida: true, instancia: inst.nome_instancia }),
     });
   } catch { /* histórico é melhor-esforço */ }
   return { ok: true };
@@ -117,37 +84,56 @@ export default async (req) => {
 
     if (a === 'status') {
       const t = await lerToggles(contaId);
+      const instancias = await listarInstancias(contaId);
       let estado = 'nao_configurada';
       if (configurada()) {
         estado = 'desconectada';
-        try {
-          const r = await ev(`/instance/connectionState/${EV_INST}`);
-          if (r.ok) { const d = await r.json(); estado = (d.instance && d.instance.state) === 'open' ? 'conectada' : 'desconectada'; }
-        } catch { estado = 'erro'; }
+        if (instancias.length) {
+          const estados = await Promise.all(instancias.map((i) => statusInstancia(i.nome_instancia)));
+          if (estados.some((e) => e === 'conectada')) estado = 'conectada';
+          else if (estados.some((e) => e === 'erro')) estado = 'erro';
+        }
       }
       return json({ ok: true, configurada: configurada(), estado, conversas: t.conversas, disparos: t.disparos });
     }
 
-    if (a === 'qr') {
-      if (!auth.admin) return json({ ok: false, error: 'Somente a administradora conecta o WhatsApp.' });
-      if (!configurada()) return json({ ok: false, error: 'A Evolution API ainda não foi configurada (aguardando a VPS).' });
-      // cria a instância se não existir e pede o QR
-      try { await ev('/instance/create', { method: 'POST', body: JSON.stringify({ instanceName: EV_INST, qrcode: true, integration: 'WHATSAPP-BAILEYS' }) }); } catch { /* já existe */ }
-      // garante o webhook: toda mensagem recebida chega ao CRM em tempo real
-      const segredo = process.env.WA_WEBHOOK_SECRET || '';
-      if (segredo && SITE_URL) {
-        try {
-          await ev(`/webhook/set/${EV_INST}`, {
-            method: 'POST',
-            body: JSON.stringify({ webhook: { enabled: true, url: `${SITE_URL}/api/wa-webhook?t=${segredo}`, events: ['MESSAGES_UPSERT'], base64: false, byEvents: false } }),
-          });
-        } catch { /* reconfigura no próximo QR */ }
+    if (a === 'instancias_listar') {
+      const instancias = await listarInstancias(contaId);
+      if (configurada()) {
+        await Promise.all(instancias.map(async (i) => {
+          i.estado = await statusInstancia(i.nome_instancia);
+          atualizarEstadoLocal(i.id, i.estado).catch(() => {});   // cache local, melhor-esforço
+        }));
       }
-      const r = await ev(`/instance/connect/${EV_INST}`);
-      const d = await r.json().catch(() => ({}));
-      const qr = (d && (d.base64 || (d.qrcode && d.qrcode.base64))) || '';
-      if (!qr) return json({ ok: false, error: 'QR indisponível agora (a instância pode já estar conectada).' });
-      return json({ ok: true, qr });
+      return json({ ok: true, instancias });
+    }
+
+    if (a === 'instancias_criar') {
+      if (!auth.admin) return json({ ok: false, error: 'Somente a administradora conecta números novos.' });
+      const rotulo = String(body.rotulo || '').trim().slice(0, 60);
+      if (!rotulo) return json({ ok: false, error: 'Dê um nome pro número (ex: Vendas).' });
+      const r = await criarInstancia(contaId, rotulo);
+      return json(r);
+    }
+
+    if (a === 'instancias_qr') {
+      if (!auth.admin) return json({ ok: false, error: 'Somente a administradora conecta o WhatsApp.' });
+      const inst = (await listarInstancias(contaId)).find((i) => i.id === Number(body.id));
+      if (!inst) return json({ ok: false, error: 'Instância não encontrada.' });
+      const r = await qrInstancia(inst.nome_instancia);
+      return json(r);
+    }
+
+    if (a === 'instancias_definir_padrao') {
+      if (!auth.admin) return json({ ok: false, error: 'Somente a administradora altera isso.' });
+      const r = await definirPadrao(contaId, body.id);
+      return json(r);
+    }
+
+    if (a === 'instancias_remover') {
+      if (!auth.admin) return json({ ok: false, error: 'Somente a administradora remove um número.' });
+      const r = await removerInstancia(contaId, body.id);
+      return json(r);
     }
 
     if (a === 'toggles') {

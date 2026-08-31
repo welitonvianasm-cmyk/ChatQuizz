@@ -1165,12 +1165,14 @@
         <h2 style="flex:1;margin:0;font-size:17px;">WhatsApp</h2>
         <button class="acao-btn" onclick="fecharModalConexao('modalConexaoWhatsapp')" title="Fechar">✕</button>
       </div>
-      <div class="sub" style="margin:0 0 12px;">Conecte seu número pela Evolution API e controle os dois interruptores de forma independente. Com <b>Conversas</b> desligadas, os botões Conversar abrem o WhatsApp Web normalmente; com <b>Disparos</b> desligados, nenhuma mensagem automática sai.</div>
+      <div class="sub" style="margin:0 0 12px;">Conecte um ou mais números pela Evolution API — útil se a equipe atende por mais de um WhatsApp. Com <b>Conversas</b> desligadas, os botões Conversar abrem o WhatsApp Web normalmente; com <b>Disparos</b> desligados, nenhuma mensagem automática sai.</div>
       <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
-        <div style="flex:1;min-width:230px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-            <b>Situação:</b> <span id="waEstado" class="pill parcial">verificando…</span>
+        <div style="flex:1;min-width:280px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+            <b>Números conectados</b>
+            <button class="acao-btn" id="waBtnNovaInstancia">+ Novo número</button>
           </div>
+          <div id="waInstanciasBox" style="display:grid;gap:6px;margin-bottom:12px;"></div>
           <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;margin:8px 0;cursor:pointer;">
             <input type="checkbox" id="waTgConversas" style="width:17px;height:17px;accent-color:var(--lime);">
             Conversas <span class="muted-cell" style="font-weight:400;">(inbox + popup interno em tempo real)</span>
@@ -1179,18 +1181,14 @@
             <input type="checkbox" id="waTgDisparos" style="width:17px;height:17px;accent-color:var(--lime);">
             Disparos <span class="muted-cell" style="font-weight:400;">(automações, agendadas e lembretes)</span>
           </label>
-          <div style="display:flex;gap:8px;margin-top:12px;">
-            <button class="btn" id="waBtnQr">Gerar QR Code</button>
-            <button class="btn" id="waBtnStatus">Atualizar situação</button>
-          </div>
           <div class="muted-cell" id="waMsg" style="margin-top:10px;font-size:12.5px;"></div>
           <div class="muted-cell" style="margin-top:10px;font-size:12px;border-top:1px solid var(--line);padding-top:8px;">
-            Webhook de mensagens recebidas: registrado automaticamente ao conectar. Se precisar configurar manualmente na Evolution, use <code id="waWebhookUrl" style="background:var(--bg);padding:2px 6px;border-radius:5px;">carregando…</code>
+            Webhook de mensagens recebidas: registrado automaticamente em cada número, ao conectar.
           </div>
         </div>
         <div id="waQrBox" style="display:none;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;">
           <img id="waQrImg" alt="QR Code do WhatsApp" style="width:220px;height:220px;object-fit:contain;">
-          <div class="muted-cell" style="font-size:12px;margin-top:6px;">WhatsApp → Aparelhos conectados → Conectar aparelho</div>
+          <div class="muted-cell" id="waQrLegenda" style="font-size:12px;margin-top:6px;">WhatsApp → Aparelhos conectados → Conectar aparelho</div>
         </div>
       </div>
     </div>
@@ -6594,20 +6592,20 @@ async function carregarWaStatus() {
   const r = await waApi({ action: 'status' });
   if (r.ok) WA = { configurada: r.configurada, estado: r.estado, conversas: r.conversas, disparos: r.disparos };
   renderWaCfg();
+  carregarInstancias();
 }
 function renderWaCfg() {
-  const p = $('#waEstado'); if (!p) return;
   const map = {
     conectada: ['agendado', '✓ conectado'],
-    desconectada: ['completo', 'desconectado, gere o QR Code'],
+    desconectada: ['completo', 'desconectado'],
     nao_configurada: ['parcial', 'aguardando o servidor (VPS)'],
     erro: ['parcial', 'erro ao consultar a Evolution'],
   };
   const [cls, tx] = map[WA.estado] || map.nao_configurada;
-  p.className = 'pill ' + cls; p.textContent = tx;
+  const pill = $('#ctWaPill');
+  if (pill) { pill.className = 'pill ' + cls; pill.textContent = tx; }
   $('#waTgConversas').checked = WA.conversas;
   $('#waTgDisparos').checked = WA.disparos;
-  espelharPill(p, 'ctWaPill');
 }
 async function waToggle(campo, valor) {
   const r = await waApi({ action: 'toggles', [campo]: valor });
@@ -6617,14 +6615,69 @@ async function waToggle(campo, valor) {
 }
 $('#waTgConversas').addEventListener('change', (e) => waToggle('conversas', e.target.checked));
 $('#waTgDisparos').addEventListener('change', (e) => waToggle('disparos', e.target.checked));
-$('#waBtnStatus').onclick = () => { $('#waMsg').textContent = ''; carregarWaStatus(); };
-$('#waBtnQr').onclick = async () => {
+
+/* --- lista de instâncias (números conectados) --- */
+async function carregarInstancias() {
+  const box = $('#waInstanciasBox'); if (!box) return;
+  const r = await waApi({ action: 'instancias_listar' });
+  clear(box);
+  if (!r.ok) { box.appendChild(el('div', 'muted-cell')).textContent = r.error || 'Erro ao carregar.'; return; }
+  if (!r.instancias.length) {
+    const vazio = el('div', 'muted-cell'); vazio.style.cssText = 'padding:8px 0;';
+    vazio.textContent = 'Nenhum número conectado ainda.';
+    box.appendChild(vazio);
+    return;
+  }
+  const mapEstado = { conectada: ['agendado', '✓ conectada'], desconectada: ['completo', 'desconectada'], nao_configurada: ['parcial', 'aguardando servidor'], erro: ['parcial', 'erro'] };
+  r.instancias.forEach((inst) => {
+    const row = el('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;flex-wrap:wrap;';
+    const info = el('div'); info.style.cssText = 'flex:1;min-width:140px;';
+    const nome = el('b'); nome.textContent = inst.rotulo || inst.nome_instancia;
+    if (inst.padrao) { const tagP = el('span', 'pill agendado'); tagP.style.cssText = 'margin-left:6px;font-size:9.5px;padding:2px 7px;'; tagP.textContent = 'padrão'; nome.appendChild(tagP); }
+    const numero = el('div', 'muted-cell'); numero.style.fontSize = '12px'; numero.textContent = inst.numero || '(número aparece após conectar)';
+    info.append(nome, numero);
+    const [cls, tx] = mapEstado[inst.estado] || mapEstado.desconectada;
+    const pill = el('span', 'pill ' + cls); pill.textContent = tx;
+    const acoes = el('div'); acoes.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+    const bQr = el('button', 'acao-btn'); bQr.textContent = inst.estado === 'conectada' ? 'Reconectar' : 'QR Code';
+    bQr.onclick = () => gerarQrInstancia(inst);
+    acoes.appendChild(bQr);
+    if (!inst.padrao) {
+      const bPad = el('button', 'acao-btn'); bPad.textContent = 'Definir padrão';
+      bPad.onclick = async () => { await waApi({ action: 'instancias_definir_padrao', id: inst.id }); carregarInstancias(); };
+      acoes.appendChild(bPad);
+    }
+    const bDel = el('button', 'acao-btn'); bDel.textContent = 'Remover'; bDel.style.color = 'var(--red)';
+    bDel.onclick = async () => {
+      if (!confirm('Remover "' + (inst.rotulo || inst.nome_instancia) + '"? Desconecta o número e para de receber mensagens por ele.')) return;
+      const r2 = await waApi({ action: 'instancias_remover', id: inst.id });
+      if (!r2.ok) { toast('error', 'Aviso', r2.error || 'Erro ao remover.'); return; }
+      carregarInstancias(); carregarWaStatus();
+    };
+    acoes.appendChild(bDel);
+    row.append(info, pill, acoes);
+    box.appendChild(row);
+  });
+}
+async function gerarQrInstancia(inst) {
   $('#waMsg').textContent = 'gerando QR…';
-  const r = await waApi({ action: 'qr' });
+  const r = await waApi({ action: 'instancias_qr', id: inst.id });
   if (!r.ok) { $('#waMsg').textContent = r.error || 'Erro.'; $('#waQrBox').style.display = 'none'; return; }
   $('#waQrImg').src = String(r.qr).startsWith('data:') ? r.qr : 'data:image/png;base64,' + r.qr;
+  $('#waQrLegenda').textContent = 'Escaneie com o celular do número "' + (inst.rotulo || inst.nome_instancia) + '" → WhatsApp → Aparelhos conectados';
   $('#waQrBox').style.display = 'block';
-  $('#waMsg').textContent = 'Escaneie com o celular do número que vai enviar as mensagens. Depois clique em "Atualizar situação".';
+  $('#waMsg').textContent = 'Depois de escanear, aguarde alguns segundos e feche/reabra esta tela pra ver a situação atualizada.';
+}
+$('#waBtnNovaInstancia').onclick = async () => {
+  const resp = await promptModal({ titulo: 'Novo número de WhatsApp', sub: 'Um nome só pra você identificar (ex: Vendas, Suporte) — não precisa ser o número em si.', campos: [{ id: 'rotulo', label: 'Nome', obrigatorio: true, placeholder: 'Principal' }], textoOk: 'Criar' });
+  if (!resp) return;
+  $('#waMsg').textContent = 'criando…';
+  const r = await waApi({ action: 'instancias_criar', rotulo: resp.rotulo });
+  if (!r.ok) { $('#waMsg').textContent = r.error || 'Erro ao criar.'; return; }
+  $('#waMsg').textContent = '';
+  await carregarInstancias();
+  gerarQrInstancia(r.instancia);
 };
 
 /* --- porta de entrada única dos botões Conversar --- */
