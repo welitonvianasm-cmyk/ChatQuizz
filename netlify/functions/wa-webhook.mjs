@@ -146,13 +146,16 @@ export default async (req) => {
         }).catch(() => {});
       }
 
-      // Agente IA próprio (Fase 3) — despacha em paralelo, sem esperar
+      // Agente IA próprio (Fase 3/4) — despacha em paralelo, sem esperar
       // (ver nota no topo do arquivo). agente-processar.mjs decide sozinho
       // se tem agente ativo/não pausado; aqui só entrega o necessário.
-      if (direcao === 'in' && texto && nomeInstancia && SITE_URL) {
+      // Áudio (Fase 4) viaja com o objeto BRUTO da mensagem (`mensagemBruta`)
+      // — é o que a Evolution exige pra decriptar e devolver o base64; texto
+      // ainda vem vazio nesse caso, o agente transcreve antes de responder.
+      if (direcao === 'in' && (texto || tipo === 'audio') && nomeInstancia && SITE_URL) {
         fetch(`${SITE_URL}/api/agente-processar`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contaId, telefone, leadRef: lead_ref, texto, instanciaNome: nomeInstancia, nomeLead, emailLead }),
+          body: JSON.stringify({ contaId, telefone, leadRef: lead_ref, texto, tipo, waId: wa_id, mensagemBruta: tipo === 'audio' ? d : undefined, instanciaNome: nomeInstancia, nomeLead, emailLead }),
         }).catch(() => {});
       }
     }

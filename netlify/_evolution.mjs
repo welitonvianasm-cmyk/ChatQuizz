@@ -198,6 +198,31 @@ export async function atualizarEstadoLocal(id, estado, numero) {
   });
 }
 
+/* ==================== mídia recebida ==================== */
+
+/* baixa (e decripta) uma mídia recebida — o WhatsApp guarda mídia
+   criptografada ponta-a-ponta no CDN da Meta, então não dá pra simplesmente
+   buscar a URL que vem no payload do webhook; só a própria Evolution
+   consegue decifrar (ela já tem as chaves da sessão). Endpoint/corpo
+   conferidos direto no código-fonte real da Evolution API: POST
+   /chat/getBase64FromMediaMessage/:instance, corpo {message: <objeto bruto
+   da mensagem, o mesmo item do array "data" do webhook>}.
+   NÃO VERIFICADO na fonte: o nome exato do campo de resposta com o base64
+   — o controller mostra a chamada, mas o formato de resposta não estava
+   visível. Tenta os nomes mais prováveis (base64/media/buffer); se a
+   Evolution usar outro, ajustar aqui depois de 1 teste real. */
+export async function baixarMidia(nomeInstancia, mensagemBruta) {
+  if (!configurada()) return { ok: false, error: 'WhatsApp não conectado (Evolution não configurada).' };
+  const r = await ev(`/chat/getBase64FromMediaMessage/${nomeInstancia}`, {
+    method: 'POST', body: JSON.stringify({ message: mensagemBruta }),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) return { ok: false, error: mensagemErroEvolution(d, r.status) };
+  const base64 = d.base64 || d.media || d.buffer || '';
+  if (!base64) return { ok: false, error: 'Evolution não devolveu o áudio (formato de resposta inesperado).' };
+  return { ok: true, base64, mimetype: d.mimetype || d.mimeType || '' };
+}
+
 /* ==================== envio ==================== */
 
 /* envia texto por UMA instância específica — só a chamada crua à Evolution,

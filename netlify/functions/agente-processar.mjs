@@ -1,19 +1,21 @@
 /**
- * AGENTE IA — loop de resposta de verdade (Fase 3). Chamado por
+ * AGENTE IA — loop de resposta de verdade (Fases 3 e 4). Chamado por
  * wa-webhook.mjs pra toda mensagem recebida de uma conta com o Agente IA
- * ativo (e não pausado nessa conversa).
+ * ativo (e não pausado nessa conversa) — inclusive mensagem de voz, que é
+ * transcrita aqui antes de entrar no mesmo loop de resposta de texto.
  *
  * NÃO é uma Netlify Background Function — a conta está no plano gratuito
  * do Netlify, que não libera isso (só Pro+). É uma function síncrona
  * normal, com orçamento de tempo mais apertado: loop de ferramentas
- * limitado a poucas idas, sem empilhar transcrição de áudio na mesma
- * chamada (isso é tratado à parte na Fase 4). Se a conta migrar pro plano
- * Pro depois, dá pra virar Background Function sem mudar a lógica, só a
- * forma de disparo.
+ * limitado a poucas idas. Se a conta migrar pro plano Pro depois, dá pra
+ * virar Background Function sem mudar a lógica, só a forma de disparo.
  *
- *   POST /api/agente-processar { contaId, telefone, leadRef, texto,
- *                                 instanciaNome, nomeLead, emailLead? }
- *   → { ok, respondeu, escalado? }
+ *   POST /api/agente-processar { contaId, telefone, leadRef, texto, tipo,
+ *                                 waId?, mensagemBruta? (obrigatório se
+ *                                 tipo==='audio' — objeto bruto do payload
+ *                                 do webhook, usado pra baixar/decriptar o
+ *                                 áudio), instanciaNome, nomeLead, emailLead? }
+ *   → { ok, respondeu, escalado?, agendado? }
  *
  * Sem autenticação de usuário (não é o dashboard chamando) — protegido só
  * por rodar server-to-server a partir do próprio wa-webhook.mjs. Não expõe
@@ -21,8 +23,9 @@
  */
 import { lerAgente, listarQA, listarArquivosAtivos, listarProdutosComRoteamento, montarSystemPrompt, lerEstadoConversa, definirPausaConversa } from '../_agenteIa.mjs';
 import { chamarClaude, textoDaResposta, chamadasDeFerramenta, configurada as llmConfigurada } from '../_llm.mjs';
-import { enviarTexto, enviarMidia } from '../_evolution.mjs';
+import { enviarTexto, enviarMidia, baixarMidia } from '../_evolution.mjs';
 import { consultarDisponibilidade, sincronizarEventoGoogle } from '../_googleAgenda.mjs';
+import { transcrever, configurada as whisperConfigurada } from '../_whisper.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -170,6 +173,19 @@ async function gravarMensagemSaida(contaId, telefone, leadRef, texto, instanciaN
   } catch { /* histórico é melhor-esforço */ }
 }
 
+/* backfilla a transcrição na própria linha da mensagem de áudio (Fase 4) —
+   corrige de brinde o inbox de Conversas pra humano também, que hoje mostra
+   uma mensagem de áudio em branco (tipo='audio', texto='') */
+async function gravarTranscricao(contaId, waId, texto) {
+  if (!waId) return;
+  try {
+    await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&wa_id=eq.${encodeURIComponent(waId)}`, {
+      method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' },
+      body: JSON.stringify({ texto: String(texto).slice(0, 4000) }),
+    });
+  } catch { /* melhor-esforço */ }
+}
+
 export default async (req) => {
   if (req.method !== 'POST') return json({ ok: false }, 405);
   let body = {};
@@ -177,11 +193,16 @@ export default async (req) => {
   const contaId = Number(body.contaId) || 0;
   const telefone = String(body.telefone || '').trim();
   const leadRef = String(body.leadRef || '').trim();
-  const textoEntrada = String(body.texto || '').trim();
+  const tipo = String(body.tipo || 'texto').trim();
+  const waId = String(body.waId || '').trim();
+  const mensagemBruta = body.mensagemBruta || null;
+  let textoEntrada = String(body.texto || '').trim();
   const instanciaNome = String(body.instanciaNome || '').trim();
   const nomeLead = String(body.nomeLead || '').trim();
   const emailLead = String(body.emailLead || '').trim();
-  if (!contaId || !telefone || !textoEntrada) return json({ ok: false, error: 'dados incompletos' });
+  // áudio chega sem texto (a transcrição acontece mais abaixo, só se o
+  // agente estiver ativo/não pausado — não vale gastar chamada da Whisper à toa)
+  if (!contaId || !telefone || (!textoEntrada && tipo !== 'audio')) return json({ ok: false, error: 'dados incompletos' });
 
   try {
     if (!llmConfigurada()) return json({ ok: false, respondeu: false, error: 'ANTHROPIC_API_KEY não configurada.' });
@@ -192,6 +213,18 @@ export default async (req) => {
 
     const estado = await lerEstadoConversa(contaId, telefone);
     if (estado.ia_pausada) return json({ ok: true, respondeu: false, motivo: 'pausado' });
+
+    if (tipo === 'audio') {
+      if (!whisperConfigurada()) return json({ ok: true, respondeu: false, motivo: 'whisper_nao_configurado' });
+      if (!mensagemBruta) return json({ ok: true, respondeu: false, motivo: 'audio_sem_payload' });
+      const baixado = await baixarMidia(instanciaNome, mensagemBruta);
+      if (!baixado.ok) { console.error('agente-processar: falha ao baixar áudio:', baixado.error); return json({ ok: true, respondeu: false, motivo: 'falha_download_audio' }); }
+      const transcricao = await transcrever(baixado.base64, baixado.mimetype);
+      if (!transcricao.ok) { console.error('agente-processar: falha ao transcrever:', transcricao.error); return json({ ok: true, respondeu: false, motivo: 'falha_transcricao' }); }
+      textoEntrada = transcricao.texto;
+      await gravarTranscricao(contaId, waId, textoEntrada);   // corrige o inbox pra humano também
+    }
+    if (!textoEntrada) return json({ ok: true, respondeu: false, motivo: 'sem_texto' });
 
     const [qa, produtos, arquivos, historico] = await Promise.all([
       listarQA(contaId, true),
