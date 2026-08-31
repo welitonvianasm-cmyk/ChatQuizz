@@ -37,13 +37,20 @@ export default async (req) => {
       // embed dos aliases (produto_aliases → produtos via FK) — se a tabela
       // ainda não existir (setup-pagamento-webhook.sql não rodou), cai pro
       // select simples: a tela de Produtos continua funcionando, só sem aliases.
-      let r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&select=id,nome,valor,produto_aliases(nome_externo)&order=nome.asc`, { headers: H });
+      // Campos do Agente IA (descricao/link_destino/instrucoes_agente) também
+      // podem não existir ainda (setup-agente-ia.sql) — mesmo fallback.
+      let r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&select=id,nome,valor,descricao,link_destino,instrucoes_agente,produto_aliases(nome_externo)&order=nome.asc`, { headers: H });
+      let comAgenteIa = r.ok;
       let comAliases = r.ok;
-      if (!r.ok) r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&select=id,nome,valor&order=nome.asc`, { headers: H });
+      if (!r.ok) r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&select=id,nome,valor,produto_aliases(nome_externo)&order=nome.asc`, { headers: H });
+      if (!r.ok) { comAliases = false; r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&select=id,nome,valor&order=nome.asc`, { headers: H }); }
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       const linhas = await r.json();
       const produtos = linhas.map((p) => ({
         id: p.id, nome: p.nome, valor: p.valor,
+        descricao: comAgenteIa ? (p.descricao || '') : '',
+        link_destino: comAgenteIa ? (p.link_destino || '') : '',
+        instrucoes_agente: comAgenteIa ? (p.instrucoes_agente || '') : '',
         aliases: comAliases ? (p.produto_aliases || []).map((a) => a.nome_externo) : [],
       }));
       return json({ ok: true, produtos });
@@ -56,10 +63,22 @@ export default async (req) => {
       // evita duplicar pelo nome (ignorando maiúsculas)
       const dup = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&nome=ilike.${encodeURIComponent(nome)}&select=id,nome,valor&limit=1`, { headers: H });
       if (dup.ok) { const d = await dup.json(); if (d.length) return json({ ok: true, produto: d[0], jaExistia: true }); }
-      const r = await fetch(`${SB_URL}/rest/v1/produtos`, {
+      const novo = { conta_id: contaId, nome, valor };
+      if ('descricao' in body) novo.descricao = String(body.descricao || '').trim().slice(0, 1000);
+      if ('link_destino' in body) novo.link_destino = String(body.link_destino || '').trim().slice(0, 500);
+      if ('instrucoes_agente' in body) novo.instrucoes_agente = String(body.instrucoes_agente || '').trim().slice(0, 1000);
+      let r = await fetch(`${SB_URL}/rest/v1/produtos`, {
         method: 'POST', headers: { ...H, Prefer: 'return=representation' },
-        body: JSON.stringify({ conta_id: contaId, nome, valor }),
+        body: JSON.stringify(novo),
       });
+      if (!r.ok) {
+        // colunas do Agente IA podem não existir ainda — tenta sem elas
+        delete novo.descricao; delete novo.link_destino; delete novo.instrucoes_agente;
+        r = await fetch(`${SB_URL}/rest/v1/produtos`, {
+          method: 'POST', headers: { ...H, Prefer: 'return=representation' },
+          body: JSON.stringify(novo),
+        });
+      }
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       return json({ ok: true, produto: (await r.json())[0] });
     }
@@ -70,10 +89,21 @@ export default async (req) => {
       const valor = Math.max(0, Number(body.valor) || 0);
       if (!id) return json({ ok: false, error: 'Produto inválido.' });
       if (!nome) return json({ ok: false, error: 'Dê um nome ao produto.' });
-      const r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&id=eq.${id}`, {
+      const patch = { nome, valor };
+      if ('descricao' in body) patch.descricao = String(body.descricao || '').trim().slice(0, 1000);
+      if ('link_destino' in body) patch.link_destino = String(body.link_destino || '').trim().slice(0, 500);
+      if ('instrucoes_agente' in body) patch.instrucoes_agente = String(body.instrucoes_agente || '').trim().slice(0, 1000);
+      let r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&id=eq.${id}`, {
         method: 'PATCH', headers: { ...H, Prefer: 'return=representation' },
-        body: JSON.stringify({ nome, valor }),
+        body: JSON.stringify(patch),
       });
+      if (!r.ok) {
+        delete patch.descricao; delete patch.link_destino; delete patch.instrucoes_agente;
+        r = await fetch(`${SB_URL}/rest/v1/produtos?conta_id=eq.${contaId}&id=eq.${id}`, {
+          method: 'PATCH', headers: { ...H, Prefer: 'return=representation' },
+          body: JSON.stringify(patch),
+        });
+      }
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       const linha = (await r.json())[0];
       if (!linha) return json({ ok: false, error: 'Produto não encontrado.' });
