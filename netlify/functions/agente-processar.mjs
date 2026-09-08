@@ -27,6 +27,7 @@ import { enviarTexto, enviarMidia, baixarMidia } from '../_evolution.mjs';
 import { consultarDisponibilidade, sincronizarEventoGoogle } from '../_googleAgenda.mjs';
 import { transcrever, configurada as whisperConfigurada } from '../_whisper.mjs';
 import { carregarConfigPublicada, respostasLegiveis } from '../_quiz.mjs';
+import { obterConexaoMentoriaHub } from '../_conexoes.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -255,6 +256,12 @@ export default async (req) => {
     const agente = await lerAgente(contaId);
     if (!agente || !agente.ativo) return json({ ok: true, respondeu: false, motivo: 'agente_inativo' });
     if (!instanciaNome) return json({ ok: true, respondeu: false, motivo: 'sem_instancia' });
+    // conta com MentoriaHub ativo: atendimento é 100% de lá (mesma fronteira
+    // já aplicada na UI, ver MENTORIAHUB_GATED em dashboard.html — sem essa
+    // checagem aqui, um agente que ficou ativo de antes continuaria
+    // respondendo por baixo dos panos mesmo com a integração escondendo a
+    // tela de configuração dele)
+    if (await obterConexaoMentoriaHub(contaId)) return json({ ok: true, respondeu: false, motivo: 'mentoriahub_ativo' });
 
     const estado = await lerEstadoConversa(contaId, telefone);
     if (estado.ia_pausada) return json({ ok: true, respondeu: false, motivo: 'pausado' });
