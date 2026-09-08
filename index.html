@@ -36,6 +36,8 @@
       --gradient-gold: linear-gradient(135deg, #f7b545 0%, #ef8f1f 100%);
       --shadow-soft: 0 1px 2px rgba(24,20,31,.04), 0 8px 24px rgba(24,20,31,.06);
       --radius: 18px;
+      --header-bg: #ffffff;              /* cor do cabeçalho — Aparência → cor_cabecalho */
+      --bot-bubble-text: #14201e;         /* texto do balão de pergunta — Aparência → cor_texto_balao_bot */
     }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; }
@@ -50,7 +52,7 @@
 
     /* ===== HEADER (claro, identidade própria: badge de marca + pill de etapa + linha de progresso) ===== */
     header {
-      background: #fff;
+      background: var(--header-bg);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
       z-index: 10;
@@ -112,7 +114,7 @@
       word-break: break-word;
     }
     .bubble b, .bubble strong { color: var(--text); font-weight: 700; }
-    .row.bot .bubble { background: var(--bg-soft); border-bottom-left-radius: 6px; }
+    .row.bot .bubble { background: var(--bg-soft); color: var(--bot-bubble-text); font-weight: 600; border-bottom-left-radius: 6px; }
     .row.user .bubble {
       background: var(--gradient); color: #fff; font-weight: 600;
       border-bottom-right-radius: 6px; box-shadow: 0 4px 18px rgba(161,85,242,.28);
@@ -516,7 +518,7 @@
   <header>
     <div class="topbar">
       <div class="brand">
-        <span class="brand-sub">Reconstrua Suas Emoções</span>
+        <span class="brand-sub" id="brandSub">Seu Diagnóstico</span>
       </div>
       <div class="step-pill" id="stepPill">0 de 11</div>
     </div>
@@ -597,14 +599,16 @@ if (CONTA_PARAM) {
    alguém publicar uma config, ou se o backend estiver fora do ar.
    ================================================================ */
 const APARENCIA_PADRAO = {
+  titulo: 'Seu Diagnóstico',
   whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '',
-  cor_primaria: '#005355',
+  cor_primaria: '#005355', cor_cabecalho: '#ffffff', cor_balao_bot: '#eef4f2', cor_texto_balao_bot: '#14201e',
   mensagem_boas_vindas: 'Oi! Eu estou aqui pra te ajudar a entender melhor o seu momento. Responda com sinceridade! 💚',
   tem_presente: false,
   presente_imagem: '', presente_nome: '', presente_descricao: '',
   cta_url_texto: 'Continuar', cta_url_cor: '#a155f2',
 };
 let APARENCIA = APARENCIA_PADRAO;
+const ehHex = (v) => /^#[0-9a-fA-F]{6}$/.test(v || '');
 
 async function carregarAparencia() {
   try {
@@ -616,16 +620,24 @@ async function carregarAparencia() {
     const j = await r.json();
     if (!j || !j.ok) return;
     APARENCIA = {
+      titulo: j.titulo || APARENCIA_PADRAO.titulo,
       whatsapp_numero: j.whatsapp_numero || '', avatar_url: j.avatar_url || '',
       avatar_fallback: j.avatar_fallback || '', site_url: j.site_url || '',
-      cor_primaria: /^#[0-9a-fA-F]{6}$/.test(j.cor_primaria || '') ? j.cor_primaria : APARENCIA_PADRAO.cor_primaria,
+      cor_primaria: ehHex(j.cor_primaria) ? j.cor_primaria : APARENCIA_PADRAO.cor_primaria,
+      cor_cabecalho: ehHex(j.cor_cabecalho) ? j.cor_cabecalho : APARENCIA_PADRAO.cor_cabecalho,
+      cor_balao_bot: ehHex(j.cor_balao_bot) ? j.cor_balao_bot : APARENCIA_PADRAO.cor_balao_bot,
+      cor_texto_balao_bot: ehHex(j.cor_texto_balao_bot) ? j.cor_texto_balao_bot : APARENCIA_PADRAO.cor_texto_balao_bot,
       mensagem_boas_vindas: j.mensagem_boas_vindas || APARENCIA_PADRAO.mensagem_boas_vindas,
       tem_presente: !!j.tem_presente, presente_imagem: j.presente_imagem || '',
       presente_nome: j.presente_nome || '', presente_descricao: j.presente_descricao || '',
       cta_url_texto: j.cta_url_texto || APARENCIA_PADRAO.cta_url_texto,
-      cta_url_cor: /^#[0-9a-fA-F]{6}$/.test(j.cta_url_cor || '') ? j.cta_url_cor : APARENCIA_PADRAO.cta_url_cor,
+      cta_url_cor: ehHex(j.cta_url_cor) ? j.cta_url_cor : APARENCIA_PADRAO.cta_url_cor,
     };
+    $('brandSub').textContent = APARENCIA.titulo;
     aplicarCorPrimaria(APARENCIA.cor_primaria);
+    document.documentElement.style.setProperty('--header-bg', APARENCIA.cor_cabecalho);
+    document.documentElement.style.setProperty('--bg-soft', APARENCIA.cor_balao_bot);
+    document.documentElement.style.setProperty('--bot-bubble-text', APARENCIA.cor_texto_balao_bot);
   } catch (e) { /* mantém o padrão embutido */ }
 }
 
@@ -644,6 +656,9 @@ function aplicarCorPrimaria(hex) {
   root.setProperty('--accent-dark', dark);
   root.setProperty('--accent-soft', `rgba(${r}, ${g}, ${b}, 0.09)`);
   root.setProperty('--accent-glow', `rgba(${r}, ${g}, ${b}, 0.28)`);
+  // o balão de resposta (usuário) e a barra de progresso usam esse degradê —
+  // sem isso, cor_primaria não mudava o gradiente de verdade, só o "pill"
+  root.setProperty('--gradient', `linear-gradient(135deg, ${bright} 0%, ${hex} 100%)`);
 }
 
 /* ================================================================

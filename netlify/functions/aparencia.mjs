@@ -19,11 +19,15 @@ const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': '
 const CHAVE = 'aparencia';
 
 const PADRAO = {
+  titulo: 'Seu Diagnóstico',
   whatsapp_numero: '',
   avatar_url: '',
   avatar_fallback: '',
   site_url: '',
   cor_primaria: '#005355',
+  cor_cabecalho: '#ffffff',
+  cor_balao_bot: '#eef4f2',
+  cor_texto_balao_bot: '#14201e',
   mensagem_boas_vindas: 'Oi! Eu estou aqui pra te ajudar a entender melhor o seu momento. Responda com sinceridade! 💚',
   tem_presente: false,
   presente_imagem: '',
@@ -37,26 +41,41 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 
 function sanitizar(body) {
   const txt = (v, max) => String(v ?? '').trim().slice(0, max);
-  const cor = txt(body.cor_primaria, 7);
-  if (cor && !HEX.test(cor)) return { erro: 'Cor primária precisa ser um hexadecimal válido, ex: #005355.' };
-  const ctaCor = txt(body.cta_url_cor, 7);
-  if (ctaCor && !HEX.test(ctaCor)) return { erro: 'Cor do botão precisa ser um hexadecimal válido, ex: #a155f2.' };
+  const corOpc = (v, campo, padrao) => {
+    const c = txt(v, 7);
+    if (c && !HEX.test(c)) return { erro: `${campo} precisa ser um hexadecimal válido, ex: ${padrao}.` };
+    return { valor: c || padrao };
+  };
+  const cCorPrimaria = corOpc(body.cor_primaria, 'Cor primária', PADRAO.cor_primaria);
+  if (cCorPrimaria.erro) return cCorPrimaria;
+  const cCtaCor = corOpc(body.cta_url_cor, 'Cor do botão', PADRAO.cta_url_cor);
+  if (cCtaCor.erro) return cCtaCor;
+  const cCorCabecalho = corOpc(body.cor_cabecalho, 'Cor do cabeçalho', PADRAO.cor_cabecalho);
+  if (cCorCabecalho.erro) return cCorCabecalho;
+  const cCorBalaoBot = corOpc(body.cor_balao_bot, 'Cor do balão de pergunta', PADRAO.cor_balao_bot);
+  if (cCorBalaoBot.erro) return cCorBalaoBot;
+  const cCorTextoBalaoBot = corOpc(body.cor_texto_balao_bot, 'Cor do texto do balão de pergunta', PADRAO.cor_texto_balao_bot);
+  if (cCorTextoBalaoBot.erro) return cCorTextoBalaoBot;
   const numero = txt(body.whatsapp_numero, 20).replace(/\D/g, '');
   if (numero && numero.length < 10) return { erro: 'Número de WhatsApp inválido (use DDI+DDD+número, só dígitos).' };
   return {
     limpo: {
+      titulo: txt(body.titulo, 60) || PADRAO.titulo,
       whatsapp_numero: numero,
       avatar_url: txt(body.avatar_url, 500),
       avatar_fallback: txt(body.avatar_fallback, 500),
       site_url: txt(body.site_url, 500),
-      cor_primaria: cor || PADRAO.cor_primaria,
+      cor_primaria: cCorPrimaria.valor,
+      cor_cabecalho: cCorCabecalho.valor,
+      cor_balao_bot: cCorBalaoBot.valor,
+      cor_texto_balao_bot: cCorTextoBalaoBot.valor,
       mensagem_boas_vindas: txt(body.mensagem_boas_vindas, 600),
       tem_presente: !!body.tem_presente,
       presente_imagem: txt(body.presente_imagem, 500),
       presente_nome: txt(body.presente_nome, 80),
       presente_descricao: txt(body.presente_descricao, 200),
       cta_url_texto: txt(body.cta_url_texto, 40) || PADRAO.cta_url_texto,
-      cta_url_cor: ctaCor || PADRAO.cta_url_cor,
+      cta_url_cor: cCtaCor.valor,
     },
   };
 }
