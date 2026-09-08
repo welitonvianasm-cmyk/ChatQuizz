@@ -26,6 +26,7 @@ import { chamarClaude, textoDaResposta, chamadasDeFerramenta, configurada as llm
 import { enviarTexto, enviarMidia, baixarMidia } from '../_evolution.mjs';
 import { consultarDisponibilidade, sincronizarEventoGoogle } from '../_googleAgenda.mjs';
 import { transcrever, configurada as whisperConfigurada } from '../_whisper.mjs';
+import { carregarConfigPublicada, respostasLegiveis } from '../_quiz.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -170,6 +171,27 @@ async function executarFerramenta(nome, input, ctx) {
   return { ok: false, erro: 'ferramenta desconhecida' };
 }
 
+/* resumo legível do que o lead respondeu no quiz (inclusive perguntas
+   abertas de texto livre, que não entram em qualificador/nível) — vira um
+   bloco de sistema à parte (não cacheado, ver _llm.mjs) pro agente saber
+   com quem está falando sem precisar perguntar de novo o que já foi dito. */
+async function montarContextoLead(contaId, leadRef) {
+  if (!leadRef) return '';
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/${TABLE}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(leadRef)}&select=respostas_json&limit=1`, { headers: H });
+    if (!r.ok) return '';
+    const rows = await r.json();
+    const respostasJson = rows[0] && rows[0].respostas_json;
+    if (!respostasJson) return '';
+    const respostas = JSON.parse(respostasJson);
+    const { doc } = await carregarConfigPublicada(SB_URL, H, contaId);
+    const legiveis = respostasLegiveis(doc.perguntas, respostas);
+    if (!legiveis.length) return '';
+    const linhas = legiveis.map((x) => `- ${x.pergunta} → ${x.resposta}`).join('\n');
+    return `## O que esse lead respondeu no quiz (contexto — não pergunte de novo, não repita de volta pra ele)\n${linhas}`;
+  } catch { return ''; }
+}
+
 async function carregarHistorico(contaId, telefone) {
   const r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&telefone=eq.${encodeURIComponent(telefone)}&select=direcao,texto,tipo&order=criado_em.desc&limit=${HIST_LIMITE}`, { headers: H });
   if (!r.ok) return [];
@@ -249,11 +271,12 @@ export default async (req) => {
     }
     if (!textoEntrada) return json({ ok: true, respondeu: false, motivo: 'sem_texto' });
 
-    const [qa, produtos, arquivos, historico] = await Promise.all([
+    const [qa, produtos, arquivos, historico, contextoLead] = await Promise.all([
       listarQA(contaId, true),
       listarProdutosComRoteamento(contaId),
       listarArquivosAtivos(contaId),
       carregarHistorico(contaId, telefone),
+      montarContextoLead(contaId, leadRef),
     ]);
 
     const system = montarSystemPrompt(agente, qa, produtos, arquivos);
@@ -265,7 +288,7 @@ export default async (req) => {
 
     let textoFinal = '';
     for (let ida = 0; ida < MAX_IDAS_FERRAMENTA; ida++) {
-      const r = await chamarClaude({ system, messages, tools, maxTokens: 1024 });
+      const r = await chamarClaude({ system, systemExtra: contextoLead, messages, tools, maxTokens: 1024 });
       if (!r.ok) { console.error('agente-processar: falha na Claude:', r.error); return json({ ok: false, error: r.error }); }
       const resposta = r.resposta;
       const chamadas = chamadasDeFerramenta(resposta);

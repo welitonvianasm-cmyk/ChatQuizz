@@ -24,12 +24,17 @@ function mensagemErroClaude(d, status) {
    mensagens, a janela de 1h aproveita bem mais o cache do que os 5min
    padrão). `system` precisa ser determinístico (mesmo texto → mesmo hash de
    cache) — ver montarSystemPrompt em _agenteIa.mjs. */
-export async function chamarClaude({ system, messages, tools, maxTokens }) {
+export async function chamarClaude({ system, systemExtra, messages, tools, maxTokens }) {
   if (!configurada()) return { ok: false, error: 'ANTHROPIC_API_KEY não configurada.' };
+  const systemBlocks = [{ type: 'text', text: system, cache_control: { type: 'ephemeral', ttl: '1h' } }];
+  // bloco extra SEM cache_control — contexto por lead (ex: respostas do quiz
+  // desse lead específico), muda a cada conversa, não faz sentido cachear;
+  // fica depois do bloco cacheado, então não invalida o cache da conta
+  if (systemExtra) systemBlocks.push({ type: 'text', text: systemExtra });
   const body = {
     model: MODEL,
     max_tokens: maxTokens || 1024,
-    system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral', ttl: '1h' } }],
+    system: systemBlocks,
     messages,
   };
   if (tools && tools.length) body.tools = tools;

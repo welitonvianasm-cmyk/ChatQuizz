@@ -23,7 +23,7 @@
  *     alto no log — melhor que perder o lead inteiro em silêncio.
  *   SUPABASE_DIAG_URL — URL do projeto dedicado.
  */
-import { votar, interpolar, carregarConfigPublicada } from '../_quiz.mjs';
+import { votar, interpolar, carregarConfigPublicada, respostasLegiveis } from '../_quiz.mjs';
 import { dispararMentoriaHub, obterConexaoMentoriaHub } from '../_conexoes.mjs';
 import { resolverContaPorHost } from '../_tenant.mjs';
 import { enviarWhats } from './whatsapp.mjs';
@@ -32,20 +32,6 @@ import { normalizarTelefoneBR } from '../_evolution.mjs';
 
 const SUPABASE_URL = (process.env.SUPABASE_DIAG_URL || 'https://aktktxizmpwckvxbdjzf.supabase.co').replace(/\/+$/, '');
 const TABLE = 'diag_instagram_leads';
-
-/* respostas cruas ({perguntaId: índice(s)}) -> pares legíveis, pro
-   espelho no MentoriaHub (não faz sentido mandar índice numérico pra
-   um CRM externo que não conhece a config do quiz) */
-function respostasLegiveis(perguntas, respostas) {
-  if (!Array.isArray(perguntas) || !respostas) return [];
-  return perguntas.map((p) => {
-    const r = respostas[p.id];
-    if (r === undefined || r === null) return null;
-    const idxs = Array.isArray(r) ? r : [r];
-    const textos = idxs.map((i) => (p.opts && p.opts[i] && p.opts[i].t) || '').filter(Boolean);
-    return textos.length ? { pergunta: p.q, resposta: textos.join(', ') } : null;
-  }).filter(Boolean);
-}
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });

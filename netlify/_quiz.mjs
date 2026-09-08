@@ -11,7 +11,10 @@
  *
  * Documento de config (chave 'quiz_perguntas' em funnel_config):
  *   {
- *     perguntas:     [{ id, q, multi, ativo, desempate, opts:[{ t, qualificador, nivel }] }],
+ *     perguntas:     [{ id, q, multi, ativo, desempate, aberta, opts:[{ t, qualificador, nivel }] }],
+ *       `aberta:true` = resposta em texto livre (o lead digita, sem opções).
+ *       Não participa da votação de qualificador/nível nem pode ser critério
+ *       de desempate — fica só como contexto (Cartão do Lead + Agente IA).
  *     qualificadores:[{ chave, nome, cor, ordem, ativo }],
  *     niveis:        [{ chave, nome, ordem }],
  *     resultados:    { por_nivel: { [chave]: { texto } }, por_qualificador: { [chave]: { texto } } },
@@ -177,26 +180,32 @@ export function sanitizar(doc) {
     if (!p || typeof p !== 'object') return { erro: 'Pergunta inválida.' };
     const texto = String(p.q || '').trim().slice(0, 300);
     if (!texto) return { erro: 'Há uma pergunta sem texto.' };
+    const aberta = !!p.aberta;
     const opts = [];
-    for (const o of (Array.isArray(p.opts) ? p.opts : [])) {
-      const t = String((o && o.t) || '').trim().slice(0, 140);
-      if (!t) continue;
-      const nivel = String((o && o.nivel) || '').trim();
-      const qualificador = o && o.qualificador ? String(o.qualificador).trim() : '';
-      if (nivel && !nChaves.has(nivel)) return { erro: `A opção "${t.slice(0, 30)}" aponta pra um nível que não existe.` };
-      if (qualificador && !qChaves.has(qualificador)) return { erro: `A opção "${t.slice(0, 30)}" aponta pra um qualificador que não existe.` };
-      const op = { t };
-      if (nivel) op.nivel = nivel;
-      if (qualificador) op.qualificador = qualificador;
-      opts.push(op);
+    if (!aberta) {
+      for (const o of (Array.isArray(p.opts) ? p.opts : [])) {
+        const t = String((o && o.t) || '').trim().slice(0, 140);
+        if (!t) continue;
+        const nivel = String((o && o.nivel) || '').trim();
+        const qualificador = o && o.qualificador ? String(o.qualificador).trim() : '';
+        if (nivel && !nChaves.has(nivel)) return { erro: `A opção "${t.slice(0, 30)}" aponta pra um nível que não existe.` };
+        if (qualificador && !qChaves.has(qualificador)) return { erro: `A opção "${t.slice(0, 30)}" aponta pra um qualificador que não existe.` };
+        const op = { t };
+        if (nivel) op.nivel = nivel;
+        if (qualificador) op.qualificador = qualificador;
+        opts.push(op);
+      }
     }
     const ativo = p.ativo !== false;
-    if (ativo && opts.length < 2) return { erro: `A pergunta "${texto.slice(0, 40)}..." precisa de pelo menos 2 opções.` };
-    const desempate = !!p.desempate;
+    // pergunta aberta é resposta em texto — não tem opções, não vota em
+    // nada, e não pode ser critério de desempate (não gera um valor único
+    // de qualificador/nível pra decidir empate)
+    if (ativo && !aberta && opts.length < 2) return { erro: `A pergunta "${texto.slice(0, 40)}..." precisa de pelo menos 2 opções.` };
+    const desempate = !aberta && !!p.desempate;
     if (desempate) desempates++;
     pLimpo.push({
       id: String(p.id || '').trim().slice(0, 30) || ('p' + pLimpo.length),
-      q: texto, multi: !!p.multi, ativo, desempate, opts,
+      q: texto, multi: aberta ? false : !!p.multi, ativo, desempate, aberta, opts,
     });
   }
   if (desempates > 1) return { erro: 'Só pode haver 1 pergunta marcada como critério de desempate.' };
@@ -256,7 +265,7 @@ export function votar(perguntas, respostas, eixo) {
   let valorDesempate = null;
 
   for (const p of perguntas) {
-    if (!p || p.ativo === false) continue;
+    if (!p || p.ativo === false || p.aberta) continue;   // pergunta aberta não vota (resposta é texto livre, não índice)
     const sel = respostas ? respostas[p.id] : null;
     const escolhidas = p.multi ? (Array.isArray(sel) ? sel : []) : (sel != null ? [sel] : []);
     if (!escolhidas.length) continue;
@@ -294,6 +303,26 @@ export function votar(perguntas, respostas, eixo) {
    ================================================================ */
 export function interpolar(texto, vars) {
   return String(texto || '').replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] != null ? String(vars[k]) : ''));
+}
+
+/* respostas cruas ({perguntaId: índice(s) | texto}) -> pares legíveis
+   {pergunta, resposta}. Compartilhado por save-lead.mjs (espelho no
+   MentoriaHub) e agente-processar.mjs (contexto do Agente IA) — pergunta
+   aberta usa o texto digitado direto, as demais resolvem o índice pro
+   texto da opção escolhida. */
+export function respostasLegiveis(perguntas, respostas) {
+  if (!Array.isArray(perguntas) || !respostas) return [];
+  return perguntas.map((p) => {
+    const r = respostas[p.id];
+    if (r === undefined || r === null) return null;
+    if (p.aberta) {
+      const texto = String(r || '').trim();
+      return texto ? { pergunta: p.q, resposta: texto } : null;
+    }
+    const idxs = Array.isArray(r) ? r : [r];
+    const textos = idxs.map((i) => (p.opts && p.opts[i] && p.opts[i].t) || '').filter(Boolean);
+    return textos.length ? { pergunta: p.q, resposta: textos.join(', ') } : null;
+  }).filter(Boolean);
 }
 
 /* Busca e valida a config publicada (usado tanto pelo GET público de

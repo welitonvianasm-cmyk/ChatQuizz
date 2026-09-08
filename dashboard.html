@@ -3473,6 +3473,13 @@ function montarCartaoLead(r, container, opts = {}) {
       if (PERGUNTAS_USADAS_REDE.has(pergunta.id)) return;   // já mostrada em Instagram/TikTok/Facebook acima
       const v = respostas[pergunta.id];
       if (v == null) return;
+      if (pergunta.aberta) {
+        const texto = String(v || '').trim();
+        if (!texto) return;
+        alguma = true;
+        body.appendChild(lmLinha(pergunta.q, texto));
+        return;
+      }
       const indices = Array.isArray(v) ? v : [v];
       const textos = indices.map((i) => pergunta.opts && pergunta.opts[i] && pergunta.opts[i].t).filter(Boolean);
       if (!textos.length) return;
@@ -3897,7 +3904,19 @@ function qeRenderPerguntas(box) {
     };
     ldes.append(cdes, 'Critério de desempate');
 
-    head.append(lativa, lmulti, ldes);
+    const laberta = el('label'); laberta.style.cssText = lativa.style.cssText;
+    laberta.title = 'O lead digita a resposta em texto livre, sem opções. Não entra na votação de qualificador/nível — fica disponível no Cartão do Lead e no contexto do Agente IA.';
+    const caberta = el('input'); caberta.type = 'checkbox'; caberta.checked = !!p.aberta;
+    caberta.onchange = () => {
+      p.aberta = caberta.checked;
+      if (p.aberta) { p.multi = false; p.desempate = false; }
+      qeRenderTudo();
+    };
+    laberta.append(caberta, 'Resposta em texto');
+
+    head.append(lativa);
+    if (!p.aberta) head.append(lmulti, ldes);
+    head.append(laberta);
     const sp = el('span'); sp.style.flex = '1'; head.appendChild(sp);
     const bdel = el('button', 'acao-btn'); bdel.textContent = 'Excluir';
     bdel.onclick = () => { if (confirm('Excluir esta pergunta do rascunho?')) { QE.perguntas.splice(pi, 1); qeRenderTudo(); } };
@@ -3909,25 +3928,32 @@ function qeRenderPerguntas(box) {
     iq.oninput = () => { p.q = iq.value; };
     card.appendChild(iq);
 
-    (p.opts || []).forEach((o, oi) => {
-      const row = el('div'); row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;';
-      const it = el('input'); it.value = o.t || ''; it.placeholder = 'Texto da opção...';
-      it.style.cssText = 'flex:1;min-width:170px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--card);';
-      it.oninput = () => { o.t = it.value; };
-      row.appendChild(it);
-      row.appendChild(qeSelectQualificador(o));
-      row.appendChild(qeSelectNivel(o));
-      const bx = el('button', 'acao-btn'); bx.textContent = '✕'; bx.title = 'Remover opção';
-      bx.onclick = () => {
-        if (p.opts.length <= 2) { toast('error', 'Aviso', 'Cada pergunta precisa de pelo menos 2 opções.'); return; }
-        p.opts.splice(oi, 1); qeRenderTudo();
-      };
-      row.appendChild(bx);
-      card.appendChild(row);
-    });
-    const badd = el('button', 'acao-btn'); badd.textContent = '+ Opção';
-    badd.onclick = () => { p.opts.push({ t: '' }); qeRenderTudo(); };
-    card.appendChild(badd);
+    if (p.aberta) {
+      const hint = el('div', 'muted-cell');
+      hint.textContent = 'Resposta livre — o lead digita o texto, sem opções pra configurar. Fica visível no Cartão do Lead e disponível pro Agente IA, mas não entra na votação de qualificador/nível.';
+      hint.style.cssText = 'font-size:12.5px;padding:6px 2px 0;';
+      card.appendChild(hint);
+    } else {
+      (p.opts || []).forEach((o, oi) => {
+        const row = el('div'); row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;';
+        const it = el('input'); it.value = o.t || ''; it.placeholder = 'Texto da opção...';
+        it.style.cssText = 'flex:1;min-width:170px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--card);';
+        it.oninput = () => { o.t = it.value; };
+        row.appendChild(it);
+        row.appendChild(qeSelectQualificador(o));
+        row.appendChild(qeSelectNivel(o));
+        const bx = el('button', 'acao-btn'); bx.textContent = '✕'; bx.title = 'Remover opção';
+        bx.onclick = () => {
+          if (p.opts.length <= 2) { toast('error', 'Aviso', 'Cada pergunta precisa de pelo menos 2 opções.'); return; }
+          p.opts.splice(oi, 1); qeRenderTudo();
+        };
+        row.appendChild(bx);
+        card.appendChild(row);
+      });
+      const badd = el('button', 'acao-btn'); badd.textContent = '+ Opção';
+      badd.onclick = () => { p.opts.push({ t: '' }); qeRenderTudo(); };
+      card.appendChild(badd);
+    }
     box.appendChild(card);
   });
 }
@@ -5146,11 +5172,14 @@ function renderPainelPergunta(pergunta, rows) {
 function abrirModalInserirKpi() {
   $('#kikAgendamento').checked = !!KPIS_CONFIG.agendamentoAtivo;
   const box = $('#kikPerguntas'); clear(box);
-  if (!QUIZ_PERGUNTAS_CACHE.length) {
-    const vazio = el('div', 'muted-cell'); vazio.textContent = 'Nenhuma pergunta cadastrada no Editor do Quiz ainda.';
+  // pergunta aberta (texto livre) não vira gráfico de contagem por opção —
+  // não tem opções, cada resposta tende a ser única
+  const perguntasComOpcoes = QUIZ_PERGUNTAS_CACHE.filter((p) => !p.aberta);
+  if (!perguntasComOpcoes.length) {
+    const vazio = el('div', 'muted-cell'); vazio.textContent = 'Nenhuma pergunta de múltipla escolha cadastrada no Editor do Quiz ainda.';
     box.appendChild(vazio);
   }
-  QUIZ_PERGUNTAS_CACHE.forEach((p) => {
+  perguntasComOpcoes.forEach((p) => {
     const label = el('label');
     label.style.cssText = 'display:flex;align-items:center;gap:9px;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;cursor:pointer;font-size:12.5px;';
     const chk = el('input'); chk.type = 'checkbox'; chk.value = p.id; chk.style.cssText = 'width:15px;height:15px;flex-shrink:0;';

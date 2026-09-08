@@ -765,7 +765,7 @@ async function carregarQuizConfig() {
     const qs = Array.isArray(j.qualificadores) ? j.qualificadores : null;
     const ns = Array.isArray(j.niveis) ? j.niveis : null;
     if (!ps || !qs || !ns) return;
-    const ativas = ps.filter((p) => p && p.ativo !== false && p.q && Array.isArray(p.opts) && p.opts.length >= 2);
+    const ativas = ps.filter((p) => p && p.ativo !== false && p.q && (p.aberta || (Array.isArray(p.opts) && p.opts.length >= 2)));
     if (!ativas.length) return;
     const qAtivos = new Set(qs.filter((q) => q && q.ativo !== false).map((q) => q.chave));
     const nChaves = new Set(ns.map((n) => n && n.chave));
@@ -801,7 +801,7 @@ function votar(eixo) {
   const contagem = {};
   let valorDesempate = null;
   QUIZ.forEach((p) => {
-    if (!p || p.ativo === false) return;
+    if (!p || p.ativo === false || p.aberta) return;   // pergunta aberta não vota
     const sel = respostas[p.id];
     const escolhidas = p.multi ? (Array.isArray(sel) ? sel : []) : (sel != null ? [sel] : []);
     if (!escolhidas.length) return;
@@ -1214,6 +1214,7 @@ function respostaLabel(id) {
   const p = QUIZ.find((x) => x.id === id);
   const v = (state.data.respostas || {})[id];
   if (!p || v == null) return '';
+  if (p.aberta) return String(v || '');
   if (Array.isArray(v)) return v.map((i) => (p.opts[i] ? p.opts[i].t : '')).filter(Boolean).join(' · ');
   return p.opts[v] ? p.opts[v].t : '';
 }
@@ -1361,7 +1362,13 @@ async function etapaQuiz(i, replay = false) {
     if (i + 1 < QUIZ.length) await etapaQuiz(i + 1);
     else await etapaResultado();
   };
-  if (p.multi) {
+  if (p.aberta) {
+    askText({
+      label: 'Sua resposta', placeholder: 'Digite aqui...', type: 'text',
+      validate: (v) => { const t = v.trim(); return t.length >= 2 ? { ok: true, valor: t } : { ok: false, erro: 'Escreve um pouquinho mais 🙂' }; },
+      onOk: async (texto) => { await registrar(texto, texto); },
+    });
+  } else if (p.multi) {
     askChipsMulti(p.opts.map((o) => o.t), async (idxs) => {
       await registrar(idxs, idxs.map((x) => p.opts[x].t).join(' · '));
     });
@@ -1855,6 +1862,7 @@ function replayUserLabel(st) {
   const p = QUIZ[st - PASSOS_CONTATO];
   if (!p) return '';
   const r = (d.respostas || {})[p.id];
+  if (p.aberta) return String(r || '');
   if (p.multi) return (Array.isArray(r) ? r : []).map((i) => (p.opts[i] ? p.opts[i].t : '')).filter(Boolean).join(' · ');
   return p.opts[r] ? p.opts[r].t : '';
 }
