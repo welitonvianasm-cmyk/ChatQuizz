@@ -2166,6 +2166,16 @@
     <div class="panel tem-banner" id="pLinks" hidden>
       <h2>Links de Rastreio</h2>
       <div class="sub">Crie um link curto por origem (Instagram, Facebook, um grupo de WhatsApp...), quem entra no quiz por ele já chega marcado com essa origem no painel. Pode criar quantos quiser, ou nenhum.</div>
+
+      <div style="margin:14px 0;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface-card-2);">
+        <label style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--text-muted);">Link principal do seu quiz</label>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
+          <a id="lkPrincipalA" target="_blank" rel="noopener" style="font-family:monospace;font-size:13px;color:var(--text);word-break:break-all;"></a>
+          <span id="lkPrincipalBtn"></span>
+        </div>
+        <div class="muted-cell" style="font-size:11.5px;margin-top:4px;">Esse é o link certo dessa conta pra usar sem rastreio nenhum (bio, cartão, WhatsApp Web...). Pra saber de onde vieram os leads, use um Link de Rastreio abaixo.</div>
+      </div>
+
       <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;align-items:end;">
         <label style="font-size:11.5px;font-weight:600;">Nome<input id="lkNome" style="width:220px;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Ex: Instagram Bio"></label>
         <button id="lkCriar" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">+ Criar link</button>
@@ -2286,6 +2296,7 @@ let CONTA_PLANO = 'completo';     // 'lite' | 'completo' — plano da conta loga
 let CONTA_PLANO_DEFINIDO = true;  // false = primeiro acesso, precisa escolher plano (#gate3)
 let CONTA_DOMINIO = '';           // domínio próprio configurado (vazio = usando o padrão da plataforma)
 let CONTA_DOMINIO_STATUS = '';    // '' | 'pendente' | 'ativo'
+let CONTA_SUBDOMINIO = '';        // slug da conta — vira ?c=<subdominio> no link principal enquanto não há domínio próprio ativo
 let IS_SUPERADMIN = false;        // true = dono do QuizzHub (usuarios.eh_superadmin) — vê o módulo Master
 let IMPERSONANDO = false;         // true = está "vendo como" uma conta de cliente
 let IMPERSONANDO_NOME = '';       // nome da conta impersonada (pra faixa de aviso)
@@ -2320,6 +2331,7 @@ async function tryToken(token) {
   CONTA_PLANO_DEFINIDO = !!data.contaPlanoDefinido;
   CONTA_DOMINIO = data.contaDominio || '';
   CONTA_DOMINIO_STATUS = data.contaDominioStatus || '';
+  CONTA_SUBDOMINIO = data.contaSubdominio || '';
   IS_SUPERADMIN = !!data.superadmin;
   IMPERSONANDO = !!data.impersonando;
   IMPERSONANDO_NOME = data.contaNome || '';
@@ -4310,6 +4322,23 @@ $('#qeRestaurar').onclick = async () => {
 };
 
 /* ===== LINKS DE RASTREIO (só administradora) ===== */
+/* base do link do quiz DESSA conta — domínio próprio já ativo tem
+   prioridade; senão, o domínio compartilhado do Netlify precisa do
+   ?c=<subdominio> pra saber de qual conta é (ver netlify/_tenant.mjs,
+   xxx.netlify.app não aceita subdomínio por conta sem DNS coringa). */
+function baseLinkQuiz() {
+  if (CONTA_DOMINIO && CONTA_DOMINIO_STATUS === 'ativo') return 'https://' + CONTA_DOMINIO + '/';
+  return location.origin + '/' + (CONTA_SUBDOMINIO ? '?c=' + encodeURIComponent(CONTA_SUBDOMINIO) : '');
+}
+function botaoCopiar(url) {
+  const b = el('button', 'acao-btn'); b.textContent = 'Copiar';
+  b.onclick = () => { navigator.clipboard.writeText(url).catch(() => {}); b.textContent = 'Copiado!'; setTimeout(() => b.textContent = 'Copiar', 1500); };
+  return b;
+}
+function urlDoLinkRastreio(slug) {
+  if (CONTA_DOMINIO && CONTA_DOMINIO_STATUS === 'ativo') return 'https://' + CONTA_DOMINIO + '/l/' + slug;
+  return location.origin + '/l/' + slug + (CONTA_SUBDOMINIO ? '?c=' + encodeURIComponent(CONTA_SUBDOMINIO) : '');
+}
 let LINKS_CARREGADO = false;
 let LINKS_LISTA = [];
 async function linksCarregar() {
@@ -4323,17 +4352,19 @@ async function linksCarregar() {
   linksRender();
 }
 function linksRender() {
+  const linkPrincipal = baseLinkQuiz();
+  const aPrincipal = $('#lkPrincipalA'); aPrincipal.href = linkPrincipal; aPrincipal.textContent = linkPrincipal;
+  const btnBox = $('#lkPrincipalBtn'); clear(btnBox); btnBox.appendChild(botaoCopiar(linkPrincipal));
+
   const t = $('#lkTable'); clear(t);
   t.appendChild(tableHead(['Nome', 'Link', 'Origem (utm_source)', 'Ativo', '']));
   const tb = el('tbody');
-  const base = location.origin;
   LINKS_LISTA.forEach((l) => {
     const tr = el('tr');
-    const url = base + '/l/' + l.slug;
+    const url = urlDoLinkRastreio(l.slug);
     const linkCel = el('span');
     const a = el('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = url; a.style.cssText = 'font-family:monospace;font-size:12px;color:var(--text);';
-    const copiar = el('button', 'acao-btn'); copiar.textContent = 'Copiar'; copiar.style.marginLeft = '8px';
-    copiar.onclick = () => { navigator.clipboard.writeText(url).catch(() => {}); copiar.textContent = 'Copiado!'; setTimeout(() => copiar.textContent = 'Copiar', 1500); };
+    const copiar = botaoCopiar(url); copiar.style.marginLeft = '8px';
     linkCel.append(a, copiar);
     const lativo = el('label'); lativo.style.cssText = 'display:flex;align-items:center;gap:5px;cursor:pointer;';
     const cativo = el('input'); cativo.type = 'checkbox'; cativo.checked = l.ativo !== false;

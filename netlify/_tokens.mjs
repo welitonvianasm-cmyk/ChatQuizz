@@ -51,7 +51,7 @@ export function temConfig() {
    pro login normal quanto pra impersonação (autenticarToken, abaixo) */
 async function carregarConta(contaId) {
   const rc = await fetch(
-    `${SB_URL}/rest/v1/contas?id=eq.${contaId}&select=id,nome,plano,status,plano_definido_em,dominio_proprio,dominio_status&limit=1`,
+    `${SB_URL}/rest/v1/contas?id=eq.${contaId}&select=id,nome,subdominio,plano,status,plano_definido_em,dominio_proprio,dominio_status&limit=1`,
     { headers: SB_HEADERS }
   );
   if (!rc.ok) {
@@ -110,6 +110,7 @@ export async function autenticar(email, senhaPlana) {
       contaPlanoDefinido: !!conta.plano_definido_em,
       contaDominio: conta.dominio_proprio || '',
       contaDominioStatus: conta.dominio_status || '',
+      contaSubdominio: conta.subdominio || '',
       user: { ...u, ehDono: !!u.eh_dono },
     };
   } catch (e) {
@@ -156,6 +157,7 @@ export async function autenticarToken(token) {
     contaPlanoDefinido: !!contaAlvo.plano_definido_em,
     contaDominio: contaAlvo.dominio_proprio || '',
     contaDominioStatus: contaAlvo.dominio_status || '',
+    contaSubdominio: contaAlvo.subdominio || '',
     impersonando: true,
     contaOriginalId: auth.contaId,
   };

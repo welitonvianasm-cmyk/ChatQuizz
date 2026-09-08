@@ -10,7 +10,13 @@
      2) subdomínio da PLATAFORMA (ex: clinica-bella.quizzhub.com) —
         só funciona de verdade quando a plataforma tiver domínio
         próprio com DNS coringa configurado.
-     3) fallback: primeira conta cadastrada (dev local / acessando
+     3) parâmetro ?c=<subdominio> na própria URL — funciona HOJE, sem
+        depender de DNS coringa nem de a conta ter domínio próprio,
+        enquanto a plataforma roda no domínio compartilhado do Netlify
+        (xxx.netlify.app, que não aceita subdomínio arbitrário por
+        conta). É o que os "Links de Rastreio" e o link principal do
+        quiz (painel → Links de Rastreio) usam por padrão.
+     4) fallback: primeira conta cadastrada (dev local / acessando
         direto pela URL do Netlify, sem nada configurado ainda) —
         mesmo comportamento de hoje (single-tenant).
 
@@ -49,6 +55,17 @@ export async function resolverContaPorHost(req) {
       const r = await fetch(`${SB_URL}/rest/v1/contas?subdominio=eq.${encodeURIComponent(sub)}&status=eq.ativa&select=id&limit=1`, { headers: H });
       if (r.ok) {
         const rows = await r.json();
+        if (rows[0]) return rows[0].id;
+      }
+    }
+    // 3) ?c=<subdominio> — só entra em jogo se os dois de cima não acharam
+    // nada (domínio próprio inativo/ausente, ou host sem subdomínio de
+    // conta de verdade, ex: xxx.netlify.app)
+    const paramConta = String(new URL(req.url).searchParams.get('c') || '').trim().toLowerCase();
+    if (paramConta) {
+      const rp = await fetch(`${SB_URL}/rest/v1/contas?subdominio=eq.${encodeURIComponent(paramConta)}&status=eq.ativa&select=id&limit=1`, { headers: H });
+      if (rp.ok) {
+        const rows = await rp.json();
         if (rows[0]) return rows[0].id;
       }
     }

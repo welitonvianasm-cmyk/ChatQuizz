@@ -576,6 +576,19 @@ const CONFIG = {
     minHorasAntecedencia: 3,
   },
 };
+/* identificação da conta no domínio compartilhado do Netlify (sem domínio
+   próprio nem DNS coringa, xxx.netlify.app não aceita subdomínio por
+   conta) — ver netlify/_tenant.mjs. Herda o ?c=<subdominio> da própria URL
+   da página (o link principal do quiz e os Links de Rastreio já vêm com
+   ele) e repassa pra toda chamada de API que precisa saber de qual conta é. */
+const CONTA_PARAM = new URLSearchParams(location.search).get('c') || '';
+if (CONTA_PARAM) {
+  const qs = '?c=' + encodeURIComponent(CONTA_PARAM);
+  CONFIG.API_SAVE += qs;
+  CONFIG.API_QUIZ_CONFIG += qs;
+  CONFIG.API_APARENCIA += qs;
+  CONFIG.API_AGENDA += qs;
+}
 
 /* ================================================================
    APARÊNCIA / IDENTIDADE — número de WhatsApp, avatar, logo, presente
