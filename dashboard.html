@@ -4210,8 +4210,8 @@ async function apCarregar(box) {
     tem_presente: !!r.tem_presente,
     presente_imagem: r.presente_imagem || '', presente_nome: r.presente_nome || '',
     presente_descricao: r.presente_descricao || '',
-    cta_url_texto: r.cta_url_texto || 'Continuar', cta_url_cor: r.cta_url_cor || '#a155f2',
-  } : { titulo: 'Seu Diagnóstico', logo_cabecalho_url: '', whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '', cor_primaria: '#005355', cor_cabecalho: '#ffffff', cor_titulo: '#14201e', cor_contador: '#005355', cor_balao_bot: '#eef4f2', cor_texto_balao_bot: '#14201e', mensagem_boas_vindas: '', tem_presente: false, presente_imagem: '', presente_nome: '', presente_descricao: '', cta_url_texto: 'Continuar', cta_url_cor: '#a155f2' };
+    cta_url_texto: r.cta_url_texto || 'Continuar', cta_url_cor: r.cta_url_cor || '#a155f2', cta_texto_cor: r.cta_texto_cor || '#ffffff',
+  } : { titulo: 'Seu Diagnóstico', logo_cabecalho_url: '', whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '', cor_primaria: '#005355', cor_cabecalho: '#ffffff', cor_titulo: '#14201e', cor_contador: '#005355', cor_balao_bot: '#eef4f2', cor_texto_balao_bot: '#14201e', mensagem_boas_vindas: '', tem_presente: false, presente_imagem: '', presente_nome: '', presente_descricao: '', cta_url_texto: 'Continuar', cta_url_cor: '#a155f2', cta_texto_cor: '#ffffff' };
   if (QE_TAB === 'aparencia') qeRenderAparencia(box || $('#qeLista'));
 }
 function apCampo(label, valor, onInput, tipo) {
@@ -4297,6 +4297,8 @@ function qeRenderAparencia(box) {
   ctaCorRow.append(ctaCorPicker, ctaCorTexto);
   ctaCorWrap.appendChild(ctaCorRow);
   box.appendChild(ctaCorWrap);
+
+  box.appendChild(apCorCampo('Cor do texto do botão', AP.cta_texto_cor, (v) => { AP.cta_texto_cor = v; }));
 
   const lp = el('label'); lp.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin:14px 0 10px;cursor:pointer;';
   const cp = el('input'); cp.type = 'checkbox'; cp.checked = !!AP.tem_presente;

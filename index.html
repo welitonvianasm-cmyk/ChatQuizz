@@ -41,6 +41,7 @@
       --contador-cor: #005355;            /* texto do contador de perguntas — Aparência → cor_contador */
       --contador-bg: rgba(0, 83, 85, .09); /* fundo do contador, derivado da cor_contador */
       --bot-bubble-text: #14201e;         /* texto do balão de pergunta — Aparência → cor_texto_balao_bot */
+      --cta-texto-cor: #ffffff;           /* texto do botão final — Aparência → cta_texto_cor */
     }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; }
@@ -448,7 +449,7 @@
     .ag-link {
       display: inline-flex; align-items: center; justify-content: center;
       margin-top: 14px; padding: 12px 18px; border-radius: 11px;
-      background: var(--gradient); color: #fff; font-weight: 700; font-size: 13.5px;
+      background: var(--gradient); color: var(--cta-texto-cor, #fff); font-weight: 700; font-size: 13.5px;
       text-decoration: none; box-shadow: 0 5px 18px rgba(161,85,242,.3);
     }
     /* card com o booker embutido (agendamento real via instância) */
@@ -612,7 +613,7 @@ const APARENCIA_PADRAO = {
   mensagem_boas_vindas: 'Oi! Eu estou aqui pra te ajudar a entender melhor o seu momento. Responda com sinceridade! 💙',
   tem_presente: false,
   presente_imagem: '', presente_nome: '', presente_descricao: '',
-  cta_url_texto: 'Continuar', cta_url_cor: '#a155f2',
+  cta_url_texto: 'Continuar', cta_url_cor: '#a155f2', cta_texto_cor: '#ffffff',
 };
 let APARENCIA = APARENCIA_PADRAO;
 const ehHex = (v) => /^#[0-9a-fA-F]{6}$/.test(v || '');
@@ -642,6 +643,7 @@ async function carregarAparencia() {
       presente_nome: j.presente_nome || '', presente_descricao: j.presente_descricao || '',
       cta_url_texto: j.cta_url_texto || APARENCIA_PADRAO.cta_url_texto,
       cta_url_cor: ehHex(j.cta_url_cor) ? j.cta_url_cor : APARENCIA_PADRAO.cta_url_cor,
+      cta_texto_cor: ehHex(j.cta_texto_cor) ? j.cta_texto_cor : APARENCIA_PADRAO.cta_texto_cor,
     };
     $('brandSub').textContent = APARENCIA.titulo;
     if (APARENCIA.logo_cabecalho_url) {
@@ -653,6 +655,7 @@ async function carregarAparencia() {
     document.documentElement.style.setProperty('--titulo-cor', APARENCIA.cor_titulo);
     document.documentElement.style.setProperty('--bg-soft', APARENCIA.cor_balao_bot);
     document.documentElement.style.setProperty('--bot-bubble-text', APARENCIA.cor_texto_balao_bot);
+    document.documentElement.style.setProperty('--cta-texto-cor', APARENCIA.cta_texto_cor);
     aplicarCorContador(APARENCIA.cor_contador);
   } catch (e) { /* mantém o padrão embutido */ }
 }

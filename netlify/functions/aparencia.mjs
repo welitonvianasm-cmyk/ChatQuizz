@@ -38,6 +38,7 @@ const PADRAO = {
   presente_descricao: '',
   cta_url_texto: 'Continuar',
   cta_url_cor: '#a155f2',
+  cta_texto_cor: '#ffffff',
 };
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -53,6 +54,8 @@ function sanitizar(body) {
   if (cCorPrimaria.erro) return cCorPrimaria;
   const cCtaCor = corOpc(body.cta_url_cor, 'Cor do botão', PADRAO.cta_url_cor);
   if (cCtaCor.erro) return cCtaCor;
+  const cCtaTextoCor = corOpc(body.cta_texto_cor, 'Cor do texto do botão', PADRAO.cta_texto_cor);
+  if (cCtaTextoCor.erro) return cCtaTextoCor;
   const cCorCabecalho = corOpc(body.cor_cabecalho, 'Cor do cabeçalho', PADRAO.cor_cabecalho);
   if (cCorCabecalho.erro) return cCorCabecalho;
   const cCorTitulo = corOpc(body.cor_titulo, 'Cor do título', PADRAO.cor_titulo);
@@ -86,6 +89,7 @@ function sanitizar(body) {
       presente_descricao: txt(body.presente_descricao, 200),
       cta_url_texto: txt(body.cta_url_texto, 40) || PADRAO.cta_url_texto,
       cta_url_cor: cCtaCor.valor,
+      cta_texto_cor: cCtaTextoCor.valor,
     },
   };
 }
