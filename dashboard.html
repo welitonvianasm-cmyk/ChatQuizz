@@ -4201,16 +4201,17 @@ async function apCarregar(box) {
   AP_CARREGADO = true;
   const r = await fetch('/api/aparencia', { headers: { 'x-dash-token': localStorage.getItem(TKEY) || '' } }).then((x) => x.json()).catch(() => null);
   AP = (r && r.ok) ? {
-    titulo: r.titulo || 'Seu Diagnóstico',
+    titulo: r.titulo || 'Seu Diagnóstico', logo_cabecalho_url: r.logo_cabecalho_url || '',
     whatsapp_numero: r.whatsapp_numero || '', avatar_url: r.avatar_url || '',
     avatar_fallback: r.avatar_fallback || '', site_url: r.site_url || '',
     cor_primaria: r.cor_primaria || '#005355', mensagem_boas_vindas: r.mensagem_boas_vindas || '',
-    cor_cabecalho: r.cor_cabecalho || '#ffffff', cor_balao_bot: r.cor_balao_bot || '#eef4f2', cor_texto_balao_bot: r.cor_texto_balao_bot || '#14201e',
+    cor_cabecalho: r.cor_cabecalho || '#ffffff', cor_titulo: r.cor_titulo || '#14201e', cor_contador: r.cor_contador || '#005355',
+    cor_balao_bot: r.cor_balao_bot || '#eef4f2', cor_texto_balao_bot: r.cor_texto_balao_bot || '#14201e',
     tem_presente: !!r.tem_presente,
     presente_imagem: r.presente_imagem || '', presente_nome: r.presente_nome || '',
     presente_descricao: r.presente_descricao || '',
     cta_url_texto: r.cta_url_texto || 'Continuar', cta_url_cor: r.cta_url_cor || '#a155f2',
-  } : { titulo: 'Seu Diagnóstico', whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '', cor_primaria: '#005355', cor_cabecalho: '#ffffff', cor_balao_bot: '#eef4f2', cor_texto_balao_bot: '#14201e', mensagem_boas_vindas: '', tem_presente: false, presente_imagem: '', presente_nome: '', presente_descricao: '', cta_url_texto: 'Continuar', cta_url_cor: '#a155f2' };
+  } : { titulo: 'Seu Diagnóstico', logo_cabecalho_url: '', whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '', cor_primaria: '#005355', cor_cabecalho: '#ffffff', cor_titulo: '#14201e', cor_contador: '#005355', cor_balao_bot: '#eef4f2', cor_texto_balao_bot: '#14201e', mensagem_boas_vindas: '', tem_presente: false, presente_imagem: '', presente_nome: '', presente_descricao: '', cta_url_texto: 'Continuar', cta_url_cor: '#a155f2' };
   if (QE_TAB === 'aparencia') qeRenderAparencia(box || $('#qeLista'));
 }
 function apCampo(label, valor, onInput, tipo) {
@@ -4244,7 +4245,10 @@ function qeRenderAparencia(box) {
   box.appendChild(sub);
 
   box.appendChild(apCampo('Título (aparece no cabeçalho do quiz, ao lado do contador de perguntas)', AP.titulo, (v) => { AP.titulo = v; }));
+  box.appendChild(apCampo('Logo do cabeçalho (URL, aparece antes do título — deixe vazio se não tiver)', AP.logo_cabecalho_url, (v) => { AP.logo_cabecalho_url = v; }));
   box.appendChild(apCorCampo('Cor do cabeçalho', AP.cor_cabecalho, (v) => { AP.cor_cabecalho = v; }));
+  box.appendChild(apCorCampo('Cor do título', AP.cor_titulo, (v) => { AP.cor_titulo = v; }));
+  box.appendChild(apCorCampo('Cor do contador de perguntas ("1 de 25")', AP.cor_contador, (v) => { AP.cor_contador = v; }));
   box.appendChild(apCampo('Número de WhatsApp (DDI+DDD+número, só dígitos, ex: 5511999999999)', AP.whatsapp_numero, (v) => { AP.whatsapp_numero = v; }));
   box.appendChild(apCampo('Avatar (URL da imagem exibida no chat)', AP.avatar_url, (v) => { AP.avatar_url = v; }));
   box.appendChild(apCampo('Logo (URL, usada se o avatar não carregar)', AP.avatar_fallback, (v) => { AP.avatar_fallback = v; }));

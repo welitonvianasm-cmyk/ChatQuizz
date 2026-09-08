@@ -37,6 +37,9 @@
       --shadow-soft: 0 1px 2px rgba(24,20,31,.04), 0 8px 24px rgba(24,20,31,.06);
       --radius: 18px;
       --header-bg: #ffffff;              /* cor do cabeçalho — Aparência → cor_cabecalho */
+      --titulo-cor: #14201e;              /* cor do título — Aparência → cor_titulo */
+      --contador-cor: #005355;            /* texto do contador de perguntas — Aparência → cor_contador */
+      --contador-bg: rgba(0, 83, 85, .09); /* fundo do contador, derivado da cor_contador */
       --bot-bubble-text: #14201e;         /* texto do balão de pergunta — Aparência → cor_texto_balao_bot */
     }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -69,12 +72,13 @@
       display: flex; align-items: center; flex-shrink: 0;
     }
     .brand-badge img { height: 34px; width: auto; max-width: 160px; object-fit: contain; display: block; }
+    #brandLogo { height: 28px; width: auto; max-width: 120px; object-fit: contain; display: block; flex-shrink: 0; }
     .brand-sub {
-      font-size: 12.5px; font-weight: 600; color: var(--text-dim);
+      font-size: 13px; font-weight: 700; color: var(--titulo-cor);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .step-pill {
-      background: var(--accent-soft); color: var(--accent-dark);
+      background: var(--contador-bg); color: var(--contador-cor);
       font-size: 12px; font-weight: 700; padding: 6px 13px; border-radius: 99px;
       flex-shrink: 0; letter-spacing: .02em;
     }
@@ -114,7 +118,8 @@
       word-break: break-word;
     }
     .bubble b, .bubble strong { color: var(--text); font-weight: 700; }
-    .row.bot .bubble { background: var(--bg-soft); color: var(--bot-bubble-text); font-weight: 600; border-bottom-left-radius: 6px; }
+    .row.bot .bubble { background: var(--bg-soft); color: var(--bot-bubble-text); border-bottom-left-radius: 6px; }
+    .row.bot .bubble.pergunta { font-weight: 700; }
     .row.user .bubble {
       background: var(--gradient); color: #fff; font-weight: 600;
       border-bottom-right-radius: 6px; box-shadow: 0 4px 18px rgba(161,85,242,.28);
@@ -518,6 +523,7 @@
   <header>
     <div class="topbar">
       <div class="brand">
+        <img id="brandLogo" src="" alt="" hidden>
         <span class="brand-sub" id="brandSub">Seu Diagnóstico</span>
       </div>
       <div class="step-pill" id="stepPill">0 de 11</div>
@@ -599,9 +605,10 @@ if (CONTA_PARAM) {
    alguém publicar uma config, ou se o backend estiver fora do ar.
    ================================================================ */
 const APARENCIA_PADRAO = {
-  titulo: 'Seu Diagnóstico',
+  titulo: 'Seu Diagnóstico', logo_cabecalho_url: '',
   whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '',
-  cor_primaria: '#005355', cor_cabecalho: '#ffffff', cor_balao_bot: '#eef4f2', cor_texto_balao_bot: '#14201e',
+  cor_primaria: '#005355', cor_cabecalho: '#ffffff', cor_titulo: '#14201e', cor_contador: '#005355',
+  cor_balao_bot: '#eef4f2', cor_texto_balao_bot: '#14201e',
   mensagem_boas_vindas: 'Oi! Eu estou aqui pra te ajudar a entender melhor o seu momento. Responda com sinceridade! 💚',
   tem_presente: false,
   presente_imagem: '', presente_nome: '', presente_descricao: '',
@@ -621,10 +628,13 @@ async function carregarAparencia() {
     if (!j || !j.ok) return;
     APARENCIA = {
       titulo: j.titulo || APARENCIA_PADRAO.titulo,
+      logo_cabecalho_url: j.logo_cabecalho_url || '',
       whatsapp_numero: j.whatsapp_numero || '', avatar_url: j.avatar_url || '',
       avatar_fallback: j.avatar_fallback || '', site_url: j.site_url || '',
       cor_primaria: ehHex(j.cor_primaria) ? j.cor_primaria : APARENCIA_PADRAO.cor_primaria,
       cor_cabecalho: ehHex(j.cor_cabecalho) ? j.cor_cabecalho : APARENCIA_PADRAO.cor_cabecalho,
+      cor_titulo: ehHex(j.cor_titulo) ? j.cor_titulo : APARENCIA_PADRAO.cor_titulo,
+      cor_contador: ehHex(j.cor_contador) ? j.cor_contador : APARENCIA_PADRAO.cor_contador,
       cor_balao_bot: ehHex(j.cor_balao_bot) ? j.cor_balao_bot : APARENCIA_PADRAO.cor_balao_bot,
       cor_texto_balao_bot: ehHex(j.cor_texto_balao_bot) ? j.cor_texto_balao_bot : APARENCIA_PADRAO.cor_texto_balao_bot,
       mensagem_boas_vindas: j.mensagem_boas_vindas || APARENCIA_PADRAO.mensagem_boas_vindas,
@@ -634,11 +644,29 @@ async function carregarAparencia() {
       cta_url_cor: ehHex(j.cta_url_cor) ? j.cta_url_cor : APARENCIA_PADRAO.cta_url_cor,
     };
     $('brandSub').textContent = APARENCIA.titulo;
+    if (APARENCIA.logo_cabecalho_url) {
+      const img = $('brandLogo'); img.src = APARENCIA.logo_cabecalho_url; img.hidden = false;
+      img.onerror = () => { img.hidden = true; };
+    }
     aplicarCorPrimaria(APARENCIA.cor_primaria);
     document.documentElement.style.setProperty('--header-bg', APARENCIA.cor_cabecalho);
+    document.documentElement.style.setProperty('--titulo-cor', APARENCIA.cor_titulo);
     document.documentElement.style.setProperty('--bg-soft', APARENCIA.cor_balao_bot);
     document.documentElement.style.setProperty('--bot-bubble-text', APARENCIA.cor_texto_balao_bot);
+    aplicarCorContador(APARENCIA.cor_contador);
   } catch (e) { /* mantém o padrão embutido */ }
+}
+
+/* fundo do "pill" do contador vem de uma versão bem clara da própria cor
+   (mesmo truque de accent-soft), pra continuar legível em qualquer cor de
+   cabeçalho escolhida — sem isso, um cabeçalho escuro deixava o contador
+   quase invisível (herdava a cor primária, pensada só pra fundo claro) */
+function aplicarCorContador(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const root = document.documentElement.style;
+  root.setProperty('--contador-cor', hex);
+  root.setProperty('--contador-bg', `rgba(${r}, ${g}, ${b}, 0.14)`);
 }
 
 /* deriva as variantes claro/escuro/transparente da cor primária (mesma
@@ -1013,11 +1041,11 @@ function showTyping() {
 }
 function hideTyping(t) { if (t) t.remove(); }
 
-async function bot(html, { delay = 900 } = {}) {
+async function bot(html, { delay = 900, pergunta = false } = {}) {
   const t = showTyping();
   await sleep(delay);
   hideTyping(t);
-  addRow('bot', html);
+  addRow('bot', html, pergunta ? 'pergunta' : '');
 }
 const user = (text) => addRow('user', esc(text));
 
@@ -1317,7 +1345,7 @@ async function postJSON(url, payload, timeoutMs = 9000) {
 async function etapaNome(replay = false) {
   if (!replay) {
     await bot(APARENCIA.mensagem_boas_vindas, { delay: 1100 });
-    await bot('Antes de tudo, me conta: como você se chama?');
+    await bot('Antes de tudo, me conta: como você se chama?', { pergunta: true });
   }
   askText({
     label: 'Nome completo', placeholder: 'Digite seu nome e sobrenome...',
@@ -1332,7 +1360,7 @@ async function etapaNome(replay = false) {
 
 async function etapaWhats(replay = false) {
   const primeiro = esc(state.data.nome.split(' ')[0]);
-  if (!replay) await bot(`Que bom ter você aqui, <b>${primeiro}</b> 💚 Me passa seu WhatsApp? É por ele que eu te envio suas orientações depois da nossa conversa.`);
+  if (!replay) await bot(`Que bom ter você aqui, <b>${primeiro}</b> 💚 Me passa seu WhatsApp? É por ele que eu te envio suas orientações depois da nossa conversa.`, { pergunta: true });
   askText({
     label: 'WhatsApp', placeholder: '(11) 99999-9999', type: 'tel', mask: maskFoneIntl,
     validate: vFoneIntl, ddiSelect: true,
@@ -1350,7 +1378,7 @@ async function etapaWhats(replay = false) {
 }
 
 async function etapaEmail(replay = false) {
-  if (!replay) await bot('Obrigada pela confiança 🙏 E qual e-mail você mais usa no dia a dia?', { delay: 700 });
+  if (!replay) await bot('Obrigada pela confiança 🙏 E qual e-mail você mais usa no dia a dia?', { delay: 700, pergunta: true });
   askText({
     label: 'E-mail', placeholder: 'seu@email.com', type: 'email',
     validate: vEmail,
@@ -1380,7 +1408,7 @@ async function confirmarEmail(email) {
 async function etapaQuiz(i, replay = false) {
   const p = QUIZ[i];
   state.data.respostas = state.data.respostas || {};
-  if (!replay) await bot(p.q, { delay: 900 });
+  if (!replay) await bot(p.q, { delay: 900, pergunta: true });
   const registrar = async (valor, labelTxt) => {
     user(labelTxt);
     state.data.respostas[p.id] = valor;

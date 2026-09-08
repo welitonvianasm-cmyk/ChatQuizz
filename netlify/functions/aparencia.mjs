@@ -20,12 +20,15 @@ const CHAVE = 'aparencia';
 
 const PADRAO = {
   titulo: 'Seu Diagnóstico',
+  logo_cabecalho_url: '',
   whatsapp_numero: '',
   avatar_url: '',
   avatar_fallback: '',
   site_url: '',
   cor_primaria: '#005355',
   cor_cabecalho: '#ffffff',
+  cor_titulo: '#14201e',
+  cor_contador: '#005355',
   cor_balao_bot: '#eef4f2',
   cor_texto_balao_bot: '#14201e',
   mensagem_boas_vindas: 'Oi! Eu estou aqui pra te ajudar a entender melhor o seu momento. Responda com sinceridade! 💚',
@@ -52,6 +55,10 @@ function sanitizar(body) {
   if (cCtaCor.erro) return cCtaCor;
   const cCorCabecalho = corOpc(body.cor_cabecalho, 'Cor do cabeçalho', PADRAO.cor_cabecalho);
   if (cCorCabecalho.erro) return cCorCabecalho;
+  const cCorTitulo = corOpc(body.cor_titulo, 'Cor do título', PADRAO.cor_titulo);
+  if (cCorTitulo.erro) return cCorTitulo;
+  const cCorContador = corOpc(body.cor_contador, 'Cor do contador de perguntas', PADRAO.cor_contador);
+  if (cCorContador.erro) return cCorContador;
   const cCorBalaoBot = corOpc(body.cor_balao_bot, 'Cor do balão de pergunta', PADRAO.cor_balao_bot);
   if (cCorBalaoBot.erro) return cCorBalaoBot;
   const cCorTextoBalaoBot = corOpc(body.cor_texto_balao_bot, 'Cor do texto do balão de pergunta', PADRAO.cor_texto_balao_bot);
@@ -61,12 +68,15 @@ function sanitizar(body) {
   return {
     limpo: {
       titulo: txt(body.titulo, 60) || PADRAO.titulo,
+      logo_cabecalho_url: txt(body.logo_cabecalho_url, 500),
       whatsapp_numero: numero,
       avatar_url: txt(body.avatar_url, 500),
       avatar_fallback: txt(body.avatar_fallback, 500),
       site_url: txt(body.site_url, 500),
       cor_primaria: cCorPrimaria.valor,
       cor_cabecalho: cCorCabecalho.valor,
+      cor_titulo: cCorTitulo.valor,
+      cor_contador: cCorContador.valor,
       cor_balao_bot: cCorBalaoBot.valor,
       cor_texto_balao_bot: cCorTextoBalaoBot.valor,
       mensagem_boas_vindas: txt(body.mensagem_boas_vindas, 600),
