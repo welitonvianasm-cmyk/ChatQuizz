@@ -28,6 +28,7 @@ import { dispararMentoriaHub, obterConexaoMentoriaHub } from '../_conexoes.mjs';
 import { resolverContaPorHost } from '../_tenant.mjs';
 import { enviarWhats } from './whatsapp.mjs';
 import { sincronizarEventoGoogle } from '../_googleAgenda.mjs';
+import { normalizarTelefoneBR } from '../_evolution.mjs';
 
 const SUPABASE_URL = (process.env.SUPABASE_DIAG_URL || 'https://aktktxizmpwckvxbdjzf.supabase.co').replace(/\/+$/, '');
 const TABLE = 'diag_instagram_leads';
@@ -62,8 +63,14 @@ export default async (req) => {
     if (!b.lead_ref || !b.nome) return json({ error: 'Missing lead_ref/nome' }, 400);
 
     const digits = String(b.whatsapp || '').replace(/\D/g, '');
-    // o front já manda ddi+número (E.164 sem '+'); só prefixa '+' — não força 55 (quebraria estrangeiro)
-    const e164 = digits ? `+${digits}` : '';
+    // normaliza pro mesmo formato canônico usado em todo o resto do sistema
+    // (wa-webhook.mjs/whatsapp.mjs/lead-admin.mjs) — sem isso, um lead que
+    // respondeu o quiz sem o 9º dígito do celular nunca casa com as próprias
+    // mensagens de WhatsApp recebidas depois (achado real no quiz-suavitatis,
+    // commit 30f8f7b). Só mexe em número de 10/11 dígitos (padrão BR); número
+    // de outro país passa direto sem alteração (normalizarTelefoneBR trata isso).
+    const normalizado = normalizarTelefoneBR(digits);
+    const e164 = normalizado ? `+${normalizado}` : '';
     const txt = (v, max = 300) => String(v ?? '').slice(0, max);
     const num = (v) => (typeof v === 'number' && isFinite(v)) ? v : null;
 
@@ -97,7 +104,11 @@ export default async (req) => {
         agendado: true,
         agendamento_em: b.agendamento_em || null,
         booking_uid: txt(b.booking_uid, 80),
-        video_url: txt(b.video_url, 300),
+        // só grava video_url se este save realmente trouxe um valor — omitir
+        // a chave (undefined some do JSON) preserva um link já certo (Cal.com
+        // ou corrigido pela equipe) contra um reenvio com o campo vazio
+        // (autosave revisitando uma confirmação antiga do localStorage)
+        ...(b.video_url ? { video_url: txt(b.video_url, 300) } : {}),
         agendamento_origem: 'auto',
       } : {}),
       utm_source: txt(b.utm_source, 200),

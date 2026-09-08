@@ -153,6 +153,14 @@ export default async (req) => {
       const t = await lerToggles(contaId);
       if (!t.conversas) return json({ ok: false, error: 'As Conversas estão desativadas nas configurações do WhatsApp.' });
       const r = await enviarWhats(contaId, body.telefone, String(body.texto || '').trim(), quem, body.lead_ref);
+      // um humano respondendo direto pelo painel É assumir a conversa — pausa
+      // o Agente IA nesse lead pra não responder por cima na próxima mensagem
+      // (antes só pausava pelo botão manual "Pausar IA" ou pela própria IA
+      // escalando; faltava esse caminho, o mais comum de todos)
+      if (r.ok) {
+        const tel = normalizarTelefoneBR(body.telefone);
+        if (tel) definirPausaConversa(contaId, tel, true, quem).catch(() => {});
+      }
       return json(r);
     }
 

@@ -182,7 +182,10 @@
         if (j.ok) {
           nome = j.nome || nome;
           startISO = j.start || startISO;
-          videoUrl = j.videoUrl || videoUrl;
+          // prioriza o link já passado (corrigido/gravado no CRM) sobre a
+          // busca ao vivo no Cal.com — evita que uma leitura desatualizada
+          // sobrescreva um link que já estava certo
+          videoUrl = videoUrl || j.videoUrl;
         }
       }
     } catch (e) { /* usa fallback */ }

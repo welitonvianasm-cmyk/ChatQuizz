@@ -23,11 +23,20 @@ import { dispararMentoriaHub, obterCalcomApiKey } from '../_conexoes.mjs';
 import { sincronizarEventoGoogle, removerEventoGoogle } from '../_googleAgenda.mjs';
 import { moverNoKanban } from '../_kanban.mjs';
 import { marcarPrimeiroAtendimento } from '../_kpi.mjs';
+import { normalizarTelefoneBR } from '../_evolution.mjs';
+import { definirPausaConversa } from '../_agenteIa.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const STATUS_VALIDOS = ['', 'concluido', 'reagendado', 'cancelado', 'compareceu', 'nao_compareceu'];
+/* nome da coluna real que o Postgres apontou como inexistente — nunca chuta
+   um conjunto fixo de campos em cascata (bug real corrigido no quiz-suavitatis,
+   commit a2e9558: fallback cego apagava campo que existia de verdade). */
+function colunaFaltando(errText) {
+  const m = String(errText || '').match(/column [\w."]+\.(\w+) does not exist/);
+  return m ? m[1] : null;
+}
 /* normaliza número BR pro formato canônico 55+DDD+9 dígitos: completa o DDI
    quando falta (cadastro manual "+ Novo Lead"/"Editar", sem seletor de país
    — o quiz público já resolve isso sozinho) e completa o 9º dígito do
@@ -143,12 +152,18 @@ export default async (req) => {
       let r = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads`, {
         method: 'POST', headers: { ...H, Prefer: 'return=representation' }, body: JSON.stringify(novo),
       });
-      if (!r.ok) {
-        // colunas mais novas (etapa/equipe_json) podem não existir ainda — tenta sem elas
-        delete novo.etapa; delete novo.equipe_json;
+      // colunas mais novas (etapa/equipe_json) podem não existir ainda — tira
+      // só a que a mensagem de erro real do Postgres apontar, uma de cada vez
+      for (let tentativa = 0; tentativa < 2 && !r.ok; tentativa++) {
+        const errText = await r.text().catch(() => '');
+        const faltando = colunaFaltando(errText);
+        let ultima = false;
+        if (faltando && faltando in novo) delete novo[faltando];
+        else { delete novo.etapa; delete novo.equipe_json; ultima = true; }   // não identificou — cai no comportamento antigo
         r = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads`, {
           method: 'POST', headers: { ...H, Prefer: 'return=representation' }, body: JSON.stringify(novo),
         });
+        if (ultima) break;
       }
       if (!r.ok) {
         console.error('lead-admin criar:', await r.text().catch(() => ''));
@@ -229,8 +244,22 @@ export default async (req) => {
         method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch),
       });
       let rg = await gravar();
-      // colunas do CRM podem não existir → grava o essencial mesmo assim
-      if (!rg.ok) { delete patch.equipe_json; delete patch.agendamento_status; delete patch.etapa; delete patch.agendamento_origem; temColunaEquipe = false; rg = await gravar(); }
+      // colunas do CRM podem não existir → tira só a que o erro real apontar
+      const opcionaisAgendar = ['equipe_json', 'agendamento_status', 'etapa', 'agendamento_origem'];
+      for (let tentativa = 0; tentativa < opcionaisAgendar.length && !rg.ok; tentativa++) {
+        const errText = await rg.text().catch(() => '');
+        const faltando = colunaFaltando(errText);
+        if (faltando && faltando in patch) {
+          delete patch[faltando];
+          if (faltando === 'equipe_json') temColunaEquipe = false;
+        } else {
+          opcionaisAgendar.forEach((c) => delete patch[c]);   // não identificou — cai no comportamento antigo
+          temColunaEquipe = false;
+          rg = await gravar();
+          break;
+        }
+        rg = await gravar();
+      }
       if (rg.ok) await moverNoKanban(contaId, ref, atendenteLead, 'agendado');   // o funil acompanha
       if (rg.ok) dispararMentoriaHub(contaId, 'agendamento_confirmado', {
         chatquizzLeadRef: ref, agendamentoEm: emISO, linkReuniao: '', bookingUid: uid,
@@ -462,6 +491,13 @@ export default async (req) => {
         if (patch.atendente) marcarPrimeiroAtendimento(contaId, ref, 'atribuicao');
         // atribuição move o funil: lead entra (ou sai) da etapa Atribuído
         if (temColunaEtapa && !(atual.resultado || '')) patch.etapa = patch.atendente ? 'atribuido' : '';
+        // atribuir um atendente É um humano assumindo o lead — pausa o
+        // Agente IA nessa conversa (faltava esse gatilho; só pausava pelo
+        // botão manual ou pela própria IA escalando)
+        if (patch.atendente) {
+          const telPausa = normalizarTelefoneBR(atual.whatsapp || '');
+          if (telPausa) definirPausaConversa(contaId, telPausa, true, quem).catch(() => {});
+        }
       }
     }
     let mudouEtapa = null;   // etapa alterada manualmente no cartão

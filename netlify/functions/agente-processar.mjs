@@ -97,11 +97,30 @@ async function marcarLeadAgendado(contaId, leadRef, inicioISO, evento) {
     method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch),
   });
   if (!r.ok) {
-    delete patch.etapa;   // coluna pode não existir ainda (setup-kanban3.sql)
+    // tira só a coluna que o erro real do Postgres apontar (etapa pode não
+    // existir ainda — setup-kanban3.sql), nunca um chute cego
+    const errText = await r.text().catch(() => '');
+    const m = errText.match(/column [\w."]+\.(\w+) does not exist/);
+    const faltando = m && m[1];
+    if (faltando && faltando in patch) delete patch[faltando]; else delete patch.etapa;
     await fetch(`${SB_URL}/rest/v1/${TABLE}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(leadRef)}`, {
       method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch),
     });
   }
+}
+
+/* google_event_id atual do lead, se já tiver um agendamento anterior — pra
+   agendar_reuniao ATUALIZAR o evento existente em vez de criar outro (sem
+   isso, um lead reagendando pelo próprio agente duplicava o evento no
+   Google Agenda em vez de mover o mesmo). */
+async function obterEventoAtual(contaId, leadRef) {
+  if (!leadRef) return '';
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/${TABLE}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(leadRef)}&select=google_event_id&limit=1`, { headers: H });
+    if (!r.ok) return '';
+    const rows = await r.json();
+    return (rows[0] && rows[0].google_event_id) || '';
+  } catch { return ''; }
 }
 
 async function executarFerramenta(nome, input, ctx) {
@@ -124,7 +143,11 @@ async function executarFerramenta(nome, input, ctx) {
     const inicio = new Date(input.inicio_iso);
     if (isNaN(inicio)) return { ok: false, erro: 'Data/hora inválida.' };
     const fim = new Date(inicio.getTime() + (ctx.agente.duracao_reuniao_min || 30) * 60000);
+    // se o lead já tem um evento (reagendando pelo próprio agente), atualiza
+    // em vez de criar outro — mesmo cuidado que lead-admin.mjs já toma
+    const googleEventId = await obterEventoAtual(ctx.contaId, ctx.leadRef);
     const evento = await sincronizarEventoGoogle(ctx.contaId, {
+      googleEventId: googleEventId || undefined,
       titulo: 'Encontro — ' + (ctx.nomeLead || 'Lead'),
       inicioISO: inicio.toISOString(), fimISO: fim.toISOString(),
       participanteNome: ctx.nomeLead, participanteEmail: ctx.emailLead,
@@ -266,7 +289,15 @@ export default async (req) => {
     if (textoFinal) {
       const envio = await enviarTexto(instanciaNome, telefone, textoFinal);
       if (envio.ok) await gravarMensagemSaida(contaId, telefone, leadRef, textoFinal, instanciaNome, envio.wa_id);
-      else console.error('agente-processar: falha ao enviar:', envio.error);
+      else {
+        console.error('agente-processar: falha ao enviar:', envio.error);
+        // número sem WhatsApp: não fica tentando de novo em silêncio a cada
+        // mensagem nova — avisa a equipe e pausa, igual a uma escalação normal
+        if (envio.semWhatsapp) {
+          await criarAlerta(contaId, leadRef, nomeLead, 'Não consegui mandar mensagem, esse número não parece ter WhatsApp.');
+          await definirPausaConversa(contaId, telefone, true, 'agente_ia');
+        }
+      }
     }
 
     return json({ ok: true, respondeu: !!textoFinal, escalado: ctx.escalado, agendado: ctx.agendado });

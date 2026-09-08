@@ -49,6 +49,25 @@ async function contaPadrao() {
   return null;
 }
 
+/* casa o telefone (já normalizado) com um lead cadastrado. Tenta primeiro
+   o valor canônico INTEIRO (funciona pra qualquer lead salvo depois que
+   save-lead.mjs passou a normalizar o telefone antes de gravar); só cai no
+   sufixo de 10 dígitos — sabidamente ambíguo no 9º dígito do celular — como
+   rede de segurança pra leads antigos, gravados antes dessa normalização. */
+async function buscarLeadPorTelefone(telefone, contaId) {
+  const escopo = contaId ? `conta_id=eq.${contaId}&` : '';
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?${escopo}whatsapp=ilike.*${telefone}&select=lead_ref,conta_id,nome,email&limit=1`, { headers: H });
+    if (r.ok) { const rows = await r.json(); if (rows[0]) return rows[0]; }
+  } catch { /* tenta o fallback */ }
+  try {
+    const fim = telefone.slice(-10);
+    const r = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?${escopo}whatsapp=ilike.*${fim}&select=lead_ref,conta_id,nome,email&limit=1`, { headers: H });
+    if (r.ok) { const rows = await r.json(); if (rows[0]) return rows[0]; }
+  } catch { /* sem vínculo */ }
+  return null;
+}
+
 export default async (req) => {
   if (req.method !== 'POST') return new Response('ok');
   try {
@@ -89,23 +108,17 @@ export default async (req) => {
       // 1) tenant pelo nome da instância (o normal, desde o multi-instância)
       let contaId = nomeInstancia ? await obterContaPorInstancia(nomeInstancia) : null;
       // 2) sem bater (instância não cadastrada, ou ainda em transição): casa
-      //    pelo telefone já vinculado a um lead (sufixo de 10-11 dígitos cobre DDI/9º dígito)
+      //    pelo telefone já vinculado a um lead
       let lead_ref = '';
       let nomeLead = '';
       let emailLead = '';
       if (!contaId) {
-        try {
-          const fim = telefone.slice(-10);
-          const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?whatsapp=ilike.*${fim}&select=lead_ref,conta_id,nome,email&limit=1`, { headers: H });
-          if (rl.ok) { const rows = await rl.json(); if (rows[0]) { lead_ref = rows[0].lead_ref || ''; contaId = rows[0].conta_id; nomeLead = rows[0].nome || ''; emailLead = rows[0].email || ''; } }
-        } catch { /* sem vínculo */ }
+        const achado = await buscarLeadPorTelefone(telefone, null);
+        if (achado) { lead_ref = achado.lead_ref || ''; contaId = achado.conta_id; nomeLead = achado.nome || ''; emailLead = achado.email || ''; }
       } else {
         // achou pela instância — ainda assim tenta achar o lead_ref, só que já escopado pela conta certa
-        try {
-          const fim = telefone.slice(-10);
-          const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&whatsapp=ilike.*${fim}&select=lead_ref,nome,email&limit=1`, { headers: H });
-          if (rl.ok) { const rows = await rl.json(); if (rows[0]) { lead_ref = rows[0].lead_ref || ''; nomeLead = rows[0].nome || ''; emailLead = rows[0].email || ''; } }
-        } catch { /* sem vínculo */ }
+        const achado = await buscarLeadPorTelefone(telefone, contaId);
+        if (achado) { lead_ref = achado.lead_ref || ''; nomeLead = achado.nome || ''; emailLead = achado.email || ''; }
       }
       if (!contaId) contaId = await contaPadrao();
       if (!contaId) continue;   // nenhuma conta cadastrada ainda — nada a fazer

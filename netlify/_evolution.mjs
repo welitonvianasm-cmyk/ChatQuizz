@@ -50,6 +50,32 @@ export function mensagemErroEvolution(d, status) {
   return 'Evolution recusou o envio (' + status + ')' + (detalhe ? ': ' + detalhe : '');
 }
 
+/* alterna o 9º dígito do celular (insere se tem 12 dígitos, remove se tem
+   13) — mesmo número pode ter sido salvo na forma errada; antes de desistir,
+   tenta a outra forma (padrão confirmado em produção no quiz-suavitatis,
+   item 12/camada 2). Só faz sentido pra número BR (DDI 55). */
+function formatoAlternativo(tel) {
+  if (!tel.startsWith('55')) return null;
+  if (tel.length === 13) return tel.slice(0, 4) + tel.slice(5);
+  if (tel.length === 12) return tel.slice(0, 4) + '9' + tel.slice(4);
+  return null;
+}
+
+/* confere se o número existe no WhatsApp antes de mandar — contrato real
+   confirmado em produção (mesmo endpoint usado no quiz-suavitatis):
+   POST /chat/whatsappNumbers/:instance, corpo {numbers:[...]}, resposta é
+   um array com {exists:boolean} por número. */
+async function existeNoWhatsapp(nomeInstancia, tel) {
+  try {
+    const r = await ev(`/chat/whatsappNumbers/${nomeInstancia}`, { method: 'POST', body: JSON.stringify({ numbers: [tel] }) });
+    if (!r.ok) return null;   // checagem indisponível — não bloqueia o envio
+    const check = await r.json().catch(() => null);
+    const info = Array.isArray(check) ? check[0] : null;
+    if (!info) return null;
+    return info.exists !== false;
+  } catch { return null; }   // melhor-esforço — se falhar, tenta enviar direto mesmo assim
+}
+
 /* ==================== instâncias por conta ==================== */
 
 export async function listarInstancias(contaId) {
@@ -229,14 +255,28 @@ export async function baixarMidia(nomeInstancia, mensagemBruta) {
    sem gravar histórico (isso é responsabilidade de quem chama, que sabe o
    contexto: lead_ref, quem mandou, etc. — ver enviarWhats em whatsapp.mjs) */
 export async function enviarTexto(nomeInstancia, telefone, texto) {
-  const tel = normalizarTelefoneBR(telefone);
+  let tel = normalizarTelefoneBR(telefone);
   if (!tel || !texto) return { ok: false, error: 'telefone/mensagem vazios' };
   if (!configurada()) return { ok: false, error: 'WhatsApp não conectado (Evolution não configurada).' };
+
+  // confere ANTES de tentar mandar — sem isso, número sem WhatsApp só dá um
+  // "Bad Request" genérico da Evolution, sem dizer o motivo real, e o envio
+  // falha em silêncio (lembrete, alerta, resposta do Agente IA, envio manual).
+  // Antes de desistir, tenta a outra forma do 9º dígito.
+  let numeroCorrigido = '';
+  const existe = await existeNoWhatsapp(nomeInstancia, tel);
+  if (existe === false) {
+    const alt = formatoAlternativo(tel);
+    const altExiste = alt ? await existeNoWhatsapp(nomeInstancia, alt) : null;
+    if (altExiste) { tel = alt; numeroCorrigido = alt; }
+    else return { ok: false, error: 'Esse número não tem WhatsApp — confira se está certo.', semWhatsapp: true };
+  }
+
   const r = await ev(`/message/sendText/${nomeInstancia}`, { method: 'POST', body: JSON.stringify({ number: tel, text: texto }) });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) return { ok: false, error: mensagemErroEvolution(d, r.status) };
   const wa_id = (d && d.key && d.key.id) || '';
-  return { ok: true, wa_id };
+  return { ok: true, wa_id, numeroCorrigido: numeroCorrigido || undefined };
 }
 
 /* envia mídia (imagem/documento) por UMA instância específica. `media` é a
