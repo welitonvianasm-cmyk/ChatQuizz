@@ -609,7 +609,7 @@ const APARENCIA_PADRAO = {
   whatsapp_numero: '', avatar_url: '', avatar_fallback: '', site_url: '',
   cor_primaria: '#005355', cor_cabecalho: '#ffffff', cor_titulo: '#14201e', cor_contador: '#005355',
   cor_balao_bot: '#eef4f2', cor_texto_balao_bot: '#14201e',
-  mensagem_boas_vindas: 'Oi! Eu estou aqui pra te ajudar a entender melhor o seu momento. Responda com sinceridade! 💚',
+  mensagem_boas_vindas: 'Oi! Eu estou aqui pra te ajudar a entender melhor o seu momento. Responda com sinceridade! 💙',
   tem_presente: false,
   presente_imagem: '', presente_nome: '', presente_descricao: '',
   cta_url_texto: 'Continuar', cta_url_cor: '#a155f2',
@@ -792,7 +792,7 @@ const RESULTADOS_PADRAO = {
 };
 const ROTEAMENTO_PADRAO = {
   comunidade: { tipo: 'calcom', calLink: 'https://cal.com/sua-agenda/comunidade' },
-  premium: { tipo: 'whatsapp', auto: true, mensagem: 'Olá {nome}! Vi que você concluiu o quiz 💚 Vamos marcar nossa conversa?' },
+  premium: { tipo: 'whatsapp', auto: true, mensagem: 'Olá {nome}! Vi que você concluiu o quiz 💙 Vamos marcar nossa conversa?' },
 };
 
 let QUIZ = QUIZ_PADRAO;                                // perguntas em uso (podem vir do painel)
@@ -948,7 +948,7 @@ async function mostrarTemplate(texto, delay = 1000) {
 /* mostra o diagnóstico (texto do nível de consciência) como sequência de mensagens */
 async function mostrarResultado(res) {
   const nivel = RESULTADOS.por_nivel[res.nivel] || Object.values(RESULTADOS.por_nivel)[0];
-  if (nivel) await mostrarTemplate(nivel.texto, 1050);
+  if (nivel) await mostrarTemplate(nivel.texto, 4000);
 }
 
 /* ================================================================
@@ -1360,7 +1360,7 @@ async function etapaNome(replay = false) {
 
 async function etapaWhats(replay = false) {
   const primeiro = esc(state.data.nome.split(' ')[0]);
-  if (!replay) await bot(`Que bom ter você aqui, <b>${primeiro}</b> 💚 Me passa seu WhatsApp? É por ele que eu te envio suas orientações depois da nossa conversa.`, { pergunta: true });
+  if (!replay) await bot(`Que bom ter você aqui, <b>${primeiro}</b> 💙 Me passa seu WhatsApp? É por ele que eu te envio suas orientações depois da nossa conversa.`, { pergunta: true });
   askText({
     label: 'WhatsApp', placeholder: '(11) 99999-9999', type: 'tel', mask: maskFoneIntl,
     validate: vFoneIntl, ddiSelect: true,
@@ -1450,7 +1450,7 @@ async function etapaResultado() {
   persist();
   salvarLead('completo');  // aqui o backend recalcula qualificador/nível e dispara o roteamento automático, se houver
 
-  const loader = showLoader('💚 Um instante, estou te lendo com atenção...',
+  const loader = showLoader('Um instante, estou te lendo com atenção...',
     ['Acolhendo o que você me contou', 'Entendendo o seu momento emocional', 'Preparando suas orientações personalizadas'], 800);
   await sleep(2500);
   await loader.done();
@@ -1472,14 +1472,14 @@ async function finalPresente() {
     await sleep(700);
     renderProdutoCard();
     await sleep(800);
-    await bot('Ele já é seu! 🗝️ E a <b>chave pra destravar</b> eu te entrego pessoalmente no final do nosso <b>Encontro</b>: um encontro gratuito, ao vivo comigo. É o espaço pra você se sentir acolhido e ouvido de verdade, sem compromisso nenhum 💚', { delay: 900 });
+    await bot('Ele já é seu! 🗝️ E a <b>chave pra destravar</b> eu te entrego pessoalmente no final do nosso <b>Encontro</b>: um encontro gratuito, ao vivo comigo. É o espaço pra você se sentir acolhido e ouvido de verdade, sem compromisso nenhum 💙', { delay: 900 });
   } else {
-    await bot('Preparei um <b>Encontro</b> gratuito, ao vivo, pra conversarmos com calma. É o espaço pra você se sentir acolhida e ouvida de verdade, sem compromisso nenhum 💚', { delay: 900 });
+    await bot('Preparei um <b>Encontro</b> gratuito, ao vivo, pra conversarmos com calma. É o espaço pra você se sentir acolhida e ouvida de verdade, sem compromisso nenhum 💙', { delay: 900 });
   }
 
   const qualificador = state.data.qualificador;
   const convite = RESULTADOS.por_qualificador[qualificador];
-  if (convite) await mostrarTemplate(convite.texto, 1000);
+  if (convite) await mostrarTemplate(convite.texto, 4000);
 
   const rota = (qualificador && ROTEAMENTO[qualificador]) || { tipo: 'crm' };
   if (rota.tipo === 'calcom' && rota.calLink) await renderAgendaEmbutida(rota.calLink, qualificador);
@@ -1493,7 +1493,7 @@ async function renderAgendaEmbutida(link, qualificador) {
   state.data.callTrack = qualificador; persist();
   salvarLead('completo');
   const comPresente = APARENCIA.tem_presente ? ' e com seu presente' : '';
-  await bot(`Escolhe aqui embaixo o dia e o horário que ficam melhores pra você 👇 Vou te esperar com muito carinho${comPresente} 💚`, { delay: 1100 });
+  await bot(`Escolhe aqui embaixo o dia e o horário que ficam melhores pra você 👇 Vou te esperar com muito carinho${comPresente} 💙`, { delay: 1100 });
   // demonstração: agenda simulada (local) no lugar do Cal.com de verdade
   if (MODO_DEMO) { renderAgendaInline({ track: qualificador }); return; }
   renderAgendaEmbed({ embedLink: link, track: qualificador, vendor: '' });
@@ -1512,11 +1512,11 @@ async function ctaWhatsAutomatico() {
   const link = rota.botao ? linkWhatsappRota(rota.numero_ou_link) : '';
 
   if (auto) {
-    await bot(`${s.primeiro}, recebi tudo certinho! Você vai receber uma mensagem no WhatsApp em instantes pra a gente combinar o melhor horário 💚`, { delay: 1200 });
+    await bot(`${s.primeiro}, recebi tudo certinho! Você vai receber uma mensagem no WhatsApp em instantes pra a gente combinar o melhor horário 💙`, { delay: 1200 });
   } else if (link) {
-    await bot(`${s.primeiro}, recebi tudo certinho! Clica aqui embaixo pra continuar no WhatsApp 💚`, { delay: 1200 });
+    await bot(`${s.primeiro}, recebi tudo certinho! Clica aqui embaixo pra continuar no WhatsApp 💙`, { delay: 1200 });
   } else {
-    await bot(`${s.primeiro}, recebi tudo certinho! Nossa equipe vai entrar em contato com você em breve 💚`, { delay: 1200 });
+    await bot(`${s.primeiro}, recebi tudo certinho! Nossa equipe vai entrar em contato com você em breve 💙`, { delay: 1200 });
   }
   if (link) addRow('bot', `<a class="ag-link" href="${esc(link)}" target="_blank" rel="noopener">💬&nbsp; ${auto ? 'Ou já chama agora no WhatsApp' : 'Chamar no WhatsApp'}</a>`);
 }
@@ -1526,7 +1526,7 @@ async function ctaCRM() {
   persist();
   salvarLead('completo');
   const s = safeData();
-  await bot(`${s.primeiro}, recebi tudo certinho! Nossa equipe vai entrar em contato com você em breve 💚`, { delay: 1200 });
+  await bot(`${s.primeiro}, recebi tudo certinho! Nossa equipe vai entrar em contato com você em breve 💙`, { delay: 1200 });
 }
 
 /* roteamento "Direcionar para uma URL" — link externo configurado no
@@ -1535,7 +1535,7 @@ async function ctaUrl(url) {
   persist();
   salvarLead('completo');
   const s = safeData();
-  await bot(`${s.primeiro}, recebi tudo certinho! Clica aqui embaixo pra continuar 💚`, { delay: 1200 });
+  await bot(`${s.primeiro}, recebi tudo certinho! Clica aqui embaixo pra continuar 💙`, { delay: 1200 });
   const texto = esc(APARENCIA.cta_url_texto || 'Continuar');
   const cor = APARENCIA.cta_url_cor || '#a155f2';
   addRow('bot', `<a class="ag-link" href="${esc(url)}" target="_blank" rel="noopener" style="background:${cor};box-shadow:0 5px 18px ${cor}4d;">🔗&nbsp; ${texto}</a>`);
@@ -1627,7 +1627,7 @@ async function onEmbedAgendado(e, row, info) {
   card.innerHTML = `
     <div class="ag-head">
       <span class="ag-ic">📅</span>
-      <div><h4>Tá marcado!</h4><p>Vou te esperar 💚</p></div>
+      <div><h4>Tá marcado!</h4><p>Vou te esperar 💙</p></div>
     </div>
     <div class="ag-done">
       <div class="ag-check">✓</div>
@@ -1640,7 +1640,7 @@ async function onEmbedAgendado(e, row, info) {
 
   const s = safeData();
   const presenteMsg = APARENCIA.tem_presente ? `, e seu presente <b>${esc(APARENCIA.presente_nome || '')}</b> já está separado pra você` : '';
-  await bot(`Prontinho, <b>${s.primeiro}</b> 💚 Seu Encontro está marcado! Guardei sua <a href="${pageUrl}" target="_blank" rel="noopener"><b>página do Encontro</b></a> com todos os detalhes${presenteMsg}. Até lá!`, { delay: 900 });
+  await bot(`Prontinho, <b>${s.primeiro}</b> 💙 Seu Encontro está marcado! Guardei sua <a href="${pageUrl}" target="_blank" rel="noopener"><b>página do Encontro</b></a> com todos os detalhes${presenteMsg}. Até lá!`, { delay: 900 });
 }
 
 /* normaliza o campo "número ou link" do roteamento WhatsApp (rota.numero_ou_link)
@@ -1889,7 +1889,7 @@ async function confirmarAgendamento(card, dia, hora, iso) {
   card.innerHTML = `
     <div class="ag-head">
       <span class="ag-ic">📅</span>
-      <div><h4>Tá marcado!</h4><p>Vou te esperar 💚</p></div>
+      <div><h4>Tá marcado!</h4><p>Vou te esperar 💙</p></div>
     </div>
     <div class="ag-done">
       <div class="ag-check">✓</div>
@@ -1902,7 +1902,7 @@ async function confirmarAgendamento(card, dia, hora, iso) {
 
   const s = safeData();
   const presenteMsg2 = APARENCIA.tem_presente ? `, e seu presente <b>${esc(APARENCIA.presente_nome || '')}</b> já está separado pra você` : '';
-  await bot(`Prontinho, <b>${s.primeiro}</b> 💚 Seu Encontro está marcado pra <b>${esc(diaTxt)} às ${esc(horaTxt)}</b>! Guardei sua <a href="${pageUrl}" target="_blank" rel="noopener"><b>página do Encontro</b></a> com todos os detalhes${presenteMsg2}. Até lá!`, { delay: 900 });
+  await bot(`Prontinho, <b>${s.primeiro}</b> 💙 Seu Encontro está marcado pra <b>${esc(diaTxt)} às ${esc(horaTxt)}</b>! Guardei sua <a href="${pageUrl}" target="_blank" rel="noopener"><b>página do Encontro</b></a> com todos os detalhes${presenteMsg2}. Até lá!`, { delay: 900 });
 }
 
 /* ================================================================
@@ -1928,7 +1928,7 @@ function replayBotBefore(st) {
     APARENCIA.mensagem_boas_vindas,
     'Pra começar, me diz: qual seu nome?',
   ];
-  if (st === 1) return [`Que bom ter você aqui, <b>${esc((state.data.nome || '').split(' ')[0])}</b> 💚 Me passa seu WhatsApp? É por ele que eu te envio suas orientações depois da nossa conversa.`];
+  if (st === 1) return [`Que bom ter você aqui, <b>${esc((state.data.nome || '').split(' ')[0])}</b> 💙 Me passa seu WhatsApp? É por ele que eu te envio suas orientações depois da nossa conversa.`];
   if (st === 2) return ['Obrigada pela confiança 🙏 E qual e-mail você mais usa no dia a dia?'];
   if (st === 3) return ['Agora quero te conhecer um pouquinho melhor, tá? Fica à vontade pra responder com o coração 🌿', QUIZ[0].q];
   const p = QUIZ[st - PASSOS_CONTATO];
@@ -1950,7 +1950,7 @@ async function boot() {
       user(replayUserLabel(st));
     }
     setProgress(ate);
-    await bot('Que bom te ver de novo 💚 Vamos continuar de onde paramos?', { delay: 600 });
+    await bot('Que bom te ver de novo 💙 Vamos continuar de onde paramos?', { delay: 600 });
     if (state.step >= TOTAL_PASSOS) await etapaResultado();   // completou mas saiu antes da agenda → resultado + agenda de novo
     else if (state.step === 1) await etapaWhats();
     else if (state.step === 2) await etapaEmail();
