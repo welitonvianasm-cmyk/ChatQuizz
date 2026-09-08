@@ -2176,6 +2176,15 @@
         <div class="muted-cell" style="font-size:11.5px;margin-top:4px;">Esse é o link certo dessa conta pra usar sem rastreio nenhum (bio, cartão, WhatsApp Web...). Pra saber de onde vieram os leads, use um Link de Rastreio abaixo.</div>
       </div>
 
+      <div style="margin:14px 0;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface-card-2);">
+        <label style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--text-muted);">Link de demonstração (teste)</label>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
+          <a id="lkDemoA" target="_blank" rel="noopener" style="font-family:monospace;font-size:13px;color:var(--text);word-break:break-all;"></a>
+          <span id="lkDemoBtn"></span>
+        </div>
+        <div class="muted-cell" style="font-size:11.5px;margin-top:4px;">O quiz roda inteiro, com uma etiqueta "🧪 Demonstração" na tela, mas nada é gravado, nenhum lead, nenhuma resposta. Use pra testar ou mostrar o quiz pra alguém sem sujar os dados reais.</div>
+      </div>
+
       <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;align-items:end;">
         <label style="font-size:11.5px;font-weight:600;">Nome<input id="lkNome" style="width:220px;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Ex: Instagram Bio"></label>
         <button id="lkCriar" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">+ Criar link</button>
@@ -4368,6 +4377,12 @@ function urlDoLinkRastreio(slug) {
   if (CONTA_DOMINIO && CONTA_DOMINIO_STATUS === 'ativo') return 'https://' + CONTA_DOMINIO + '/l/' + slug;
   return location.origin + '/l/' + slug + (CONTA_SUBDOMINIO ? '?c=' + encodeURIComponent(CONTA_SUBDOMINIO) : '');
 }
+/* ?demo roda o quiz inteiro sem gravar nada (ver index.html, MODO_DEMO) —
+   funciona pra qualquer conta, é só anexar ao link principal dela */
+function linkDemo() {
+  const base = baseLinkQuiz();
+  return base + (base.includes('?') ? '&' : '?') + 'demo';
+}
 let LINKS_CARREGADO = false;
 let LINKS_LISTA = [];
 async function linksCarregar() {
@@ -4384,6 +4399,10 @@ function linksRender() {
   const linkPrincipal = baseLinkQuiz();
   const aPrincipal = $('#lkPrincipalA'); aPrincipal.href = linkPrincipal; aPrincipal.textContent = linkPrincipal;
   const btnBox = $('#lkPrincipalBtn'); clear(btnBox); btnBox.appendChild(botaoCopiar(linkPrincipal));
+
+  const demo = linkDemo();
+  const aDemo = $('#lkDemoA'); aDemo.href = demo; aDemo.textContent = demo;
+  const btnDemoBox = $('#lkDemoBtn'); clear(btnDemoBox); btnDemoBox.appendChild(botaoCopiar(demo));
 
   const t = $('#lkTable'); clear(t);
   t.appendChild(tableHead(['Nome', 'Link', 'Origem (utm_source)', 'Ativo', '']));
