@@ -5005,7 +5005,7 @@ async function kbCarregar() {
   await carregarEtiquetasPorLead();
   $('#kbAviso').textContent = '';
   const vis = kbBoardsVisiveis();
-  if (!vis.find((b) => b.id === KB_BOARD)) KB_BOARD = vis.length ? vis[0].id : null;
+  if (KB_BOARD !== 'geral' && !vis.find((b) => b.id === KB_BOARD)) KB_BOARD = vis.length ? vis[0].id : null;
   kbRender();
 }
 const KB_CORES = { verde: '#16a34a', roxo: '#7c3aed', azul: '#2f6fed', vermelho: '#dc2626', laranja: '#ea580c', amarelo: '#ca8a04', rosa: '#db2777', turquesa: '#0d9488', cinza: '#64748b', preto: '#1f2937' };
@@ -5014,13 +5014,21 @@ const KB_BUSCA_ON = new Set();   // colunas com a lupa aberta
 function kbRender() {
   const vis = kbBoardsVisiveis();
   const sel = $('#kbBoardSel'); clear(sel);
+  if (vis.length > 1) {   // "Geral" só faz sentido juntando 2+ quadros
+    const oGeral = el('option'); oGeral.value = 'geral'; oGeral.textContent = '🌐 Geral (todos os quadros)';
+    sel.appendChild(oGeral);
+  }
   vis.forEach((b) => {
     const o = el('option'); o.value = b.id;
     o.textContent = b.nome + (b.atendente ? ' · ' + b.atendente : '');
     sel.appendChild(o);
   });
   if (KB_BOARD) sel.value = String(KB_BOARD);
-  $('#kbVinculo').style.display = IS_ADMIN ? '' : 'none';
+  const geral = KB_BOARD === 'geral';
+  $('#kbVinculo').style.display = (IS_ADMIN && !geral) ? '' : 'none';
+  $('#kbNovoLead').style.display = geral ? 'none' : '';
+  $('#kbNovaCol').style.display = geral ? 'none' : '';
+  $('#kbExcluirQuadro').style.display = geral ? 'none' : '';
   const wrap = $('#kbCols'); clear(wrap);
   if (!vis.length) {
     $('#kbAviso').textContent = IS_ADMIN
@@ -5029,9 +5037,22 @@ function kbRender() {
     return;
   }
   const byRef = new Map(ALL.map((l) => [l.lead_ref, l]));
+  const boardPorId = new Map(vis.map((b) => [b.id, b]));
+  const colsIter = geral
+    ? vis.flatMap((b) => KB.cols.filter((c) => c.board_id === b.id && (c.tipo || c.mostrar_geral !== false)))
+    : KB.cols.filter((c) => c.board_id === KB_BOARD);
 
-  KB.cols.filter((c) => c.board_id === KB_BOARD).forEach((col) => {
+  colsIter.forEach((col) => {
     const cEl = el('div', 'kb-col');
+
+    /* Kanban Geral: visão fixa e só-leitura que junta todos os quadros —
+       cada coluna leva um rótulo de qual quadro/atendente é a origem dela */
+    if (geral) {
+      const b = boardPorId.get(col.board_id);
+      const rot = el('div'); rot.textContent = b ? (b.nome + (b.atendente ? ' · ' + b.atendente : '')) : '';
+      rot.style.cssText = 'font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--text-muted);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      cEl.appendChild(rot);
+    }
 
     /* ===== cabeçalho: cor + nome + contagem + lupa + menu ⋮ ===== */
     const corHex = KB_CORES[col.cor] || '';
@@ -5069,12 +5090,19 @@ function kbRender() {
       s.onclick = async () => { const r2 = await kbApi({ action: 'col_editar', id: col.id, cor: nomeCor }); if (!r2.ok) $('#kbAviso').textContent = r2.error || 'Erro.'; kbCarregar(); };
       sw.appendChild(s);
     });
+    const bGeral = el('button'); bGeral.textContent = (col.mostrar_geral === false ? '☐' : '☑') + ' Mostrar no Kanban Geral';
+    bGeral.onclick = async () => {
+      const r2 = await kbApi({ action: 'col_editar', id: col.id, mostrar_geral: col.mostrar_geral === false });
+      if (!r2.ok) $('#kbAviso').textContent = r2.error || 'Erro.';
+      kbCarregar();
+    };
     const bDel = el('button'); bDel.textContent = 'Excluir coluna'; bDel.style.color = 'var(--red)';
     bDel.onclick = async () => { if (confirm('Excluir a coluna "' + col.nome + '" e os cartões dela?')) { await kbApi({ action: 'col_excluir', id: col.id }); kbCarregar(); } };
-    if (oficial) drop.append(bCorTit, sw);          // oficiais: só a cor pode mudar
-    else drop.append(bRen, bCorTit, sw, bDel);
+    if (oficial) drop.append(bCorTit, sw);          // oficiais: só a cor pode mudar, sempre aparecem no Geral
+    else drop.append(bRen, bCorTit, sw, bGeral, bDel);
     menuWrap.append(mBtn, drop);
-    head.append(nome, n, lupa, menuWrap);
+    head.append(nome, n, lupa);
+    if (!geral) head.appendChild(menuWrap);   // Geral é só-leitura: sem opções de editar coluna
     cEl.appendChild(head);
 
     /* ===== busca da coluna ===== */
@@ -5091,34 +5119,36 @@ function kbRender() {
 
     /* ===== corpo: cartões (arrastar + clicar + conversar) ===== */
     const body = el('div', 'kb-body');
-    body.ondragover = (e) => { e.preventDefault(); body.classList.add('drag'); };
-    body.ondragleave = () => body.classList.remove('drag');
-    body.ondrop = async (e) => {
-      e.preventDefault(); body.classList.remove('drag');
-      if (!KB_DRAG) return;
-      const cardMovido = KB.cards.find((k) => k.id === KB_DRAG);
-      KB_DRAG = null;
-      let motivo;
-      if (col.tipo === 'perdido') {
-        motivo = await perguntarMotivoPerda();
-        if (motivo === null) { kbRender(); return; }   // desistiu
-      }
-      const r = await kbApi({ action: 'card_mover', id: cardMovido ? cardMovido.id : 0, col_id: col.id, motivo });
-      if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao mover.'); kbCarregar(); return; }
-      // coluna oficial → espelha o Status do lead no painel na hora
-      const lead = cardMovido ? byRef.get(cardMovido.lead_ref) : null;
-      if (lead && col.tipo && col.tipo !== 'followup') {
-        if (col.tipo === 'perdido' || col.tipo === 'convertido') {
-          lead.resultado = col.tipo; lead.etapa = '';
-          lead.resultado_em = new Date().toISOString(); lead.resultado_por = USUARIO || 'Equipe';
-          if (col.tipo === 'perdido') lead.resultado_motivo = (motivo || '').trim();
-        } else {
-          lead.resultado = ''; lead.etapa = col.tipo;
+    if (!geral) {   // Kanban Geral: só visualização, sem arrastar entre colunas
+      body.ondragover = (e) => { e.preventDefault(); body.classList.add('drag'); };
+      body.ondragleave = () => body.classList.remove('drag');
+      body.ondrop = async (e) => {
+        e.preventDefault(); body.classList.remove('drag');
+        if (!KB_DRAG) return;
+        const cardMovido = KB.cards.find((k) => k.id === KB_DRAG);
+        KB_DRAG = null;
+        let motivo;
+        if (col.tipo === 'perdido') {
+          motivo = await perguntarMotivoPerda();
+          if (motivo === null) { kbRender(); return; }   // desistiu
         }
-        render();
-      }
-      kbCarregar();
-    };
+        const r = await kbApi({ action: 'card_mover', id: cardMovido ? cardMovido.id : 0, col_id: col.id, motivo });
+        if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao mover.'); kbCarregar(); return; }
+        // coluna oficial → espelha o Status do lead no painel na hora
+        const lead = cardMovido ? byRef.get(cardMovido.lead_ref) : null;
+        if (lead && col.tipo && col.tipo !== 'followup') {
+          if (col.tipo === 'perdido' || col.tipo === 'convertido') {
+            lead.resultado = col.tipo; lead.etapa = '';
+            lead.resultado_em = new Date().toISOString(); lead.resultado_por = USUARIO || 'Equipe';
+            if (col.tipo === 'perdido') lead.resultado_motivo = (motivo || '').trim();
+          } else {
+            lead.resultado = ''; lead.etapa = col.tipo;
+          }
+          render();
+        }
+        kbCarregar();
+      };
+    }
     const cardsAll = KB.cards.filter((k) => k.col_id === col.id);
     const desenharCards = () => {
       clear(body);
@@ -5137,22 +5167,16 @@ function kbRender() {
         const lead = byRef.get(card.lead_ref);
         const bloqueado = lead && !podeAcessarLead(lead);
         const k = el('div', 'kb-card');
-        k.draggable = !bloqueado;   // lead de outro atendente não pode ser movido no funil
-        k.ondragstart = () => { KB_DRAG = bloqueado ? null : card.id; };
+        k.draggable = !geral && !bloqueado;   // Geral é só-leitura; lead de outro atendente também não arrasta
+        k.ondragstart = () => { KB_DRAG = (geral || bloqueado) ? null : card.id; };
         k.title = bloqueado
           ? 'Lead vinculado a ' + String(lead.atendente || '').trim() + ', acesso restrito ao responsável'
-          : 'Clique para abrir o Cartão do Lead · arraste para mover de coluna';
+          : (geral ? 'Clique para abrir o Cartão do Lead (abra o quadro de origem pra mover)' : 'Clique para abrir o Cartão do Lead · arraste para mover de coluna');
         if (bloqueado) k.style.opacity = '.6';
         if (lead) k.onclick = () => abrirLeadModal(lead);
         const nm = el('b'); nm.textContent = (bloqueado ? '' : '') + (lead ? lead.nome : card.lead_ref);
         const qualifNome = lead && lead.call_track ? (qualificadoresOuFallback().find((x) => x.chave === lead.call_track) || {}).nome || lead.call_track : '';
         const sm = el('small'); sm.textContent = lead ? [(lead.whatsapp || ''), qualifNome].filter(Boolean).join(' · ') : '';
-        const x = el('button', 'x'); x.textContent = '✕'; x.title = 'Tirar do quadro';
-        x.onclick = async (e) => {
-          e.stopPropagation();
-          if (bloqueado) { avisarLeadBloqueado(lead); return; }
-          await kbApi({ action: 'card_excluir', id: card.id }); kbCarregar();
-        };
         k.append(nm, sm);
         if (lead && lead.whatsapp) {
           const wa = el('a', 'kb-conversar');
@@ -5166,7 +5190,15 @@ function kbRender() {
           };
           k.appendChild(wa);
         }
-        k.appendChild(x);
+        if (!geral) {   // "tirar do quadro" é uma escrita, não existe na visão agregada só-leitura
+          const x = el('button', 'x'); x.textContent = '✕'; x.title = 'Tirar do quadro';
+          x.onclick = async (e) => {
+            e.stopPropagation();
+            if (bloqueado) { avisarLeadBloqueado(lead); return; }
+            await kbApi({ action: 'card_excluir', id: card.id }); kbCarregar();
+          };
+          k.appendChild(x);
+        }
         body.appendChild(k);
       });
     };
@@ -5174,33 +5206,35 @@ function kbRender() {
     desenharCards();
     cEl.appendChild(body);
 
-    /* ===== adicionar lead à coluna ===== */
-    const add = el('button', 'acao-btn kb-add'); add.textContent = '+ Adicionar Lead';
-    const busca = el('input', 'kb-busca'); busca.placeholder = 'Busque por nome, e-mail ou WhatsApp...'; busca.style.display = 'none';
-    const res = el('div', 'kb-res');
-    add.onclick = () => { busca.style.display = busca.style.display === 'none' ? '' : 'none'; clear(res); if (busca.style.display === '') busca.focus(); };
-    busca.oninput = () => {
-      clear(res);
-      const q = busca.value.trim().toLowerCase();
-      if (q.length < 2) return;
-      const noQuadro = new Set(KB.cards.filter((k2) => k2.board_id === KB_BOARD).map((k2) => k2.lead_ref));
-      ALL.filter((l) => !noQuadro.has(l.lead_ref) && !l.resultado && [l.nome, l.email, l.whatsapp].some((v) => String(v || '').toLowerCase().includes(q)))
-        .slice(0, 8)
-        .forEach((l) => {
-          const b = el('button'); b.textContent = (l.nome || '(sem nome)') + ' · ' + (l.whatsapp || l.email || '');
-          b.onclick = async () => {
-            const r2 = await kbApi({ action: 'card_criar', board_id: KB_BOARD, col_id: col.id, lead_ref: l.lead_ref });
-            if (!r2.ok) $('#kbAviso').textContent = r2.error || 'Erro.';
-            kbCarregar();
-          };
-          res.appendChild(b);
-        });
-    };
-    cEl.append(add, busca, res);
+    /* ===== adicionar lead à coluna (não existe no Kanban Geral, só-leitura) ===== */
+    if (!geral) {
+      const add = el('button', 'acao-btn kb-add'); add.textContent = '+ Adicionar Lead';
+      const busca = el('input', 'kb-busca'); busca.placeholder = 'Busque por nome, e-mail ou WhatsApp...'; busca.style.display = 'none';
+      const res = el('div', 'kb-res');
+      add.onclick = () => { busca.style.display = busca.style.display === 'none' ? '' : 'none'; clear(res); if (busca.style.display === '') busca.focus(); };
+      busca.oninput = () => {
+        clear(res);
+        const q = busca.value.trim().toLowerCase();
+        if (q.length < 2) return;
+        const noQuadro = new Set(KB.cards.filter((k2) => k2.board_id === KB_BOARD).map((k2) => k2.lead_ref));
+        ALL.filter((l) => !noQuadro.has(l.lead_ref) && !l.resultado && [l.nome, l.email, l.whatsapp].some((v) => String(v || '').toLowerCase().includes(q)))
+          .slice(0, 8)
+          .forEach((l) => {
+            const b = el('button'); b.textContent = (l.nome || '(sem nome)') + ' · ' + (l.whatsapp || l.email || '');
+            b.onclick = async () => {
+              const r2 = await kbApi({ action: 'card_criar', board_id: KB_BOARD, col_id: col.id, lead_ref: l.lead_ref });
+              if (!r2.ok) $('#kbAviso').textContent = r2.error || 'Erro.';
+              kbCarregar();
+            };
+            res.appendChild(b);
+          });
+      };
+      cEl.append(add, busca, res);
+    }
     wrap.appendChild(cEl);
   });
 }
-$('#kbBoardSel').addEventListener('change', (e) => { KB_BOARD = Number(e.target.value); kbRender(); });
+$('#kbBoardSel').addEventListener('change', (e) => { KB_BOARD = e.target.value === 'geral' ? 'geral' : Number(e.target.value); kbRender(); });
 $('#kbVinculo').onclick = async () => {
   if (!KB_BOARD || !IS_ADMIN) return;
   const b = KB.boards.find((x) => x.id === KB_BOARD);
@@ -5228,9 +5262,16 @@ $('#kbNovoQuadro').onclick = async () => {
 };
 $('#kbNovaCol').onclick = async () => {
   if (!KB_BOARD) { $('#kbAviso').textContent = 'Crie um quadro primeiro.'; return; }
-  const resp = await promptModal({ titulo: 'Nova coluna', campos: [{ id: 'nome', label: 'Nome da coluna', placeholder: 'Ex: Em negociação', obrigatorio: true }], textoOk: 'Criar coluna' });
+  const resp = await promptModal({
+    titulo: 'Nova coluna',
+    campos: [
+      { id: 'nome', label: 'Nome da coluna', placeholder: 'Ex: Em negociação', obrigatorio: true },
+      { id: 'mostrar_geral', tipo: 'checkbox', label: 'Mostrar no Kanban Geral', valor: true },
+    ],
+    textoOk: 'Criar coluna',
+  });
   if (!resp) return;
-  await kbApi({ action: 'col_criar', board_id: KB_BOARD, nome: resp.nome });
+  await kbApi({ action: 'col_criar', board_id: KB_BOARD, nome: resp.nome, mostrar_geral: resp.mostrar_geral });
   kbCarregar();
 };
 $('#kbExcluirQuadro').onclick = async () => {
@@ -6225,6 +6266,13 @@ function promptModal({ titulo, sub, campos, textoOk }) {
         campo = el('select');
         campo.style.cssText = 'width:100%;margin-top:5px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;background:var(--surface-input);color:var(--text);cursor:pointer;';
         (c.options || []).forEach((op) => { const o = el('option'); o.value = op; o.textContent = op; campo.appendChild(o); });
+      } else if (c.tipo === 'checkbox') {
+        wrap.style.cssText = 'display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:var(--text-muted);cursor:pointer;';
+        campo = el('input'); campo.type = 'checkbox'; campo.checked = c.valor !== false;
+        wrap.textContent = ''; wrap.append(campo, c.label || '');
+        campo.dataset.campoId = c.id; campo.dataset.obrigatorio = '';
+        box.appendChild(wrap);
+        return;
       } else {
         campo = el('input'); campo.type = c.tipoInput || 'text';
         campo.style.cssText = 'width:100%;margin-top:5px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;';
@@ -6249,7 +6297,7 @@ function pmConfirmar() {
   const campos = [...document.querySelectorAll('#pmCampos [data-campo-id]')];
   const valores = {};
   for (const c of campos) {
-    const v = typeof c.value === 'string' ? c.value.trim() : c.value;
+    const v = c.type === 'checkbox' ? c.checked : (typeof c.value === 'string' ? c.value.trim() : c.value);
     if (c.dataset.obrigatorio === '1' && !v) { $('#pmErro').textContent = 'Preencha todos os campos obrigatórios.'; return; }
     valores[c.dataset.campoId] = v;
   }

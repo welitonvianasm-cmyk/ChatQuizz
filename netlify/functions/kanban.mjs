@@ -20,8 +20,8 @@
  *   { token, action:'board_criar',  nome, atendente, descricao? }
  *   { token, action:'board_editar', id, nome?, atendente?, descricao? }  (atendente: só admin)
  *   { token, action:'board_excluir', id }                       (só admin)
- *   { token, action:'col_criar',    board_id, nome }
- *   { token, action:'col_editar',   id, nome?, cor? }
+ *   { token, action:'col_criar',    board_id, nome, mostrar_geral? }
+ *   { token, action:'col_editar',   id, nome?, cor?, mostrar_geral? }
  *   { token, action:'col_excluir',  id }
  *   { token, action:'card_criar',   board_id, col_id, lead_ref }
  *   { token, action:'card_mover',   id, col_id, motivo? }
@@ -151,7 +151,8 @@ export default async (req) => {
       if (!rb.ok) { semVinculo = true; rb = await sb(`kanban_boards?conta_id=eq.${contaId}&select=id,nome&order=criado_em.asc`); }
       if (!rb.ok) return json({ ok: false, error: AVISO_SQL });
       const boards = await rb.json();
-      let cols = await sb(`kanban_cols?conta_id=eq.${contaId}&select=id,board_id,nome,ordem,cor,tipo&order=ordem.asc,id.asc`).then((r) => r.ok ? r.json() : null);
+      let cols = await sb(`kanban_cols?conta_id=eq.${contaId}&select=id,board_id,nome,ordem,cor,tipo,mostrar_geral&order=ordem.asc,id.asc`).then((r) => r.ok ? r.json() : null);
+      if (!cols) cols = await sb(`kanban_cols?conta_id=eq.${contaId}&select=id,board_id,nome,ordem,cor,tipo&order=ordem.asc,id.asc`).then((r) => r.ok ? r.json() : null);
       if (!cols) cols = await sb(`kanban_cols?conta_id=eq.${contaId}&select=id,board_id,nome,ordem,cor&order=ordem.asc,id.asc`).then((r) => r.ok ? r.json() : null);
       if (!cols) cols = await sb(`kanban_cols?conta_id=eq.${contaId}&select=id,board_id,nome,ordem&order=ordem.asc,id.asc`).then((r) => r.ok ? r.json() : []);
       const cards = await sb(`kanban_cards?conta_id=eq.${contaId}&select=id,board_id,col_id,lead_ref,ordem&order=ordem.asc,id.asc`).then((r) => r.ok ? r.json() : []);
@@ -211,8 +212,10 @@ export default async (req) => {
       const nome = String(body.nome || '').trim().slice(0, 60);
       const board_id = Number(body.board_id) || 0;
       if (!nome || !board_id) return json({ ok: false, error: 'Dê um nome à coluna.' });
+      const mostrar_geral = body.mostrar_geral !== false;   // personalizada: pergunta na criação, padrão true
       // personalizada: tipo vazio, entra depois das oficiais
-      let r = await sb('kanban_cols', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ conta_id: contaId, board_id, nome, tipo: '', ordem: 100 + (Date.now() % 100000) }) });
+      let r = await sb('kanban_cols', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ conta_id: contaId, board_id, nome, tipo: '', mostrar_geral, ordem: 100 + (Date.now() % 100000) }) });
+      if (!r.ok) r = await sb('kanban_cols', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ conta_id: contaId, board_id, nome, tipo: '', ordem: 100 + (Date.now() % 100000) }) });
       if (!r.ok) r = await sb('kanban_cols', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ conta_id: contaId, board_id, nome, ordem: 100 + (Date.now() % 100000) }) });
       return json({ ok: r.ok });
     }
@@ -233,9 +236,11 @@ export default async (req) => {
         if (!CORES.includes(cor)) return json({ ok: false, error: 'cor inválida' });
         patch.cor = cor;
       }
+      if ('mostrar_geral' in body) patch.mostrar_geral = !!body.mostrar_geral;
       if (!Object.keys(patch).length) return json({ ok: false, error: 'nada para alterar' });
       const r = await sb(`kanban_cols?id=eq.${id}&conta_id=eq.${contaId}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
       if (!r.ok && 'cor' in patch) return json({ ok: false, error: 'Falta rodar o setup-kanban2.sql no Supabase (cores das colunas).' });
+      if (!r.ok && 'mostrar_geral' in patch) return json({ ok: false, error: 'Falta rodar o setup-kanban-geral.sql no Supabase.' });
       return json({ ok: r.ok });
     }
 
