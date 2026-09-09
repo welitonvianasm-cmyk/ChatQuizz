@@ -3,9 +3,13 @@
  * quiz viram painel extra, e se o grupo de Agendamento (opcional) aparece.
  * Multi-tenant: cada conta tem a própria (funnel_config escopado por conta_id).
  *
- *   GET  /api/kpis-config { token }                → { ok, agendamentoAtivo, perguntasAtivas }
- *   POST /api/kpis-config { token, agendamentoAtivo, perguntasAtivas } → salva (SÓ administradora)
+ *   GET  /api/kpis-config { token }                → { ok, agendamentoAtivo, perguntasAtivas, colunaExtra }
+ *   POST /api/kpis-config { token, agendamentoAtivo, perguntasAtivas, colunaExtra } → salva (SÓ administradora)
  *   POST /api/kpis-config { token, action:'restaurar' } → volta ao padrão
+ *
+ * `colunaExtra: { perguntaId }` — qual pergunta do quiz aparece como coluna
+ * extra na tabela de Leads (substitui a antiga "Renda familiar", fixa e
+ * específica de outro cliente). Vazio = nenhuma coluna extra.
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
 
@@ -13,7 +17,7 @@ const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const CHAVE = 'kpis_geral';
-const PADRAO = { agendamentoAtivo: true, perguntasAtivas: [] };
+const PADRAO = { agendamentoAtivo: true, perguntasAtivas: [], colunaExtra: { perguntaId: '' } };
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
@@ -42,6 +46,7 @@ export default async (req) => {
     const limpo = {
       agendamentoAtivo: !!body.agendamentoAtivo,
       perguntasAtivas: Array.isArray(body.perguntasAtivas) ? body.perguntasAtivas.map((id) => String(id).slice(0, 60)).slice(0, 30) : [],
+      colunaExtra: { perguntaId: String((body.colunaExtra && body.colunaExtra.perguntaId) || '').slice(0, 60) },
     };
     const r = await fetch(`${SB_URL}/rest/v1/funnel_config?on_conflict=conta_id,key`, {
       method: 'POST',

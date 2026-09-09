@@ -855,9 +855,8 @@
           <label style="font-size:11.5px;font-weight:700;">WhatsApp<input id="nlWhats" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="(11) 99999-9999"></label>
           <label style="font-size:11.5px;font-weight:700;">E-mail<input id="nlEmail" type="email" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="nome@email.com"></label>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;">
+        <div style="display:grid;grid-template-columns:1fr;gap:8px;">
           <label style="font-size:11.5px;font-weight:700;">Estado (UF)<input id="nlUf" maxlength="2" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;text-transform:uppercase;background:var(--surface-input);color:var(--text);" placeholder="SP"></label>
-          <label style="font-size:11.5px;font-weight:700;">Renda familiar<input id="nlRenda" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Ex: Entre R$ 5.000,00 e R$ 10.000,00"></label>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <label style="font-size:11.5px;font-weight:700;">Atendente responsável<select id="nlAtendente" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— sem responsável —</option></select></label>
@@ -1636,7 +1635,6 @@
       </div>
       <div id="uaMais" class="fextra" hidden>
         <select id="uaUf"><option value="">Estado (UF): Todos</option></select>
-        <select id="uaRenda"><option value="">Renda familiar: Todas</option></select>
       </div>
       <div class="tbl-wrap"><table id="upcoming"></table></div>
     </div>
@@ -1670,6 +1668,9 @@
         <select id="leadsQualificadorSel" title="Qualificador (resultado do quiz)">
           <option value="">Qualificador: Todos</option>
         </select>
+        <select id="leadsColunaExtraSel" title="Escolha uma pergunta do quiz pra mostrar como coluna extra na tabela">
+          <option value="">Coluna extra: Nenhuma</option>
+        </select>
         <button class="fmais" id="leadsMaisBtn" title="Filtros menos usados">Mais filtros</button>
         <button id="leadsNovoLead" style="padding:9px 14px;border:none;border-radius:9px;background:var(--brand);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">+ Novo Lead</button>
         <span class="muted-cell" id="tbl-count"></span>
@@ -1687,7 +1688,6 @@
           <option value="completo">✓ Completo</option>
         </select>
         <select id="leadsUf"><option value="">Estado (UF): Todos</option></select>
-        <select id="leadsRenda"><option value="">Renda familiar: Todas</option></select>
         <select id="leadsAgendou">
           <option value="">Agendou: Todos</option>
           <option value="sim">Agendou: Sim</option>
@@ -3384,6 +3384,21 @@ function montarCartaoLead(r, container, opts = {}) {
     stRow.appendChild(rea);
   }
   c.appendChild(stRow);
+
+  /* Qualificador (editável direto aqui) — o atendente pode corrigir na hora
+     se perceber que o lead se encaixa melhor em outro qualificador; o
+     backend (lead-admin.mjs, campos.qualificador) já aceita essa troca,
+     só faltava um jeito rápido de mudar sem abrir o modal "Editar". */
+  const qRow = el('div'); qRow.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 10px;font-size:12.5px;font-weight:700;';
+  qRow.append('Qualificador:');
+  const qSel = el('select');
+  qSel.style.cssText = 'padding:5px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;';
+  popularSelectQualificador(qSel);
+  qSel.value = r.call_track || '';
+  qSel.onchange = () => salvarLeadCampos(r, { qualificador: qSel.value });
+  qRow.appendChild(qSel);
+  c.appendChild(qRow);
+
   if (r.resultado) {
     c.appendChild(lmLinha(r.resultado === 'convertido' ? '✓ Convertido em' : '✕ Perdido em', fmtDateTime(r.resultado_em)));
     c.appendChild(lmLinha('Marcado por', r.resultado_por));
@@ -5025,7 +5040,7 @@ function abrirNovoLeadModal(prefill) {
   const p = (prefill && typeof prefill === 'object' && !(prefill instanceof Event)) ? prefill : {};
   NL_DE_CONVERSA = !!p.deConversa;
   $('#nlNome').value = p.nome || ''; $('#nlWhats').value = p.whatsapp || ''; $('#nlEmail').value = '';
-  $('#nlUf').value = ''; $('#nlRenda').value = ''; $('#nlStatus').textContent = '';
+  $('#nlUf').value = ''; $('#nlStatus').textContent = '';
   const sel = $('#nlAtendente'); clear(sel);
   const o0 = el('option'); o0.value = ''; o0.textContent = '— sem responsável —'; sel.appendChild(o0);
   (ATENDENTES || []).forEach((n) => { const o = el('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
@@ -5050,7 +5065,7 @@ $('#nlSalvar').onclick = async () => {
       token: localStorage.getItem(TKEY) || '', action: 'criar',
       lead: {
         nome, whatsapp: $('#nlWhats').value.trim(), email: $('#nlEmail').value.trim(),
-        uf: $('#nlUf').value.trim(), renda: $('#nlRenda').value.trim(), atendente: $('#nlAtendente').value,
+        uf: $('#nlUf').value.trim(), atendente: $('#nlAtendente').value,
         qualificador: $('#nlQualificador').value,
       },
     }),
@@ -5195,11 +5210,12 @@ async function carregarWaMetricas() {
 
 /* ===== Configuração dos KPIs personalizados (Agendamento opcional +
    painéis por pergunta do quiz) — por conta, ver kpis-config.mjs ===== */
-let KPIS_CONFIG = { agendamentoAtivo: true, perguntasAtivas: [] };
+let KPIS_CONFIG = { agendamentoAtivo: true, perguntasAtivas: [], colunaExtra: { perguntaId: '' } };
 async function carregarKpisConfig() {
   const r = await fetch('/api/kpis-config', { headers: { 'x-dash-token': localStorage.getItem(TKEY) || '' } }).then((x) => x.json()).catch(() => null);
-  if (r && r.ok) KPIS_CONFIG = { agendamentoAtivo: !!r.agendamentoAtivo, perguntasAtivas: r.perguntasAtivas || [] };
+  if (r && r.ok) KPIS_CONFIG = { agendamentoAtivo: !!r.agendamentoAtivo, perguntasAtivas: r.perguntasAtivas || [], colunaExtra: r.colunaExtra || { perguntaId: '' } };
   render();
+  popularLeadsColunaExtra();
 }
 /* liga/desliga o grupo de Agendamento (hero + #pAgendaram + #pPorAtendente)
    e renderiza os painéis por pergunta escolhidos — chamado toda vez que
@@ -5214,6 +5230,20 @@ function aplicarKpisPersonalizados(rows) {
   }
   renderKpisPersonalizados(rows);
 }
+/* coluna extra na tabela de Leads: qualquer pergunta do quiz, escolhida
+   pela administradora (mesma preferência/permissão do "+ Inserir KPI"),
+   substitui a antiga coluna fixa "Renda familiar". */
+function popularLeadsColunaExtra() {
+  const sel = $('#leadsColunaExtraSel'); if (!sel) return;
+  sel.style.display = IS_ADMIN ? '' : 'none';
+  clear(sel);
+  const o0 = el('option'); o0.value = ''; o0.textContent = 'Coluna extra: Nenhuma'; sel.appendChild(o0);
+  (QUIZ_PERGUNTAS_CACHE || []).forEach((p) => {
+    const o = el('option'); o.value = p.id; o.textContent = String(p.q || '').replace(/<[^>]+>/g, '').slice(0, 50);
+    sel.appendChild(o);
+  });
+  sel.value = (KPIS_CONFIG.colunaExtra && KPIS_CONFIG.colunaExtra.perguntaId) || '';
+}
 function renderKpisPersonalizados(rows) {
   const box = $('#kpisPersonalizados'); if (!box) return; clear(box);
   KPIS_CONFIG.perguntasAtivas.forEach((perguntaId) => {
@@ -5224,6 +5254,19 @@ function renderKpisPersonalizados(rows) {
 /* painel genérico "1 por pergunta" — mesmo espírito visual do painel
    "Renda familiar" (que é fixo numa coluna específica do lead), só que
    genérico pra qualquer pergunta cadastrada, lendo respostas_json. */
+/* resolve a resposta de UM lead pra uma pergunta do quiz — usado pela
+   coluna extra da tabela de Leads (mesma lógica de índice→texto de
+   renderPainelPergunta, mas pra 1 lead em vez de contagem agregada) */
+function respostaColunaExtra(r, pergunta) {
+  let respostas = null;
+  try { respostas = JSON.parse(r.respostas_json || ''); } catch { return ''; }
+  if (!respostas) return '';
+  const v = respostas[pergunta.id];
+  if (v == null) return '';
+  if (pergunta.aberta) return String(v || '');
+  const idxs = Array.isArray(v) ? v : [v];
+  return idxs.map((i) => pergunta.opts && pergunta.opts[i] && pergunta.opts[i].t).filter(Boolean).join(', ');
+}
 function renderPainelPergunta(pergunta, rows) {
   const panel = el('div', 'panel grid2-item');
   const h2 = el('h2'); h2.textContent = pergunta.q; panel.appendChild(h2);
@@ -5727,7 +5770,7 @@ function tableHead(cols) { const tr = el('tr'); cols.forEach((c) => { const th =
 function td(text, cls) { const c = el('td', cls); if (text instanceof Node) c.appendChild(text); else c.textContent = (text == null || text === '') ? '—' : String(text); return c; }
 
 /* filtros do quadro Leads Agendados */
-let UA = { periodo: 'tudo', ini: null, fim: null, busca: '', trilha: '', status: '', atendente: '', uf: '', renda: '' };
+let UA = { periodo: 'tudo', ini: null, fim: null, busca: '', trilha: '', status: '', atendente: '', uf: '' };
 /* preenche um dropdown com os valores distintos encontrados nos leads,
    preservando a seleção atual quando a lista não mudou */
 function popularDistintos(sel, valores, rotuloTodos, atual) {
@@ -5801,11 +5844,9 @@ function renderUpcoming() {
   popularUaAtendente(todas);
   popularUaTrilha();
   UA.uf = popularDistintos($('#uaUf'), todas.map((r) => r.uf), 'Estado (UF): Todos', UA.uf);
-  UA.renda = popularDistintos($('#uaRenda'), todas.map((r) => r.renda), 'Renda familiar: Todas', UA.renda);
   let filtradas = todas.filter(uaInPeriodo);
   if (UA.trilha) filtradas = filtradas.filter((r) => r.call_track === UA.trilha);
   if (UA.uf) filtradas = filtradas.filter((r) => (r.uf || '').trim() === UA.uf);
-  if (UA.renda) filtradas = filtradas.filter((r) => (r.renda || '').trim() === UA.renda);
   if (UA.status) {
     filtradas = UA.status === 'confirmado'
       ? filtradas.filter((r) => !r.agendamento_status)
@@ -5824,9 +5865,9 @@ function renderUpcoming() {
   const passadas = filtradas.filter((r) => new Date(r.agendamento_em).getTime() < agora).reverse();
   const up = [...futuras, ...passadas];
   $('#upCount').textContent = nf(futuras.length) + ' futura(s) · ' + nf(passadas.length) + ' passada(s)';
-  t.appendChild(tableHead(['Quando', 'Lead', 'WhatsApp', 'Renda familiar', 'Destino', 'Atendente', 'Status', 'Ações']));
+  t.appendChild(tableHead(['Quando', 'Lead', 'WhatsApp', 'Destino', 'Atendente', 'Status', 'Ações']));
   const tb = el('tbody');
-  if (!up.length) { const tr = el('tr'); const c = td('Nenhum lead agendado ainda.'); c.colSpan = 8; c.className = 'muted-cell'; tr.appendChild(c); tb.appendChild(tr); }
+  if (!up.length) { const tr = el('tr'); const c = td('Nenhum lead agendado ainda.'); c.colSpan = 7; c.className = 'muted-cell'; tr.appendChild(c); tb.appendChild(tr); }
   up.forEach((r) => {
     const tr = el('tr');
     if (new Date(r.agendamento_em).getTime() < agora) tr.style.opacity = '.62';
@@ -5838,7 +5879,6 @@ function renderUpcoming() {
       td(fmtDateTime(r.agendamento_em)),
       td(nomeLink(r), 'nome'),
       td(r.whatsapp),
-      td(r.renda),
       td(trilhaPill(r.call_track)),
       td(selAtendente(r)),
       td(agendPill(r.agendamento_status)),
@@ -5872,7 +5912,6 @@ let ORIGEM_FILTER = '';        // '' | utm_source (de onde veio o clique — lin
 let QUALIFICADOR_FILTER = '';  // '' | chave do qualificador (resultado do quiz)
 let STATUS_FILTER = '';
 let LEADS_UF = '';
-let LEADS_RENDA = '';
 let LEADS_AGENDOU = '';   // '' | 'sim' | 'nao'
 let LEADS_RESPOSTA = '';  // '' | 'sem_resposta' | 'parcial' | 'completo'
 function renderLeads(rows) {
@@ -6337,8 +6376,8 @@ function drawLeads() {
   popularLeadsAtendente();
   popularLeadsOrigem();
   popularLeadsQualificador();
+  popularLeadsColunaExtra();
   LEADS_UF = popularDistintos($('#leadsUf'), LEADS_VIEW.map((r) => r.uf), 'Estado (UF): Todos', LEADS_UF);
-  LEADS_RENDA = popularDistintos($('#leadsRenda'), LEADS_VIEW.map((r) => r.renda), 'Renda familiar: Todas', LEADS_RENDA);
   const q = ($('#search').value || '').trim().toLowerCase();
   let data = LEADS_VIEW.filter((r) => abaDoLead(r) === LEADS_ABA).filter(inLeadsRange);
   if (ORIGEM_FILTER) data = data.filter((r) => (String(r.utm_source || '').trim() || '(direto)') === ORIGEM_FILTER);
@@ -6351,7 +6390,6 @@ function drawLeads() {
       : data.filter((r) => (r.atendente || '').trim() === LEADS_ATEND);
   }
   if (LEADS_UF) data = data.filter((r) => (r.uf || '').trim() === LEADS_UF);
-  if (LEADS_RENDA) data = data.filter((r) => (r.renda || '').trim() === LEADS_RENDA);
   if (LEADS_AGENDOU) {
     const agendou = (r) => !!(r.agendado || r.status === 'agendado');
     data = data.filter((r) => LEADS_AGENDOU === 'sim' ? agendou(r) : !agendou(r));
@@ -6360,7 +6398,7 @@ function drawLeads() {
   $('#tbl-count').textContent = nf(data.length) + ' lead(s)';
 
   // paginação: 50 por página; mudou qualquer filtro/busca, volta pra 1ª página
-  const assinatura = [LEADS_ABA, LEADS_ATEND, ORIGEM_FILTER, QUALIFICADOR_FILTER, STATUS_FILTER, LEADS_RESPOSTA, LEADS_UF, LEADS_RENDA, LEADS_AGENDOU, q, JSON.stringify(LEADS_RANGE)].join('§');
+  const assinatura = [LEADS_ABA, LEADS_ATEND, ORIGEM_FILTER, QUALIFICADOR_FILTER, STATUS_FILTER, LEADS_RESPOSTA, LEADS_UF, LEADS_AGENDOU, q, JSON.stringify(LEADS_RANGE)].join('§');
   if (assinatura !== LEADS_ASSINATURA) { LEADS_ASSINATURA = assinatura; LEADS_PAG = 0; }
   const totalPag = Math.max(1, Math.ceil(data.length / LEADS_POR_PAGINA));
   if (LEADS_PAG >= totalPag) LEADS_PAG = totalPag - 1;   // lista encolheu? recua
@@ -6369,9 +6407,14 @@ function drawLeads() {
   const t = $('#leads'); clear(t);
   /* lista COMPACTA: só o essencial cabe na tela, sem rolagem horizontal —
      todo o resto (e-mail, origem...) vive no Cartão do Lead */
-  const cols = ['Atualizado em', 'Nome', 'Telefone', 'Qualificador', 'Renda familiar', 'Atendente', 'Status', 'Resposta', ''];
-  if (LEADS_ABA === 'convertido') cols.splice(8, 0, 'Convertido em');
-  if (LEADS_ABA === 'perdido') cols.splice(8, 0, 'Perdido em', 'Motivo');
+  const perguntaExtra = (KPIS_CONFIG.colunaExtra && KPIS_CONFIG.colunaExtra.perguntaId)
+    ? (QUIZ_PERGUNTAS_CACHE || []).find((p) => p.id === KPIS_CONFIG.colunaExtra.perguntaId) : null;
+  const cols = ['Atualizado em', 'Nome', 'Telefone', 'Qualificador'];
+  if (perguntaExtra) cols.push(String(perguntaExtra.q || '').replace(/<[^>]+>/g, '').slice(0, 40));
+  cols.push('Atendente', 'Status', 'Resposta', '');
+  const idxAntesAcoes = cols.length - 1;
+  if (LEADS_ABA === 'convertido') cols.splice(idxAntesAcoes, 0, 'Convertido em');
+  if (LEADS_ABA === 'perdido') cols.splice(idxAntesAcoes, 0, 'Perdido em', 'Motivo');
   t.appendChild(tableHead(cols));
   const tb = el('tbody');
   pagina.forEach((r) => {
@@ -6384,7 +6427,9 @@ function drawLeads() {
       td(nomeLink(r), 'nome'),
       td(r.whatsapp),
       td(trilhaPill(r.call_track)),
-      td(r.renda),
+    );
+    if (perguntaExtra) tr.appendChild(td(respostaColunaExtra(r, perguntaExtra)));
+    tr.append(
       td(selAtendente(r)),
       td(crmPill(r)),
       td(respostaPill(r)),
@@ -7460,6 +7505,19 @@ function utmCell(r) {
 $('#search').addEventListener('input', drawLeads);
 $('#leadsOrigemSel').addEventListener('change', (e) => { ORIGEM_FILTER = e.target.value; drawLeads(); });
 $('#leadsQualificadorSel').addEventListener('change', (e) => { QUALIFICADOR_FILTER = e.target.value; drawLeads(); });
+$('#leadsColunaExtraSel').addEventListener('change', async (e) => {
+  KPIS_CONFIG.colunaExtra = { perguntaId: e.target.value };
+  await fetch('/api/kpis-config', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token: localStorage.getItem(TKEY) || '',
+      agendamentoAtivo: KPIS_CONFIG.agendamentoAtivo,
+      perguntasAtivas: KPIS_CONFIG.perguntasAtivas,
+      colunaExtra: KPIS_CONFIG.colunaExtra,
+    }),
+  }).then((x) => x.json()).catch(() => ({ ok: false }));
+  drawLeads();
+});
 /* ===== NOVO AGENDAMENTO (sem lead escolhido ainda) =====
    Cal.com continua sendo só um link externo (não dá pra saber o
    qualificador antes de existir o lead); Google Agenda/"direto no
@@ -7600,7 +7658,6 @@ $('#leadsAtendente').addEventListener('change', (e) => { LEADS_ATEND = e.target.
 $('#leadsMaisBtn').onclick = () => { const m = $('#leadsMais'); m.hidden = !m.hidden; $('#leadsMaisBtn').classList.toggle('on', !m.hidden); };
 $('#leadsResposta').addEventListener('change', (e) => { LEADS_RESPOSTA = e.target.value; drawLeads(); });
 $('#leadsUf').addEventListener('change', (e) => { LEADS_UF = e.target.value; drawLeads(); });
-$('#leadsRenda').addEventListener('change', (e) => { LEADS_RENDA = e.target.value; drawLeads(); });
 $('#leadsAgendou').addEventListener('change', (e) => { LEADS_AGENDOU = e.target.value; drawLeads(); });
 $('#utmDim').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
@@ -8001,7 +8058,6 @@ $('#uaStatusSel').addEventListener('change', (e) => { UA.status = e.target.value
 $('#uaAtendente').addEventListener('change', (e) => { UA.atendente = e.target.value; renderUpcoming(); });
 $('#uaMaisBtn').onclick = () => { const m = $('#uaMais'); m.hidden = !m.hidden; $('#uaMaisBtn').classList.toggle('on', !m.hidden); };
 $('#uaUf').addEventListener('change', (e) => { UA.uf = e.target.value; renderUpcoming(); });
-$('#uaRenda').addEventListener('change', (e) => { UA.renda = e.target.value; renderUpcoming(); });
 
 async function carregarCal() {
   $('#calCount').textContent = 'carregando do Cal…';
