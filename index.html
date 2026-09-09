@@ -618,12 +618,28 @@ const APARENCIA_PADRAO = {
 let APARENCIA = APARENCIA_PADRAO;
 const ehHex = (v) => /^#[0-9a-fA-F]{6}$/.test(v || '');
 
+/* fetch com timeout + 1 nova tentativa — Netlify Function "fria" ou rede
+   de celular (in-app do WhatsApp, por ex.) podem passar de 3.5s numa
+   primeira chamada; sem retry, isso caía calado pro padrão embutido da
+   plataforma (achado real: 1 em 3 testes da própria Lelinha mostrou as
+   perguntas erradas). 2ª tentativa com timeout maior antes de desistir. */
+async function fetchComRetry(url, temposMs = [3500, 7000]) {
+  let ultimoErro = null;
+  for (const timeoutMs of temposMs) {
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), timeoutMs);
+      const r = await fetch(url, { signal: ctl.signal });
+      clearTimeout(t);
+      return r;
+    } catch (e) { ultimoErro = e; }
+  }
+  throw ultimoErro;
+}
+
 async function carregarAparencia() {
   try {
-    const ctl = new AbortController();
-    const t = setTimeout(() => ctl.abort(), 3500);
-    const r = await fetch(CONFIG.API_APARENCIA, { signal: ctl.signal });
-    clearTimeout(t);
+    const r = await fetchComRetry(CONFIG.API_APARENCIA);
     if (!r.ok) return;
     const j = await r.json();
     if (!j || !j.ok) return;
@@ -812,10 +828,7 @@ let TOTAL_PASSOS = PASSOS_CONTATO + QUIZ.length;
    quiz NUNCA trava. */
 async function carregarQuizConfig() {
   try {
-    const ctl = new AbortController();
-    const t = setTimeout(() => ctl.abort(), 3500);
-    const r = await fetch(CONFIG.API_QUIZ_CONFIG, { signal: ctl.signal });
-    clearTimeout(t);
+    const r = await fetchComRetry(CONFIG.API_QUIZ_CONFIG);
     if (!r.ok) return;
     const j = await r.json();
     if (!j || !j.ok) return;
