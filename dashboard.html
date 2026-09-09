@@ -1394,6 +1394,7 @@
             <button data-sec="quadro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" opacity=".35"/><path d="M8 7v9"/><path d="M12 7v5"/><path d="M16 7v7"/></svg>Quadros (Funil)</button>
             <button data-sec="leads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Leads</button>
             <button data-sec="conversas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Conversas</button>
+            <button data-sec="etiquetas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Etiquetas</button>
           </div>
         </div>
         <div class="nav-menu">
@@ -2198,6 +2199,18 @@
       <div class="tbl-wrap"><table id="lkTable"></table></div>
     </div>
 
+    <!-- ===== ETIQUETAS — catálogo de tags pra marcar leads (Kanban/Cartão) ===== -->
+    <div class="panel tem-banner" id="pEtiquetas" hidden>
+      <h2>Etiquetas</h2>
+      <div class="sub">Cadastre etiquetas pra marcar leads (no Cartão do Lead) e depois buscar por elas no Kanban. Se um lead já usa uma etiqueta, prefira desativar em vez de excluir.</div>
+
+      <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;align-items:end;">
+        <button id="etNovaBtn" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">+ Nova Etiqueta</button>
+      </div>
+      <span class="muted-cell" id="etStatus"></span>
+      <div id="etLista" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
+    </div>
+
     <!-- ===== ÁREA EQUIPE — só a administradora vê ===== -->
     <div class="panel tem-banner" id="equipePanel" hidden>
       <h2>Usuários</h2>
@@ -2701,13 +2714,14 @@ const SECTIONS = {
   qePerguntas: ['#pQuizEditor'], qeQualificadores: ['#pQuizEditor'], qeNiveis: ['#pQuizEditor'],
   qeResultados: ['#pQuizEditor'], qeRoteamento: ['#pQuizEditor'], qeAparencia: ['#pQuizEditor'],
   links: ['#pLinks'],
+  etiquetas: ['#pEtiquetas'],
   conexoes: ['#pConexoes'],
   usuarios: ['#equipePanel', '#equipeLogsPanel'],
   masterContas: ['#pMasterContas'],
 };
 const TODOS_PANEIS = [...new Set(Object.values(SECTIONS).flat())];
 // itens só-administradora (equivalente ao antigo bloco único "config")
-const SECOES_ADMIN = new Set(['agConfig', 'agConhecimento', 'agArquivos', 'qePerguntas', 'qeQualificadores', 'qeNiveis', 'qeResultados', 'qeRoteamento', 'qeAparencia', 'links', 'conexoes', 'usuarios']);
+const SECOES_ADMIN = new Set(['agConfig', 'agConhecimento', 'agArquivos', 'qePerguntas', 'qeQualificadores', 'qeNiveis', 'qeResultados', 'qeRoteamento', 'qeAparencia', 'links', 'etiquetas', 'conexoes', 'usuarios']);
 // seções que só existem no plano Completo (plano Lite fica com Leads + Configurações)
 const SECOES_SO_COMPLETO = new Set([
   'quadro', 'conversas',
@@ -2788,7 +2802,7 @@ const AG_TAB_POR_SEC = { agConfig: 'config', agConhecimento: 'conhecimento', agA
 // a qual grupo (e sub-grupo, quando existir) do menu lateral cada `sec` pertence
 const SEC_MENU = {
   geral: 'home',
-  quadro: 'gestao', leads: 'gestao', conversas: 'gestao',
+  quadro: 'gestao', leads: 'gestao', conversas: 'gestao', etiquetas: 'gestao',
   agendaDash: 'agenda', reunioes: 'agenda', agendados: 'agenda', calEspelho: 'agenda',
   automacoes: 'automacao', disparos: 'automacao',
   agConfig: 'agenteia', agConhecimento: 'agenteia', agArquivos: 'agenteia',
@@ -2839,6 +2853,7 @@ function navGo(sec) {
     if (!AG_CARREGADO) agCarregar(); else agRenderTab();
   }
   if (sec === 'links' && !LINKS_CARREGADO) linksCarregar();
+  if (sec === 'etiquetas' && !ETIQUETAS_ADM_CARREGADO) etiquetasAdmCarregar();
   if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); carregarConexaoMentoriaHub(); carregarConexaoGoogleAgenda(); carregarConexaoPagamento(); renderPlanoInfo(); renderDominioInfo(); }
   if (sec === 'usuarios') { $('#eqLogsBody').style.display = 'none'; $('#eqLogsChevron').style.transform = 'none'; }
   if (sec === 'masterContas') masterCarregar();
@@ -3468,6 +3483,41 @@ function montarCartaoLead(r, container, opts = {}) {
     });
     c.appendChild(listaCompras);
   }
+
+  /* etiquetas: chips clicáveis (toque marca/desmarca), catálogo cadastrado
+     em Gestão > Etiquetas — salva na hora, sem botão "Salvar" separado */
+  const hEt = el('h2'); hEt.textContent = 'Etiquetas'; hEt.style.marginTop = '14px'; c.appendChild(hEt);
+  const etChips = el('div'); etChips.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+  c.appendChild(etChips);
+  (async () => {
+    if (!ETIQUETAS_CACHE.length) await carregarEtiquetasCache();
+    const rEt = await fetch('/api/etiquetas', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'lead_listar', lead_ref: r.lead_ref }),
+    }).then((x) => x.json()).catch(() => ({ ok: false }));
+    const marcadas = new Set(rEt.ok ? rEt.etiqueta_ids : []);
+    const desenharChips = () => {
+      clear(etChips);
+      const ativas = ETIQUETAS_CACHE.filter((e) => e.ativo !== false);
+      if (!ativas.length) { const v = el('span', 'muted-cell'); v.textContent = 'Nenhuma etiqueta cadastrada (Gestão > Etiquetas).'; etChips.appendChild(v); return; }
+      ativas.forEach((e) => {
+        const chip = el('span'); chip.textContent = e.nome;
+        const on = marcadas.has(e.id);
+        chip.style.cssText = 'cursor:pointer;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid ' + e.cor + ';'
+          + (on ? 'background:' + e.cor + ';color:#fff;' : 'background:transparent;color:' + e.cor + ';');
+        chip.onclick = async () => {
+          if (on) marcadas.delete(e.id); else marcadas.add(e.id);
+          desenharChips();
+          await fetch('/api/etiquetas', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'lead_definir', lead_ref: r.lead_ref, etiqueta_ids: [...marcadas] }),
+          }).catch(() => {});
+        };
+        etChips.appendChild(chip);
+      });
+    };
+    desenharChips();
+  })();
 
   /* anotações da equipe: observações + campos personalizados */
   const h3 = el('h2'); h3.textContent = 'Anotações da equipe'; h3.style.marginTop = '14px'; c.appendChild(h3);
@@ -4546,6 +4596,61 @@ $('#lkCriar').onclick = async () => {
   if (r.ok) { $('#lkNome').value = ''; linksCarregar(); }
 };
 
+/* ===== ETIQUETAS (Gestão) — catálogo admin, o resto (marcar no lead, buscar
+   no Kanban) usa o cache global ETIQUETAS_CACHE/carregarEtiquetasCache() ===== */
+let ETIQUETAS_ADM_CARREGADO = false;
+async function etiquetasApi(payload) {
+  return fetch('/api/etiquetas', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', ...payload }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+}
+async function etiquetasAdmCarregar() {
+  ETIQUETAS_ADM_CARREGADO = true;
+  await carregarEtiquetasCache();
+  etiquetasAdmRender();
+}
+function etiquetasAdmRender() {
+  const box = $('#etLista'); clear(box);
+  if (!ETIQUETAS_CACHE.length) { const v = el('div', 'muted-cell'); v.textContent = 'Nenhuma etiqueta cadastrada ainda.'; box.appendChild(v); return; }
+  ETIQUETAS_CACHE.forEach((et) => {
+    const row = el('div');
+    row.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--bg);';
+    const inome = el('input'); inome.value = et.nome || ''; inome.placeholder = 'Nome';
+    inome.style.cssText = 'flex:1;min-width:160px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--card);';
+    inome.onblur = async () => { if (inome.value.trim() && inome.value.trim() !== et.nome) { et.nome = inome.value.trim(); await etiquetasApi({ action: 'editar', id: et.id, nome: et.nome }); } };
+    row.appendChild(inome);
+
+    const icor = el('input'); icor.type = 'color'; icor.value = et.cor || '#22A55E';
+    icor.style.cssText = 'width:36px;height:32px;border:1.5px solid var(--line);border-radius:8px;cursor:pointer;padding:2px;';
+    icor.onchange = async () => { et.cor = icor.value; await etiquetasApi({ action: 'editar', id: et.id, cor: et.cor }); };
+    row.appendChild(icor);
+
+    const lativo = el('label'); lativo.style.cssText = 'font-size:12.5px;font-weight:600;display:flex;gap:5px;align-items:center;cursor:pointer;';
+    const cativo = el('input'); cativo.type = 'checkbox'; cativo.checked = et.ativo !== false;
+    cativo.onchange = async () => { et.ativo = cativo.checked; await etiquetasApi({ action: 'editar', id: et.id, ativo: et.ativo }); };
+    lativo.append(cativo, 'Ativo'); row.appendChild(lativo);
+
+    const bdel = el('button', 'acao-btn'); bdel.textContent = 'Excluir';
+    bdel.title = 'Se algum lead já usa esta etiqueta, prefira desativar em vez de excluir';
+    bdel.onclick = async () => {
+      if (!confirm('Excluir a etiqueta "' + et.nome + '"? Ela sai de todos os leads que a usam.')) return;
+      const r = await etiquetasApi({ action: 'excluir', id: et.id });
+      if (r.ok) etiquetasAdmCarregar(); else toast('error', 'Aviso', 'Erro ao excluir.');
+    };
+    row.appendChild(bdel);
+
+    box.appendChild(row);
+  });
+}
+$('#etNovaBtn').onclick = async () => {
+  const r = await promptModal({ titulo: 'Nova etiqueta', campos: [{ id: 'nome', label: 'Nome', obrigatorio: true }], textoOk: 'Criar' });
+  if (!r) return;
+  const r2 = await etiquetasApi({ action: 'criar', nome: r.nome });
+  if (!r2.ok) { toast('error', 'Aviso', r2.error || 'Erro ao criar.'); return; }
+  etiquetasAdmCarregar();
+};
+
 /* ===== REUNIÕES — agenda mensal com dias recolhidos (sanfona) ===== */
 let RE_TAB = 'pendentes';
 let RE_FOCO = null;              // data (yyyy-mm-dd) a abrir ao chegar vindo da Agenda
@@ -4856,6 +4961,26 @@ function abrirAlertPopup() {
 }
 $('#alertModalDepois').onclick = () => { $('#alertModal').style.display = 'none'; };
 
+/* ===== ETIQUETAS — cache global, usado no Cartão do Lead (chips) e na
+   busca por coluna do Kanban. Catálogo (nome/cor) muda pouco, mas quem tem
+   cada etiqueta muda o tempo todo — por isso 2 caches separados. ===== */
+let ETIQUETAS_CACHE = [];        // catálogo: [{id,nome,cor,ativo}]
+let ETIQUETAS_POR_LEAD = {};     // lead_ref -> [etiqueta_id,...]
+async function carregarEtiquetasCache() {
+  const r = await fetch('/api/etiquetas', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'listar' }),
+  }).then((x) => x.json()).catch(() => ({ ok: false }));
+  ETIQUETAS_CACHE = r.ok ? r.etiquetas : [];
+}
+async function carregarEtiquetasPorLead() {
+  const r = await fetch('/api/etiquetas', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'todas_por_lead' }),
+  }).then((x) => x.json()).catch(() => ({ ok: false }));
+  ETIQUETAS_POR_LEAD = r.ok ? r.mapa : {};
+}
+
 /* ===== KANBAN — quadros, colunas e cartões ===== */
 let KB = { boards: [], cols: [], cards: [] };
 let KB_BOARD = null;
@@ -4876,6 +5001,8 @@ async function kbCarregar() {
   const r = await kbApi({ action: 'estado' });
   if (!r.ok) { $('#kbAviso').textContent = r.error || 'Erro ao carregar.'; return; }
   KB = r; KB_CARREGADO = true;
+  if (!ETIQUETAS_CACHE.length) await carregarEtiquetasCache();
+  await carregarEtiquetasPorLead();
   $('#kbAviso').textContent = '';
   const vis = kbBoardsVisiveis();
   if (!vis.find((b) => b.id === KB_BOARD)) KB_BOARD = vis.length ? vis[0].id : null;
@@ -4912,7 +5039,7 @@ function kbRender() {
     if (corHex) head.style.background = corHex;
     const nome = el('b'); nome.textContent = col.nome; nome.style.flex = '1';
     const n = el('span', 'n');
-    const lupa = el('button', 'kb-mini'); lupa.innerHTML = '<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2.4\' width=\'13\' height=\'13\'><circle cx=\'11\' cy=\'11\' r=\'8\'/><path d=\'m21 21-4.3-4.3\'/></svg>'; lupa.title = 'Buscar lead nesta coluna (nome ou telefone)';
+    const lupa = el('button', 'kb-mini'); lupa.innerHTML = '<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2.4\' width=\'13\' height=\'13\'><circle cx=\'11\' cy=\'11\' r=\'8\'/><path d=\'m21 21-4.3-4.3\'/></svg>'; lupa.title = 'Buscar lead nesta coluna (nome, telefone, qualificador ou etiqueta)';
     const menuWrap = el('span', 'kb-menu');
     const mBtn = el('button', 'kb-mini'); mBtn.textContent = '⋮'; mBtn.title = 'Opções da coluna';
     const drop = el('div', 'kb-menu-drop'); drop.style.display = 'none';
@@ -4952,7 +5079,7 @@ function kbRender() {
 
     /* ===== busca da coluna ===== */
     const bi = el('input', 'kb-busca');
-    bi.placeholder = 'Nome ou telefone...';
+    bi.placeholder = 'Nome, telefone, qualificador ou etiqueta...';
     bi.value = KB_BUSCA.get(col.id) || '';
     bi.style.display = KB_BUSCA_ON.has(col.id) ? '' : 'none';
     lupa.onclick = () => {
@@ -4997,7 +5124,13 @@ function kbRender() {
       clear(body);
       const q = (KB_BUSCA.get(col.id) || '').trim().toLowerCase();
       const lista = q
-        ? cardsAll.filter((k) => { const l = byRef.get(k.lead_ref) || {}; return [l.nome, l.whatsapp].some((v) => String(v || '').toLowerCase().includes(q)); })
+        ? cardsAll.filter((k) => {
+            const l = byRef.get(k.lead_ref) || {};
+            const qualifNome = l.call_track ? (qualificadoresOuFallback().find((x) => x.chave === l.call_track) || {}).nome || l.call_track : '';
+            const etiquetasNomes = (ETIQUETAS_POR_LEAD[k.lead_ref] || [])
+              .map((id) => (ETIQUETAS_CACHE.find((e) => e.id === id) || {}).nome || '').join(' ');
+            return [l.nome, l.whatsapp, qualifNome, etiquetasNomes].some((v) => String(v || '').toLowerCase().includes(q));
+          })
         : cardsAll;
       n.textContent = q ? lista.length + '/' + cardsAll.length : cardsAll.length;
       lista.forEach((card) => {
