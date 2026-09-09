@@ -3501,6 +3501,82 @@ function montarCartaoLead(r, container, opts = {}) {
   rodape.append(bAdd, bSalvar);
   c.appendChild(rodape);
 
+  /* Tarefas — lembrete (despertador) vinculado a este lead. Quando vence,
+     o cron (tarefas-cron.mjs) cria um alerta no sino automaticamente, sem
+     precisar de nenhuma tela nova de notificação. */
+  c.appendChild(lmSecao('Tarefas', async (body) => {
+    const linhaTarefa = (t, aoMudar) => {
+      const vencida = !t.concluida && new Date(t.vencimento).getTime() < Date.now();
+      const row = el('div');
+      row.style.cssText = 'display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;';
+      const meio = el('div'); meio.style.cssText = 'flex:1;min-width:0;';
+      const tit = el('div'); tit.textContent = t.titulo;
+      tit.style.cssText = 'font-weight:600;' + (t.concluida ? 'text-decoration:line-through;color:var(--text-muted);' : '');
+      const quando = el('div'); quando.textContent = '⏰ ' + fmtDateTime(t.vencimento);
+      quando.style.cssText = 'font-size:11.5px;margin-top:2px;' + (vencida ? 'color:var(--red);font-weight:700;' : 'color:var(--text-muted);');
+      meio.append(tit, quando);
+      const bConcluir = el('button', 'acao-btn'); bConcluir.textContent = t.concluida ? 'Reabrir' : '✓ Concluir';
+      bConcluir.onclick = async () => {
+        await fetch('/api/tarefas', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: t.concluida ? 'reabrir' : 'concluir', id: t.id }),
+        }).catch(() => {});
+        aoMudar();
+      };
+      const bExcluir = el('button', 'acao-btn'); bExcluir.textContent = 'Excluir';
+      bExcluir.onclick = async () => {
+        if (!confirm('Excluir a tarefa "' + t.titulo + '"?')) return;
+        await fetch('/api/tarefas', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'excluir', id: t.id }),
+        }).catch(() => {});
+        aoMudar();
+      };
+      row.append(meio, bConcluir, bExcluir);
+      return row;
+    };
+    const desenhar = async () => {
+      clear(body);
+      const r2 = await fetch('/api/tarefas', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'listar', lead_ref: r.lead_ref }),
+      }).then((x) => x.json()).catch(() => ({ ok: false }));
+      const tarefas = (r2.ok ? r2.tarefas : []) || [];
+      const abertas = tarefas.filter((t) => !t.concluida);
+      const feitas = tarefas.filter((t) => t.concluida);
+      if (!abertas.length) { const v = el('div', 'muted-cell'); v.textContent = 'Nenhuma tarefa aberta.'; v.style.padding = '6px 0'; body.appendChild(v); }
+      abertas.forEach((t) => body.appendChild(linhaTarefa(t, desenhar)));
+
+      const form = el('div'); form.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;';
+      const iTit = el('input'); iTit.placeholder = 'Ex: Ligar de novo pra confirmar';
+      iTit.style.cssText = 'flex:1;min-width:180px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;';
+      const iData = el('input'); iData.type = 'datetime-local';
+      iData.style.cssText = 'padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;';
+      const bAddT = el('button', 'acao-btn'); bAddT.textContent = '+ Nova tarefa';
+      bAddT.onclick = async () => {
+        const titulo = iTit.value.trim();
+        if (!titulo || !iData.value) { toast('error', 'Aviso', 'Preencha o título e a data/hora.'); return; }
+        const r3 = await fetch('/api/tarefas', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'criar', lead_ref: r.lead_ref, titulo, vencimento: new Date(iData.value).toISOString() }),
+        }).then((x) => x.json()).catch(() => ({ ok: false }));
+        if (!r3.ok) { toast('error', 'Aviso', r3.error || 'Erro ao criar a tarefa.'); return; }
+        desenhar();
+      };
+      form.append(iTit, iData, bAddT);
+      body.appendChild(form);
+
+      if (feitas.length) {
+        const detalhes = el('details'); detalhes.style.marginTop = '8px';
+        const sum = el('summary'); sum.textContent = feitas.length + ' concluída(s)'; sum.style.cssText = 'cursor:pointer;font-size:12px;color:var(--text-muted);';
+        detalhes.appendChild(sum);
+        feitas.forEach((t) => detalhes.appendChild(linhaTarefa(t, desenhar)));
+        body.appendChild(detalhes);
+      }
+    };
+    await desenhar();
+  }));
+
   /* dinâmico: 1 linha por pergunta ATUALMENTE cadastrada no quiz (não por
      campo fixo do lead) — pergunta nova aparece sozinha pros próximos leads
      que responderem; pergunta excluída some daqui também (não guardamos o
@@ -4711,7 +4787,7 @@ function alertaLinha(a) {
   tag.style.marginLeft = '6px';
   l1.append(b, tag);
   const l2 = el('div'); l2.style.cssText = 'font-size:12px;color:var(--text-muted);margin-top:2px;';
-  const ROTULO_TIPO_ALERTA = { presenca: 'Presença registrada', agente_ia: 'Agente IA' };
+  const ROTULO_TIPO_ALERTA = { presenca: 'Presença registrada', agente_ia: 'Agente IA', tarefa: 'Tarefa vencendo' };
   l2.textContent = (ROTULO_TIPO_ALERTA[a.tipo] || a.tipo) + ' · ' +
     new Date(a.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) +
     (a.atendente ? ' · para: ' + a.atendente : ' · para toda a equipe');
