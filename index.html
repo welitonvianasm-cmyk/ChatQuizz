@@ -718,55 +718,56 @@ function aplicarCorPrimaria(hex) {
    não há bundler neste projeto pra compartilhar o módulo de verdade.
    ================================================================ */
 const QUIZ_PADRAO = [
-  { id: 'q1', q: 'Pra começar: qual a sua idade?', multi: false, ativo: true, desempate: false, opts: [
-    { t: '🌻 30-45', nivel: 'high' },
-    { t: '🌳 46-60', nivel: 'high' },
-    { t: '🕊️ 61+', nivel: 'high' },
+  { id: 'q1', q: 'Como você descreveria o seu momento atual?', multi: false, ativo: true, desempate: false, opts: [
+    { t: 'Estou no início, ainda organizando as ideias', nivel: 'low' },
+    { t: 'Já tenho experiência, mas sinto que falta direção', nivel: 'mid' },
+    { t: 'Já sei o que quero, só preciso de um empurrão pra agir', nivel: 'high' },
   ]},
-  { id: 'q2', q: 'Como você se sente cuidando de seus pais?', multi: false, ativo: true, desempate: false, opts: [
-    { t: '😩 Exausta', nivel: 'low' },
-    { t: '🤯 Sobrecarregada', nivel: 'mid' },
-    { t: '🧘‍♀️ Em Paz', nivel: 'high' },
+  { id: 'q2', q: 'O que mais te impede de avançar hoje?', multi: false, ativo: true, desempate: false, opts: [
+    { t: 'Falta de clareza sobre o próximo passo', nivel: 'low' },
+    { t: 'Falta de tempo', nivel: 'mid' },
+    { t: 'Falta de confiança pra colocar em prática', nivel: 'mid' },
+    { t: 'Já sei o que preciso fazer, só falta decidir', nivel: 'high' },
   ]},
-  { id: 'q3', q: 'Quais áreas da sua vida você sente que estão sendo <b>mais afetadas</b>? Pode marcar mais de uma 🙂', multi: true, ativo: true, desempate: false, opts: [
-    { t: '💪 Saúde física', nivel: 'high' },
-    { t: '🧠 Saúde mental', nivel: 'high' },
-    { t: '❤️ Relacionamentos', nivel: 'high' },
-    { t: '💼 Carreira/Trabalho', nivel: 'high' },
-    { t: '🎨 Tempo livre/Hobbies', nivel: 'high' },
+  { id: 'q3', q: 'Quais áreas você sente que estão sendo <b>mais afetadas</b> por isso? Pode marcar mais de uma', multi: true, ativo: true, desempate: false, opts: [
+    { t: 'Rotina e produtividade', nivel: 'high' },
+    { t: 'Bem-estar emocional', nivel: 'high' },
+    { t: 'Relacionamentos', nivel: 'high' },
+    { t: 'Resultados financeiros', nivel: 'high' },
+    { t: 'Tempo livre', nivel: 'high' },
   ]},
-  { id: 'q4', q: 'Em uma escala de 1 a 5, o quanto você se sente <b>culpada</b> por não conseguir "dar conta de tudo"?', multi: false, ativo: true, desempate: false, opts: [
-    { t: '😊 1 - Nada culpada', nivel: 'high' },
-    { t: '🙂 2', nivel: 'high' },
-    { t: '😐 3', nivel: 'mid' },
-    { t: '🙁 4', nivel: 'low' },
-    { t: '😔 5 - Extremamente culpada', nivel: 'low' },
+  { id: 'q4', q: 'Em uma escala de 1 a 5, o quanto você sente que já consegue agir sobre isso agora?', multi: false, ativo: true, desempate: false, opts: [
+    { t: '1 - Sinto que ainda não consigo', nivel: 'low' },
+    { t: '2', nivel: 'low' },
+    { t: '3', nivel: 'mid' },
+    { t: '4', nivel: 'high' },
+    { t: '5 - Sinto que já consigo agir agora', nivel: 'high' },
   ]},
-  { id: 'q5', q: 'Você já buscou ajuda profissional (terapia, grupos de apoio...) pra lidar com o estresse do cuidado?', multi: false, ativo: true, desempate: false, opts: [
-    { t: '🌱 Sim, e estou em acompanhamento', nivel: 'high' },
-    { t: '💔 Sim, mas não funcionou', nivel: 'mid' },
-    { t: '🤔 Não, nunca busquei', nivel: 'low' },
+  { id: 'q5', q: 'Você já buscou ajuda profissional (mentoria, curso, consultoria) pra resolver isso?', multi: false, ativo: true, desempate: false, opts: [
+    { t: 'Sim, e estou em acompanhamento', nivel: 'high' },
+    { t: 'Sim, mas não funcionou', nivel: 'mid' },
+    { t: 'Não, nunca busquei', nivel: 'low' },
   ]},
-  { id: 'q6', q: '🌻 Qual é a renda média <b>mensal</b> da sua família?', multi: false, ativo: true, desempate: true, opts: [
-    { t: 'Entre R$ 1.500,00 e R$ 2.500,00', nivel: 'mid', qualificador: 'comunidade' },
-    { t: 'Entre R$ 2.500,00 e R$ 5.000,00', nivel: 'high', qualificador: 'comunidade' },
-    { t: 'Entre R$ 5.000,00 e R$ 10.000,00', nivel: 'high', qualificador: 'comunidade' },
-    { t: 'Entre R$ 10.000,00 e R$ 20.000,00', nivel: 'high', qualificador: 'comunidade' },
-    { t: 'Acima de R$ 20.000,00', nivel: 'high', qualificador: 'premium' },
+  { id: 'q6', q: 'Em qual <b>prazo</b> você gostaria de ver uma mudança real?', multi: false, ativo: true, desempate: false, opts: [
+    { t: 'O quanto antes, preciso de uma mudança urgente', nivel: 'high' },
+    { t: 'Em até 3 meses', nivel: 'mid' },
+    { t: 'Sem pressa', nivel: 'low' },
   ]},
-  { id: 'q7', q: 'Em qual <b>prazo</b> você gostaria de começar a sentir uma melhora significativa na sua vida?', multi: false, ativo: true, desempate: false, opts: [
-    { t: '🚨 O mais rápido possível, preciso de uma mudança urgente!', nivel: 'high' },
-    { t: '⏳ Em até 3 meses', nivel: 'mid' },
-    { t: '🕰️ Não tenho pressa', nivel: 'low' },
+  { id: 'q7', q: 'Pensando no seu <b>orçamento disponível</b> pra investir nisso agora, qual faixa faz mais sentido?', multi: false, ativo: true, desempate: true, opts: [
+    { t: 'Até R$ 1.500', qualificador: 'padrao' },
+    { t: 'Entre R$ 1.500 e R$ 3.000', qualificador: 'padrao' },
+    { t: 'Entre R$ 3.000 e R$ 6.000', qualificador: 'padrao' },
+    { t: 'Entre R$ 6.000 e R$ 12.000', qualificador: 'padrao' },
+    { t: 'Acima de R$ 12.000', qualificador: 'premium' },
   ]},
-  { id: 'q8', q: 'Última: qual o <b>orçamento disponível</b> pra investir em um programa de desenvolvimento pessoal?', multi: false, ativo: true, desempate: false, opts: [
-    { t: '💰 Já tenho um orçamento definido e estou pronta para investir.', nivel: 'high' },
-    { t: '🤔 Preciso entender melhor o programa para avaliar o investimento.', nivel: 'mid' },
-    { t: '💸 Não tenho orçamento disponível no momento.', nivel: 'low' },
+  { id: 'q8', q: 'Última: qual o orçamento disponível pra investir num programa de desenvolvimento?', multi: false, ativo: true, desempate: false, opts: [
+    { t: 'Já defini um orçamento e quero investir agora', nivel: 'high' },
+    { t: 'Preciso entender melhor a proposta pra avaliar', nivel: 'mid' },
+    { t: 'Não tenho orçamento disponível no momento', nivel: 'low' },
   ]},
 ];
 const QUALIFICADORES_PADRAO = [
-  { chave: 'comunidade', nome: 'Comunidade', cor: '#22A55E', ordem: 0, ativo: true },
+  { chave: 'padrao', nome: 'Padrão', cor: '#22A55E', ordem: 0, ativo: true },
   { chave: 'premium', nome: 'Premium (WhatsApp)', cor: '#8B5CF6', ordem: 1, ativo: true },
 ];
 const NIVEIS_PADRAO = [
@@ -777,40 +778,40 @@ const NIVEIS_PADRAO = [
 const RESULTADOS_PADRAO = {
   por_nivel: {
     low: { texto:
-      '{nome}, li tudo o que você me contou, e li com muito carinho 🌿\n\n' +
-      'O que eu percebo é que você está num momento de <b>Baixa Consciência</b>. Você ainda não entendeu que precisa mergulhar fundo na transformação. Talvez ainda esteja resistindo à ideia de priorizar a si mesma.\n\n' +
-      "<b>Você está no modo 'piloto automático' do cuidado.</b> A rotina te engoliu, e você se sente presa a um ciclo de obrigações. A ideia de mudar parece distante e até um pouco assustadora.\n\n" +
-      '<b>A raiz do problema: a dificuldade em se priorizar.</b> Você se sente culpada ao pensar em si mesma, como se estivesse negligenciando seus pais. Essa culpa te impede de buscar soluções e perpetua o ciclo de exaustão.\n\n' +
-      '<b>Se você continuar nesse caminho, 3 coisas podem acontecer:</b><br>• Sua saúde física e mental se deteriorarão cada vez mais.<br>• Seus relacionamentos se desgastarão, gerando isolamento e ressentimento.<br>• Você perderá sua identidade e seus sonhos, vivendo apenas em função do cuidado.\n\n' +
-      '<b>É possível cuidar sem se perder de si mesma.</b> Priorizar seu bem-estar não é egoísmo, mas sim uma necessidade para que você possa oferecer o melhor cuidado aos seus pais. Ao se fortalecer emocionalmente, você se torna uma cuidadora mais presente, equilibrada e feliz.\n\n' +
-      '💬 <i>"Cuidar de si não é egoísmo, é autopreservação, e autopreservação é um ato de guerra."</i>' },
+      '{nome}, li tudo o que você me contou.\n\n' +
+      'O que eu percebo é que você está num momento de <b>Baixa Consciência</b>: você sente que precisa de uma mudança, mas ainda não deu o primeiro passo de verdade.\n\n' +
+      '<b>Isso é mais comum do que parece.</b> A maioria das pessoas que chegam até aqui já pensou em mudar antes, mas algo sempre atrapalhou: falta de tempo, de clareza, ou a sensação de que "ainda não é a hora".\n\n' +
+      '<b>A raiz do problema geralmente não é falta de vontade, é falta de direção clara.</b> Sem um caminho definido, cada tentativa vira um recomeço do zero, e isso cansa antes mesmo de dar resultado.\n\n' +
+      '<b>Se isso continuar assim, 3 coisas tendem a acontecer:</b><br>• A sensação de estar andando em círculos vai continuar.<br>• O tempo que já passou sem mudança vai pesar cada vez mais.<br>• Vai ficar mais difícil recomeçar quanto mais tempo passar.\n\n' +
+      '<b>A boa notícia: dar o primeiro passo certo já muda tudo.</b> Você não precisa ter todas as respostas agora, só precisa de uma direção clara.\n\n' +
+      '💬 <i>"Você não precisa ver a escada inteira, só precisa dar o primeiro passo."</i>' },
     mid: { texto:
-      '{nome}, li tudo o que você me contou, e li com muito carinho 🌿\n\n' +
-      'O que eu percebo é que você está num momento de <b>Média Consciência</b>. Você já reconhece que precisa de ajuda, mas ainda está hesitante em investir tempo e recursos em si mesma. Você está no caminho certo, mas precisa de um empurrãozinho.\n\n' +
-      "<b>Você está no 'meio do caminho' da transformação.</b> Você sente o peso do cuidado, mas também vislumbra a possibilidade de uma vida mais equilibrada. A dúvida é: como chegar lá?\n\n" +
-      '<b>A hesitação em investir em si mesma te impede de avançar.</b> Você sabe que precisa de ajuda, mas se sente insegura em gastar tempo e dinheiro em um programa. O medo de não funcionar te paralisa e te mantém presa à rotina.\n\n' +
-      '<b>Se você não tomar uma atitude agora, 3 coisas podem acontecer:</b><br>• O estresse crônico se intensificará, afetando sua saúde e bem-estar.<br>• A sobrecarga emocional te deixará mais irritada e impaciente com seus pais.<br>• Você perderá oportunidades de se reconectar com seus hobbies e paixões.\n\n' +
-      '<b>Investir em você é investir no melhor cuidado para seus pais.</b> Ao se fortalecer emocionalmente, você se torna uma cuidadora mais eficiente, presente e amorosa.\n\n' +
-      '💬 <i>"Seja a mudança que você quer ver no mundo."</i>' },
+      '{nome}, li tudo o que você me contou.\n\n' +
+      'O que eu percebo é que você está num momento de <b>Média Consciência</b>: você já sabe que precisa de ajuda, mas ainda está avaliando se vale investir tempo e recursos nisso agora.\n\n' +
+      '<b>Você já está no caminho certo, só falta decisão.</b> Diferente de quem ainda nem começou a pensar no assunto, você já entende o problema, só não deu o passo final.\n\n' +
+      '<b>A hesitação geralmente vem do medo de investir e não funcionar.</b> Isso é natural, mas também é o que mantém tudo como está.\n\n' +
+      '<b>Se você não decidir agora, 3 coisas tendem a acontecer:</b><br>• A situação atual vai continuar consumindo energia todo dia.<br>• Você vai continuar adiando uma decisão que, no fundo, já sabe que precisa tomar.<br>• O custo de esperar mais tende a ser maior que o de agir agora.\n\n' +
+      '<b>Investir em resolver isso agora costuma custar menos do que continuar convivendo com o problema.</b>\n\n' +
+      '💬 <i>"Decisão adiada também é uma decisão, só que geralmente a pior."</i>' },
     high: { texto:
-      '{nome}, li tudo o que você me contou, e li com muito carinho 🌿\n\n' +
-      'O que eu percebo é que você está num momento de <b>Alta Consciência</b>. Você está decidida a transformar sua vida e reconquistar sua felicidade. Você sabe que precisa de um suporte especializado e está pronta para investir em si mesma. Parabéns!\n\n' +
-      '<b>Você está no ponto ideal para a transformação!</b> Você já reconhece a importância de priorizar seu bem-estar e está disposta a investir tempo e recursos em um programa que te ajude a reconquistar sua vida.\n\n' +
-      '<b>Ainda existe uma lacuna entre o desejo e a ação.</b> Você já sabe o que precisa fazer, mas sente que precisa de um suporte especializado para te guiar e te manter motivada ao longo do processo.\n\n' +
-      '<b>Se você não agir agora, o custo da espera pode ser alto:</b><br>• Perder a oportunidade de viver uma vida plena e realizada.<br>• Ver seus sonhos e projetos pessoais se distanciarem cada vez mais.<br>• Arrepender-se de não ter tomado uma atitude antes que a situação se tornasse insustentável.\n\n' +
-      '<b>A hora de agir é agora! Não espere mais para reconquistar sua vida.</b>\n\n' +
-      '💬 <i>"O melhor momento para plantar uma árvore foi há 20 anos. O segundo melhor momento é agora."</i>' },
+      '{nome}, li tudo o que você me contou.\n\n' +
+      'O que eu percebo é que você está num momento de <b>Alta Consciência</b>: você já sabe o que quer, já entende o problema, e chegou a hora de agir. Parabéns por chegar até aqui.\n\n' +
+      '<b>Você está no ponto ideal pra dar o próximo passo.</b> Você já reconhece o valor de resolver isso e topa investir tempo e recursos no caminho certo.\n\n' +
+      '<b>O que ainda falta é o suporte certo pra acelerar o processo.</b> Você sabe o que precisa fazer, mas ter alguém guiando o caminho reduz erro e ganha tempo.\n\n' +
+      '<b>Se você não agir agora, o custo de esperar pode ser alto:</b><br>• A oportunidade de resolver isso rápido pode passar.<br>• Cada mês sem agir é um mês a mais convivendo com o problema.<br>• Quem começa agora sai na frente de quem fica só planejando.\n\n' +
+      '<b>A hora de agir é agora.</b>\n\n' +
+      '💬 <i>"O melhor momento pra começar foi ontem. O segundo melhor é agora."</i>' },
   },
   por_qualificador: {
-    comunidade: { texto:
-      '<b>Você não precisa continuar carregando isso sozinha.</b>\n\n' +
-      'A <b>Comunidade</b> é o espaço para filhos cuidadores que precisam de apoio, direção e força para cuidar sem se perder no processo. Aqui você vai sair do modo <i>"eu não aguento mais e não sei o que fazer"</i> para o modo <i>"eu tenho direção, apoio e ferramentas para cuidar melhor sem me abandonar pelo caminho."</i>' },
+    padrao: { texto:
+      '<b>Você não precisa continuar enfrentando isso por conta própria.</b>\n\n' +
+      'Esse é o espaço pra quem quer sair do "não sei o que fazer" pro "tenho um caminho claro". Aqui você encontra direção, prática e um grupo de apoio pra aplicar o que aprender de verdade.' },
     premium: { texto:
-      '{nome}, pelo que você me contou, eu quero marcar nossa conversa pessoalmente com você. Clica no botão aqui embaixo que a gente combina o melhor horário. Pode vir, é comigo mesma que você vai falar 👇' },
+      '{nome}, pelo que você me contou, eu quero marcar uma conversa com você diretamente. Clica no botão aqui embaixo que a gente combina o melhor horário 👇' },
   },
 };
 const ROTEAMENTO_PADRAO = {
-  comunidade: { tipo: 'calcom', calLink: 'https://cal.com/sua-agenda/comunidade' },
+  padrao: { tipo: 'calcom', calLink: 'https://cal.com/sua-agenda' },
   premium: { tipo: 'whatsapp', auto: true, mensagem: 'Olá {nome}! Vi que você concluiu o quiz 💙 Vamos marcar nossa conversa?' },
 };
 
