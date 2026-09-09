@@ -1097,6 +1097,7 @@
           <b id="chNome" style="display:block;font-size:14px;color:var(--brand-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></b>
           <small id="chTel" style="opacity:.7;font-size:11.5px;"></small>
         </div>
+        <span class="pill" id="chInstPill" style="display:none;font-size:10.5px;"></span>
         <span class="pill" id="chIaPill" style="display:none;font-size:10.5px;"></span>
         <button class="acao-btn" id="chIaBtn" title="Pausar/retomar o Agente IA nesta conversa" style="display:none;"></button>
         <button class="acao-btn" id="chVerLead" title="Abrir o Cartão do Lead" style="display:none;">Ver Lead</button>
@@ -1774,6 +1775,9 @@
       <div class="sub">Inbox do WhatsApp — selecione uma conversa à esquerda para abrir o chat. <span id="cvAviso"></span></div>
       <div class="fbar" data-pbanner="conversas">
         <input id="cvBusca" class="fbusca" placeholder="Buscar conversa por nome ou telefone...">
+        <select id="cvInstanciaSel" title="Número de WhatsApp" style="display:none;">
+          <option value="">Número: Todos</option>
+        </select>
         <button class="btn" id="cvAtualizar">Atualizar</button>
         <span class="muted-cell" id="cvCount"></span>
       </div>
@@ -1788,6 +1792,7 @@
                 <b id="cvChNome" class="cv-chat-nome"></b>
                 <small id="cvChTel" class="cv-chat-tel"></small>
               </div>
+              <span class="pill" id="cvInstPill" style="display:none;font-size:10.5px;"></span>
               <span class="pill" id="cvIaPill" style="display:none;font-size:10.5px;"></span>
               <button class="acao-btn" id="cvIaBtn" title="Pausar/retomar o Agente IA nesta conversa" style="display:none;"></button>
               <button class="acao-btn" id="cvChInfoBtn" title="Ver informações e ações deste lead">Infos do Lead</button>
@@ -7120,7 +7125,7 @@ function abrirConversa(r) {
 
 /* --- popup de conversa --- */
 let CH = { tel: '', lead: null, timer: null };
-function abrirChat(tel, nome, lead) {
+async function abrirChat(tel, nome, lead) {
   CH = { tel, lead: lead || null, timer: null };
   $('#chNome').textContent = nome || tel;
   $('#chTel').textContent = '+' + tel;
@@ -7128,6 +7133,9 @@ function abrirChat(tel, nome, lead) {
   $('#chVerLead').style.display = lead ? '' : 'none';
   $('#chMsgs').innerHTML = '';
   $('#chatModal').style.display = 'flex';
+  if (!CV_INSTANCIAS.length) await carregarCvInstancias();
+  const convCh = CV_LISTA.find((c) => c.telefone === tel);
+  aplicarTagInstancia($('#chInstPill'), convCh && convCh.instancia);
   carregarChat(true);
   CH.timer = setInterval(() => carregarChat(false), 3000);   // tempo real por atualização contínua
   setTimeout(() => $('#chInput').focus(), 150);
@@ -7199,8 +7207,39 @@ $('#chInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.s
 /* --- inbox (menu Conversas) --- */
 let CV_LISTA = [];
 let CV_BUSCA = '';
+let CV_INSTANCIAS = [];        // números de WhatsApp conectados nesta conta
+let CV_INSTANCIA_FILTER = '';  // '' | nome_instancia
+async function carregarCvInstancias() {
+  const r = await waApi({ action: 'instancias_listar' });
+  CV_INSTANCIAS = r.ok ? (r.instancias || []) : [];
+  const sel = $('#cvInstanciaSel');
+  const mostra = CV_INSTANCIAS.length > 1;
+  sel.style.display = mostra ? '' : 'none';
+  if (!mostra) return;
+  const atual = CV_INSTANCIA_FILTER;
+  clear(sel);
+  const o0 = el('option'); o0.value = ''; o0.textContent = 'Número: Todos'; sel.appendChild(o0);
+  CV_INSTANCIAS.forEach((i) => { const o = el('option'); o.value = i.nome_instancia; o.textContent = i.rotulo || i.nome_instancia; sel.appendChild(o); });
+  CV_INSTANCIA_FILTER = [...sel.options].some((o) => o.value === atual) ? atual : '';
+  sel.value = CV_INSTANCIA_FILTER;
+}
+/* rótulo amigável (ex.: "Vendas") a partir do nome técnico da instância —
+   mesmo padrão de fallback já usado em Conexões/Agente IA */
+function rotuloInstancia(nomeTecnico) {
+  if (!nomeTecnico) return '';
+  const inst = CV_INSTANCIAS.find((i) => i.nome_instancia === nomeTecnico);
+  return (inst && (inst.rotulo || inst.nome_instancia)) || nomeTecnico;
+}
+/* mostra/esconde a tag de número num pill — só faz sentido exibir quando
+   a conta tem mais de 1 WhatsApp conectado (senão é redundante em toda linha) */
+function aplicarTagInstancia(pill, nomeTecnico) {
+  if (!pill) return;
+  if (CV_INSTANCIAS.length > 1 && nomeTecnico) { pill.textContent = rotuloInstancia(nomeTecnico); pill.style.display = ''; }
+  else pill.style.display = 'none';
+}
 async function carregarInbox() {
   $('#cvAviso').textContent = chatDisponivel() ? '' : '(o inbox liga sozinho quando o WhatsApp estiver conectado e as Conversas ativadas)';
+  if (!CV_INSTANCIAS.length) await carregarCvInstancias();
   const r = await waApi({ action: 'inbox' });
   CV_LISTA = r.ok ? (r.conversas || []) : [];
   renderInbox();
@@ -7215,6 +7254,7 @@ function renderInbox() {
   });
   const q = CV_BUSCA.trim().toLowerCase();
   if (q) lista = lista.filter((c) => c.nome.toLowerCase().includes(q) || c.telefone.includes(q.replace(/\D/g, '') || '§'));
+  if (CV_INSTANCIA_FILTER) lista = lista.filter((c) => c.instancia === CV_INSTANCIA_FILTER);
   $('#cvCount').textContent = nf(lista.length) + ' conversa(s)';
   if (!lista.length) { const v = el('div', 'empty'); v.textContent = 'Nenhuma conversa ainda. Elas aparecem aqui assim que chegarem ou forem enviadas mensagens.'; box.appendChild(v); return; }
   lista.forEach((c) => {
@@ -7234,12 +7274,18 @@ function renderInbox() {
       bd.style.cssText = 'display:inline-block;margin-top:3px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-size:11px;font-weight:800;border-radius:99px;padding:1px 8px;';
       dir.appendChild(bd);
     }
+    if (CV_INSTANCIAS.length > 1 && c.instancia) {
+      const tagInst = el('div', 'pill'); tagInst.textContent = rotuloInstancia(c.instancia);
+      tagInst.style.cssText = 'margin-top:3px;font-size:9.5px;padding:1px 7px;';
+      dir.appendChild(tagInst);
+    }
     row.append(av, meio, dir);
     row.onclick = () => abrirConversaInline(c);
     box.appendChild(row);
   });
 }
 $('#cvBusca').addEventListener('input', (e) => { CV_BUSCA = e.target.value; renderInbox(); });
+$('#cvInstanciaSel').addEventListener('change', (e) => { CV_INSTANCIA_FILTER = e.target.value; renderInbox(); });
 $('#cvAtualizar').onclick = carregarInbox;
 
 /* --- chat embutido dentro da própria aba Conversas (coluna direita) ---
@@ -7254,6 +7300,7 @@ function abrirConversaInline(c) {
   $('#cvChNome').textContent = c.nome || c.telefone;
   $('#cvChTel').textContent = '+' + c.telefone;
   $('#cvChAvatar').textContent = ((c.nome || '?').trim()[0] || '?').toUpperCase();
+  aplicarTagInstancia($('#cvInstPill'), c.instancia);
   $('#cvChMsgs').innerHTML = '';
   $('#cvChatVazio').style.display = 'none';
   $('#cvChatAtivo').style.display = 'flex';

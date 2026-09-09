@@ -165,8 +165,12 @@ export default async (req) => {
     }
 
     if (a === 'inbox') {
-      let colsInbox = 'telefone,lead_ref,direcao,texto,lida,criado_em,push_name';
+      let colsInbox = 'telefone,lead_ref,direcao,texto,lida,criado_em,push_name,instancia';
       let r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&select=${colsInbox}&order=criado_em.desc&limit=1200`, { headers: H });
+      if (!r.ok) {
+        colsInbox = 'telefone,lead_ref,direcao,texto,lida,criado_em,push_name';   // falta rodar setup-wa-multi-instancia.sql
+        r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&select=${colsInbox}&order=criado_em.desc&limit=1200`, { headers: H });
+      }
       if (!r.ok) {
         colsInbox = 'telefone,lead_ref,direcao,texto,lida,criado_em';   // falta rodar setup-wa-nome-contato.sql
         r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&select=${colsInbox}&order=criado_em.desc&limit=1200`, { headers: H });
@@ -175,7 +179,9 @@ export default async (req) => {
       const msgs = await r.json();
       const conv = new Map();
       msgs.forEach((m) => {
-        if (!conv.has(m.telefone)) conv.set(m.telefone, { telefone: m.telefone, lead_ref: m.lead_ref || '', ultima: m.texto, quando: m.criado_em, nao_lidas: 0, pushName: m.push_name || '' });
+        // a lista já vem da mais recente pra mais antiga (order=criado_em.desc)
+        // — a "primeira vez que vê aquele telefone" já é a instância mais atual
+        if (!conv.has(m.telefone)) conv.set(m.telefone, { telefone: m.telefone, lead_ref: m.lead_ref || '', ultima: m.texto, quando: m.criado_em, nao_lidas: 0, pushName: m.push_name || '', instancia: m.instancia || '' });
         const c = conv.get(m.telefone);
         if (!c.lead_ref && m.lead_ref) c.lead_ref = m.lead_ref;
         if (!c.pushName && m.push_name) c.pushName = m.push_name;
