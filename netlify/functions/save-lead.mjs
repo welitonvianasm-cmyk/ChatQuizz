@@ -134,6 +134,20 @@ export default async (req) => {
       }
     }
 
+    // Detecta se é a 1ª vez que este lead_ref é salvo — só precisa checar no
+    // status mais cedo (parcial); uma vez que a linha existe, todo save
+    // seguinte (mesmo outro 'parcial', se o lead ainda estiver respondendo)
+    // já vai achar a linha e não dispara de novo. Melhor-esforço: se essa
+    // checagem falhar, só não dispara o evento novo — não afeta o save.
+    let primeiraVez = false;
+    if (row.status === 'parcial') {
+      try {
+        const rExiste = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(row.lead_ref)}&select=lead_ref&limit=1`, { headers: H });
+        const existentes = rExiste.ok ? await rExiste.json() : [];
+        primeiraVez = existentes.length === 0;
+      } catch (e) { console.warn('[quiz_iniciado] checagem de 1ª vez falhou (seguindo normal):', e.message); }
+    }
+
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=conta_id,lead_ref`, {
       method: 'POST',
       headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' },
@@ -144,6 +158,14 @@ export default async (req) => {
       const errText = await res.text();
       console.error('Supabase save error:', res.status, errText.slice(0, 300));
       return json({ error: 'DB save failed' }, 500);
+    }
+
+    /* Espelho no MentoriaHub de que essa sessão começou (mesmo que nunca
+       chegue a completar) — usado só pro KPI "Pararam no meio" no Dashboard
+       de Vendas. Mesmo chatquizzLeadRef que 'lead_qualificado' vai usar se a
+       pessoa terminar, pra dar pra casar os dois eventos do lado de lá. */
+    if (primeiraVez) {
+      dispararMentoriaHub(contaId, 'quiz_iniciado', { chatquizzLeadRef: row.lead_ref });
     }
 
     /* Fila de WhatsApp automático — reaproveita o cron/disparos que já
