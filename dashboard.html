@@ -1395,6 +1395,7 @@
             <button data-sec="leads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Leads</button>
             <button data-sec="conversas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Conversas</button>
             <button data-sec="etiquetas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Etiquetas</button>
+            <button data-sec="respostasRapidas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>Respostas Rápidas</button>
           </div>
         </div>
         <div class="nav-menu">
@@ -2211,6 +2212,28 @@
       <div id="etLista" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
     </div>
 
+    <!-- ===== RESPOSTAS RÁPIDAS — snippets pro atendente usar nas Conversas ===== -->
+    <div class="panel tem-banner" id="pRespostasRapidas" hidden>
+      <h2>Respostas Rápidas</h2>
+      <div class="sub">Cadastre textos prontos pra usar nas Conversas: digite <b>/</b> seguido do atalho no campo de mensagem e escolha da lista pra completar sozinho. Qualquer pessoa da equipe pode cadastrar as suas.</div>
+
+      <div id="rrForm" style="display:none;flex-direction:column;gap:8px;margin:12px 0;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface-card-2);max-width:520px;">
+        <label style="font-size:11.5px;font-weight:700;">Atalho (sem espaço, sem "/")<input id="rrAtalho" placeholder="Ex: boas-vindas" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+        <label style="font-size:11.5px;font-weight:700;">Título<input id="rrTitulo" placeholder="Ex: Mensagem de boas-vindas" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+        <label style="font-size:11.5px;font-weight:700;">Conteúdo<textarea id="rrConteudo" placeholder="Texto que vai ser inserido na mensagem" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;min-height:80px;font-family:inherit;background:var(--surface-input);color:var(--text);"></textarea></label>
+        <div style="display:flex;gap:8px;">
+          <button id="rrSalvarBtn" style="padding:9px 16px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">Salvar</button>
+          <button id="rrCancelarBtn" class="acao-btn">Cancelar</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;align-items:end;">
+        <button id="rrNovaBtn" style="padding:10px 16px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">+ Nova Resposta Rápida</button>
+      </div>
+      <span class="muted-cell" id="rrStatus"></span>
+      <div id="rrLista" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
+    </div>
+
     <!-- ===== ÁREA EQUIPE — só a administradora vê ===== -->
     <div class="panel tem-banner" id="equipePanel" hidden>
       <h2>Usuários</h2>
@@ -2715,6 +2738,7 @@ const SECTIONS = {
   qeResultados: ['#pQuizEditor'], qeRoteamento: ['#pQuizEditor'], qeAparencia: ['#pQuizEditor'],
   links: ['#pLinks'],
   etiquetas: ['#pEtiquetas'],
+  respostasRapidas: ['#pRespostasRapidas'],
   conexoes: ['#pConexoes'],
   usuarios: ['#equipePanel', '#equipeLogsPanel'],
   masterContas: ['#pMasterContas'],
@@ -2802,7 +2826,7 @@ const AG_TAB_POR_SEC = { agConfig: 'config', agConhecimento: 'conhecimento', agA
 // a qual grupo (e sub-grupo, quando existir) do menu lateral cada `sec` pertence
 const SEC_MENU = {
   geral: 'home',
-  quadro: 'gestao', leads: 'gestao', conversas: 'gestao', etiquetas: 'gestao',
+  quadro: 'gestao', leads: 'gestao', conversas: 'gestao', etiquetas: 'gestao', respostasRapidas: 'gestao',
   agendaDash: 'agenda', reunioes: 'agenda', agendados: 'agenda', calEspelho: 'agenda',
   automacoes: 'automacao', disparos: 'automacao',
   agConfig: 'agenteia', agConhecimento: 'agenteia', agArquivos: 'agenteia',
@@ -2854,6 +2878,7 @@ function navGo(sec) {
   }
   if (sec === 'links' && !LINKS_CARREGADO) linksCarregar();
   if (sec === 'etiquetas' && !ETIQUETAS_ADM_CARREGADO) etiquetasAdmCarregar();
+  if (sec === 'respostasRapidas' && !RESPOSTAS_RAPIDAS_ADM_CARREGADO) respostasRapidasAdmCarregar();
   if (sec === 'conexoes') { carregarWaStatus(); renderConexoesInfo(); carregarConexaoCalcom(); carregarConexaoMentoriaHub(); carregarConexaoGoogleAgenda(); carregarConexaoPagamento(); renderPlanoInfo(); renderDominioInfo(); }
   if (sec === 'usuarios') { $('#eqLogsBody').style.display = 'none'; $('#eqLogsChevron').style.transform = 'none'; }
   if (sec === 'masterContas') masterCarregar();
@@ -4707,6 +4732,81 @@ $('#etNovaBtn').onclick = async () => {
   etiquetasAdmCarregar();
 };
 
+/* ===== RESPOSTAS RÁPIDAS (Gestão) — CRUD do catálogo. Aberto a qualquer
+   usuário logado (não é admin-only, é ferramenta do dia a dia do time). O
+   resto do painel usa o cache global RESPOSTAS_RAPIDAS_CACHE/
+   carregarRespostasRapidasCache(), definidos mais acima. ===== */
+let RESPOSTAS_RAPIDAS_ADM_CARREGADO = false;
+let RR_EDITANDO_ID = null;
+async function respostasRapidasApi(payload) {
+  return fetch('/api/respostas-rapidas', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', ...payload }),
+  }).then((x) => x.json()).catch(() => ({ ok: false, error: 'Erro de rede.' }));
+}
+async function respostasRapidasAdmCarregar() {
+  RESPOSTAS_RAPIDAS_ADM_CARREGADO = true;
+  await carregarRespostasRapidasCache();
+  respostasRapidasAdmRender();
+}
+function respostasRapidasAdmRender() {
+  const box = $('#rrLista'); clear(box);
+  if (!RESPOSTAS_RAPIDAS_CACHE.length) { const v = el('div', 'muted-cell'); v.textContent = 'Nenhuma resposta rápida cadastrada ainda.'; box.appendChild(v); return; }
+  RESPOSTAS_RAPIDAS_CACHE.forEach((r) => {
+    const row = el('div');
+    row.style.cssText = 'display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--bg);';
+    const meio = el('div'); meio.style.cssText = 'flex:1;min-width:0;';
+    const tit = el('div'); tit.style.cssText = 'font-weight:700;font-size:13px;';
+    tit.textContent = '/' + r.atalho + (r.titulo && r.titulo !== r.atalho ? ' · ' + r.titulo : '');
+    const prev = el('div'); prev.style.cssText = 'color:var(--text-muted);font-size:12px;margin-top:3px;white-space:pre-wrap;';
+    prev.textContent = r.conteudo;
+    meio.append(tit, prev);
+    row.appendChild(meio);
+
+    const bEditar = el('button', 'acao-btn'); bEditar.textContent = 'Editar';
+    bEditar.onclick = () => rrAbrirForm(r);
+    row.appendChild(bEditar);
+
+    const bdel = el('button', 'acao-btn'); bdel.textContent = 'Excluir';
+    bdel.onclick = async () => {
+      if (!confirm('Excluir a resposta rápida "/' + r.atalho + '"?')) return;
+      const r2 = await respostasRapidasApi({ action: 'excluir', id: r.id });
+      if (r2.ok) respostasRapidasAdmCarregar(); else toast('error', 'Aviso', 'Erro ao excluir.');
+    };
+    row.appendChild(bdel);
+
+    box.appendChild(row);
+  });
+}
+function rrAbrirForm(r) {
+  RR_EDITANDO_ID = r ? r.id : null;
+  $('#rrAtalho').value = r ? r.atalho : '';
+  $('#rrTitulo').value = r ? r.titulo : '';
+  $('#rrConteudo').value = r ? r.conteudo : '';
+  $('#rrForm').style.display = 'flex';
+  $('#rrAtalho').focus();
+}
+function rrFecharForm() {
+  RR_EDITANDO_ID = null;
+  $('#rrForm').style.display = 'none';
+  $('#rrStatus').textContent = '';
+}
+$('#rrNovaBtn').onclick = () => rrAbrirForm(null);
+$('#rrCancelarBtn').onclick = rrFecharForm;
+$('#rrSalvarBtn').onclick = async () => {
+  const atalho = $('#rrAtalho').value.trim();
+  const titulo = $('#rrTitulo').value.trim();
+  const conteudo = $('#rrConteudo').value.trim();
+  if (!atalho || !conteudo) { $('#rrStatus').textContent = 'Preencha o atalho e o conteúdo.'; return; }
+  const acao = RR_EDITANDO_ID
+    ? respostasRapidasApi({ action: 'editar', id: RR_EDITANDO_ID, atalho, titulo, conteudo })
+    : respostasRapidasApi({ action: 'criar', atalho, titulo, conteudo });
+  const r = await acao;
+  if (!r.ok) { $('#rrStatus').textContent = r.error || 'Erro ao salvar.'; return; }
+  rrFecharForm();
+  respostasRapidasAdmCarregar();
+};
+
 /* ===== REUNIÕES — agenda mensal com dias recolhidos (sanfona) ===== */
 let RE_TAB = 'pendentes';
 let RE_FOCO = null;              // data (yyyy-mm-dd) a abrir ao chegar vindo da Agenda
@@ -5016,6 +5116,82 @@ function abrirAlertPopup() {
   if (ALERTAS.some((a) => a.status === 'pendente')) $('#alertModal').style.display = 'flex';
 }
 $('#alertModalDepois').onclick = () => { $('#alertModal').style.display = 'none'; };
+
+/* ===== RESPOSTAS RÁPIDAS — cache global + atalho "/texto" no campo de
+   mensagem das Conversas (chat embutido e popup antigo). Digitar "/" (no
+   início ou depois de espaço) + prefixo abre um popover com as respostas
+   que combinam; ↑/↓ navega, Enter/Tab completa, Esc fecha. Ligado logo
+   abaixo, ANTES do listener de Enter-envia desses campos existir (mais
+   embaixo no arquivo) — 2 listeners de keydown no mesmo elemento disparam
+   na ordem em que foram registrados, então precisa vir primeiro pra poder
+   interceptar o Enter antes de virar "enviar mensagem". */
+let RESPOSTAS_RAPIDAS_CACHE = [];
+let RESPOSTAS_RAPIDAS_CARREGADAS = false;
+async function carregarRespostasRapidasCache() {
+  const r = await fetch('/api/respostas-rapidas', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'listar' }),
+  }).then((x) => x.json()).catch(() => ({ ok: false }));
+  RESPOSTAS_RAPIDAS_CACHE = r.ok ? r.respostas : [];
+  RESPOSTAS_RAPIDAS_CARREGADAS = true;
+}
+function ligarAtalhoRespostaRapida(input) {
+  if (!input) return;
+  const pop = el('div');
+  pop.style.cssText = 'position:absolute;bottom:100%;left:0;margin-bottom:6px;min-width:260px;max-width:360px;max-height:220px;overflow-y:auto;background:var(--card);border:1.5px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:none;z-index:50;';
+  const pai = input.parentElement;
+  if (pai) { if (getComputedStyle(pai).position === 'static') pai.style.position = 'relative'; pai.appendChild(pop); }
+
+  let candidatos = [];
+  let selecionado = 0;
+  const fechar = () => { pop.style.display = 'none'; candidatos = []; };
+  const desenhar = () => {
+    clear(pop);
+    candidatos.forEach((r, i) => {
+      const item = el('div');
+      item.style.cssText = 'padding:8px 11px;cursor:pointer;font-size:12.5px;border-bottom:1px solid var(--line);' + (i === selecionado ? 'background:var(--surface-card-2);' : '');
+      const tit = el('div'); tit.style.fontWeight = '700'; tit.textContent = '/' + r.atalho + (r.titulo && r.titulo !== r.atalho ? ' · ' + r.titulo : '');
+      const prev = el('div'); prev.style.cssText = 'color:var(--text-muted);font-size:11.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'; prev.textContent = r.conteudo;
+      item.append(tit, prev);
+      item.onmousedown = (e) => { e.preventDefault(); aplicar(r); };
+      pop.appendChild(item);
+    });
+    pop.style.display = candidatos.length ? 'block' : 'none';
+  };
+  const aplicar = (r) => {
+    const val = input.value;
+    const cursor = input.selectionStart || val.length;
+    const antes = val.slice(0, cursor);
+    const m = antes.match(/(?:^|\s)\/(\S*)$/);
+    if (!m) { fechar(); return; }
+    const inicio = cursor - m[1].length - 1;
+    input.value = val.slice(0, inicio) + r.conteudo + ' ' + val.slice(cursor);
+    const novaPos = inicio + r.conteudo.length + 1;
+    input.setSelectionRange(novaPos, novaPos);
+    input.focus();
+    fechar();
+  };
+  input.addEventListener('input', async () => {
+    if (!RESPOSTAS_RAPIDAS_CARREGADAS) await carregarRespostasRapidasCache();
+    const cursor = input.selectionStart || input.value.length;
+    const m = input.value.slice(0, cursor).match(/(?:^|\s)\/(\S*)$/);
+    if (!m) { fechar(); return; }
+    const prefixo = m[1].toLowerCase();
+    candidatos = RESPOSTAS_RAPIDAS_CACHE.filter((r) => r.atalho.startsWith(prefixo)).slice(0, 8);
+    selecionado = 0;
+    desenhar();
+  });
+  input.addEventListener('keydown', (e) => {
+    if (!candidatos.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); selecionado = Math.min(selecionado + 1, candidatos.length - 1); desenhar(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); selecionado = Math.max(selecionado - 1, 0); desenhar(); }
+    else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); e.stopImmediatePropagation(); aplicar(candidatos[selecionado]); }
+    else if (e.key === 'Escape') { fechar(); }
+  });
+  input.addEventListener('blur', () => setTimeout(fechar, 150));
+}
+ligarAtalhoRespostaRapida($('#chInput'));
+ligarAtalhoRespostaRapida($('#cvChInput'));
 
 /* ===== ETIQUETAS — cache global, usado no Cartão do Lead (chips) e na
    busca por coluna do Kanban. Catálogo (nome/cor) muda pouco, mas quem tem
