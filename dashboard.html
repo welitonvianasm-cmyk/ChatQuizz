@@ -1908,6 +1908,7 @@
         <b id="agTitulo" style="min-width:170px;text-align:center;font-size:14px;"></b>
         <button class="btn" id="agNext">›</button>
         <button class="btn" id="agHoje">Hoje</button>
+        <select id="agAtendenteSel" style="padding:8px 11px;border-radius:9px;font-size:12.5px;cursor:pointer;" title="Filtrar a agenda por atendente"></select>
         <span style="flex:1"></span>
         <button class="btn" id="agNovoBtn" title="Abre o link de Cal.com configurado no Roteamento">+ Novo agendamento</button>
       </div>
@@ -2371,6 +2372,7 @@ let RANGE_CUSTOM = { ini: null, fim: null };   // yyyy-mm-dd (só quando RANGE =
 let IS_ADMIN = false;     // true = entrou com a senha da administradora
 let MUST_CHANGE = false;  // true = usuário precisa definir a própria senha
 let ATENDENTES = [];      // nomes da equipe (pro seletor de responsável)
+let AG_ATENDENTE_FILTRO = '';   // agenda: '' = todos (admin); nome = só esse atendente (padrão de quem não é admin)
 let USUARIO = '';         // nome de quem está logado (pro controle de permissões)
 let IS_CS = false;        // usuário com Função CS (Customer Success)
 let EQUIPE_CS = [];       // nomes com Função CS (recebem leads convertidos)
@@ -2408,6 +2410,10 @@ async function tryToken(token) {
   ATENDENTES = data.atendentes || [];
   EQUIPE_CS = data.equipeCS || [];
   USUARIO = (data.usuario || '').trim();
+  // agenda pessoal por padrão pra quem não é admin, mesmo antes de abrir a
+  // aba Agenda pela 1ª vez — renderAgendaCal()/renderReunioes() também
+  // rodam no sync automático de 45s, não só quando a seção está aberta
+  AG_ATENDENTE_FILTRO = IS_ADMIN ? AG_ATENDENTE_FILTRO : USUARIO;
   CONTA_PLANO = data.contaPlano || 'completo';
   MENTORIAHUB_ATIVO = !!data.mentoriahubAtivo;
   CONTA_PLANO_DEFINIDO = !!data.contaPlanoDefinido;
@@ -2920,8 +2926,8 @@ function navGo(sec) {
   } else if (CV_TIMER) { clearInterval(CV_TIMER); CV_TIMER = null; }   // sai da aba: para de sondar o chat aberto
   if (sec === 'automacoes') carregarAutomacoes();
   if (sec === 'disparos') carregarDisparos();
-  if (sec === 'agendaDash') { renderAgendaCal(); renderAgDia(); }
-  if (sec === 'reunioes') renderReunioes();
+  if (sec === 'agendaDash') { popularAgAtendenteSel(); renderAgendaCal(); renderAgDia(); }
+  if (sec === 'reunioes') { popularAgAtendenteSel(); renderReunioes(); }
   // navGo() reexibe #pAgendaram/#pPorAtendente sozinho (fazem parte de SECTIONS.geral)
   // toda vez que entra em "geral" — reaplica o toggle de Agendamento por cima
   if (sec === 'geral') renderKpis(ALL.filter(inRange), periodoAnterior() ? ALL.filter(inPeriodoAnterior) : null);
@@ -3315,10 +3321,35 @@ const AG_FMT_DIA = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'num
 const AG_WDS = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
 const capAg = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 
+/* agenda por atendente: cada pessoa vê só a própria por padrão (nem
+   aparece o seletor pra trocar); admin vê "Todos" por padrão e pode
+   filtrar por qualquer atendente específico. (AG_ATENDENTE_FILTRO é
+   declarada lá em cima, perto de IS_ADMIN/USUARIO — precisa existir
+   antes do login preencher o valor inicial.) */
+function popularAgAtendenteSel() {
+  const sel = $('#agAtendenteSel'); if (!sel) return;
+  if (!IS_ADMIN) {
+    AG_ATENDENTE_FILTRO = USUARIO || '';
+    clear(sel);
+    const o = el('option'); o.value = AG_ATENDENTE_FILTRO; o.textContent = 'Minha agenda (' + (AG_ATENDENTE_FILTRO || '—') + ')';
+    sel.appendChild(o); sel.disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  const atual = AG_ATENDENTE_FILTRO;
+  clear(sel);
+  const oTodos = el('option'); oTodos.value = ''; oTodos.textContent = 'Todos os atendentes'; sel.appendChild(oTodos);
+  (ATENDENTES || []).forEach((n) => { const o = el('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
+  sel.value = [...sel.options].some((o) => o.value === atual) ? atual : '';
+  AG_ATENDENTE_FILTRO = sel.value;
+}
+$('#agAtendenteSel').addEventListener('change', (e) => { AG_ATENDENTE_FILTRO = e.target.value; renderAgendaCal(); renderAgDia(); });
+
 function agPorDia() {
   const m = new Map();
   ALL.forEach((r) => {
     if (!r.agendado || !r.agendamento_em) return;
+    if (AG_ATENDENTE_FILTRO && String(r.atendente || '').trim() !== AG_ATENDENTE_FILTRO) return;
     const k = diaBRT(new Date(r.agendamento_em));
     if (!m.has(k)) m.set(k, []);
     m.get(k).push(r);
@@ -4913,7 +4944,8 @@ function renderReunioes() {
 
   const mesK = diaBRT(RE_MES).slice(0, 7);   // yyyy-mm do mês em exibição
   const rs = ALL.filter((r) => r.agendado && r.agendamento_em && reTabDe(r) === RE_TAB &&
-    diaBRT(new Date(r.agendamento_em)).slice(0, 7) === mesK);
+    diaBRT(new Date(r.agendamento_em)).slice(0, 7) === mesK &&
+    (!AG_ATENDENTE_FILTRO || String(r.atendente || '').trim() === AG_ATENDENTE_FILTRO));
   const porDia = new Map();
   rs.forEach((r) => { const k = diaBRT(new Date(r.agendamento_em)); if (!porDia.has(k)) porDia.set(k, []); porDia.get(k).push(r); });
   const dias = [...porDia.keys()].sort();
