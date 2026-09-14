@@ -5213,6 +5213,46 @@ async function carregarEtiquetasPorLead() {
   ETIQUETAS_POR_LEAD = r.ok ? r.mapa : {};
 }
 
+/* popover flutuante (position:fixed, escapa do scroll da coluna do Kanban)
+   pra marcar/desmarcar etiquetas de 1 lead direto no card, sem abrir o
+   Cartão do Lead inteiro. `aoMudar` é chamado a cada toggle, pra quem abriu
+   redesenhar o que precisar (ex.: os chips do próprio card). */
+function abrirPopoverEtiquetasCard(anchorEl, leadRef, aoMudar) {
+  document.querySelectorAll('.kb-et-popover').forEach((p) => p.remove());
+  const marcadas = new Set(ETIQUETAS_POR_LEAD[leadRef] || []);
+  const rect = anchorEl.getBoundingClientRect();
+  const pop = el('div', 'kb-et-popover');
+  pop.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;min-width:180px;max-width:260px;max-height:240px;overflow-y:auto;background:var(--card);border:1.5px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);padding:8px;z-index:200;display:flex;flex-direction:column;gap:4px;';
+  const ativas = ETIQUETAS_CACHE.filter((e) => e.ativo !== false);
+  if (!ativas.length) {
+    const v = el('div', 'muted-cell'); v.style.fontSize = '12px'; v.textContent = 'Nenhuma etiqueta cadastrada (Gestão > Etiquetas).'; pop.appendChild(v);
+  }
+  ativas.forEach((et) => {
+    const item = el('label'); item.style.cssText = 'display:flex;gap:6px;align-items:center;cursor:pointer;font-size:12px;padding:3px 4px;border-radius:6px;';
+    const chk = el('input'); chk.type = 'checkbox'; chk.checked = marcadas.has(et.id);
+    const dot = el('span'); dot.style.cssText = 'width:9px;height:9px;border-radius:50%;background:' + et.cor + ';flex-shrink:0;';
+    const rot = el('span'); rot.textContent = et.nome; rot.style.flex = '1';
+    item.append(chk, dot, rot);
+    chk.onchange = async () => {
+      if (chk.checked) marcadas.add(et.id); else marcadas.delete(et.id);
+      ETIQUETAS_POR_LEAD[leadRef] = [...marcadas];
+      if (aoMudar) aoMudar();
+      await fetch('/api/etiquetas', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: localStorage.getItem(TKEY) || '', action: 'lead_definir', lead_ref: leadRef, etiqueta_ids: [...marcadas] }),
+      }).catch(() => {});
+    };
+    pop.appendChild(item);
+  });
+  document.body.appendChild(pop);
+  const fechar = (e) => {
+    if (pop.contains(e.target) || e.target === anchorEl) return;
+    pop.remove();
+    document.removeEventListener('mousedown', fechar, true);
+  };
+  setTimeout(() => document.addEventListener('mousedown', fechar, true), 0);
+}
+
 /* ===== KANBAN — quadros, colunas e cartões ===== */
 let KB = { boards: [], cols: [], cards: [] };
 let KB_BOARD = null;
@@ -5410,6 +5450,24 @@ function kbRender() {
         const qualifNome = lead && lead.call_track ? (qualificadoresOuFallback().find((x) => x.chave === lead.call_track) || {}).nome || lead.call_track : '';
         const sm = el('small'); sm.textContent = lead ? [(lead.whatsapp || ''), qualifNome].filter(Boolean).join(' · ') : '';
         k.append(nm, sm);
+        if (lead) {
+          const etRow = el('div'); etRow.style.cssText = 'display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:5px;';
+          (ETIQUETAS_POR_LEAD[card.lead_ref] || []).forEach((id) => {
+            const et = ETIQUETAS_CACHE.find((e) => e.id === id);
+            if (!et || et.ativo === false) return;
+            const chip = el('span'); chip.textContent = et.nome;
+            chip.style.cssText = 'font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:8px;background:' + et.cor + ';color:#fff;';
+            etRow.appendChild(chip);
+          });
+          if (!bloqueado) {
+            const bEt = el('button'); bEt.title = 'Etiquetas deste lead';
+            bEt.style.cssText = 'border:none;background:none;cursor:pointer;padding:1px 2px;color:var(--text-dim);display:flex;align-items:center;';
+            bEt.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>';
+            bEt.onclick = (e) => { e.stopPropagation(); abrirPopoverEtiquetasCard(bEt, card.lead_ref, () => desenharCards()); };
+            etRow.appendChild(bEt);
+          }
+          k.appendChild(etRow);
+        }
         if (lead && lead.whatsapp) {
           const wa = el('a', 'kb-conversar');
           wa.textContent = 'Conversar';
