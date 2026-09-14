@@ -3344,6 +3344,17 @@ let LM_DRAFT = null;   // rascunho das anotações em edição (obs + campos)
 let LM_ABERTAS = new Set();   // seções recolhíveis abertas (Respostas do quiz/Histórico) — reseta ao trocar de lead
 let LM_RERENDER = null;   // callback pra redesenhar o cartão aberto por último (modal OU painel lateral de Conversas)
 function refrescarCartaoLead(r) { if (LM_ATUAL === r && LM_RERENDER) LM_RERENDER(); }
+/* linha de "Respostas do quiz": pergunta em cima, resposta embaixo (nunca
+   lado a lado) — pergunta e resposta podem ser longas, então empilhado +
+   quebra de linha é o único jeito de nunca estourar a margem direita do
+   Cartão do Lead nem precisar de scroll horizontal. */
+function lmLinhaResposta(pergunta, resposta) {
+  const row = el('div'); row.style.cssText = 'padding:7px 0;border-bottom:1px solid var(--line);';
+  const p = el('div'); p.textContent = pergunta; p.style.cssText = 'color:var(--text-muted);font-weight:600;font-size:11.5px;line-height:1.35;word-break:break-word;overflow-wrap:anywhere;';
+  const v = el('div'); v.textContent = resposta; v.style.cssText = 'font-size:12.5px;line-height:1.4;margin-top:2px;word-break:break-word;overflow-wrap:anywhere;';
+  row.append(p, v);
+  return row;
+}
 function lmLinha(rotulo, valor) {
   const row = el('div'); row.style.cssText = 'display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;align-items:center;';
   const l = el('span'); l.textContent = rotulo; l.style.cssText = 'color:var(--text-muted);font-weight:600;min-width:135px;flex-shrink:0;';
@@ -3701,14 +3712,14 @@ function montarCartaoLead(r, container, opts = {}) {
         const texto = String(v || '').trim();
         if (!texto) return;
         alguma = true;
-        body.appendChild(lmLinha(pergunta.q, texto));
+        body.appendChild(lmLinhaResposta(pergunta.q, texto));
         return;
       }
       const indices = Array.isArray(v) ? v : [v];
       const textos = indices.map((i) => pergunta.opts && pergunta.opts[i] && pergunta.opts[i].t).filter(Boolean);
       if (!textos.length) return;
       alguma = true;
-      body.appendChild(lmLinha(pergunta.q, textos.join(', ')));
+      body.appendChild(lmLinhaResposta(pergunta.q, textos.join(', ')));
     });
     if (!alguma) {
       const e2 = el('div', 'muted-cell'); e2.textContent = 'Este lead ainda não respondeu nenhuma pergunta do quiz atual.'; e2.style.padding = '6px 0';
