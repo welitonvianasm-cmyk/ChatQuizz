@@ -123,7 +123,11 @@ export default async (req) => {
       if (!contaId) contaId = await contaPadrao();
       if (!contaId) continue;   // nenhuma conta cadastrada ainda — nada a fazer
 
-      const linhaMsg = { conta_id: contaId, telefone, lead_ref, direcao, tipo, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out', push_name: pushName, instancia: nomeInstancia };
+      // pushName do Baileys, em mensagem fromMe:true, é o nome da PRÓPRIA
+      // conta conectada, não do contato — só grava em mensagem recebida,
+      // senão o nome do contato na lista de Conversas fica errado assim
+      // que a equipe responde (mesma classe de bug já achada no MentoriaHub)
+      const linhaMsg = { conta_id: contaId, telefone, lead_ref, direcao, tipo, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out', push_name: direcao === 'in' ? pushName : '', instancia: nomeInstancia };
       const rIns = await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
         method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
         body: JSON.stringify(linhaMsg),

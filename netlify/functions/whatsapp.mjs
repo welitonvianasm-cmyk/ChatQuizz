@@ -181,10 +181,14 @@ export default async (req) => {
       msgs.forEach((m) => {
         // a lista já vem da mais recente pra mais antiga (order=criado_em.desc)
         // — a "primeira vez que vê aquele telefone" já é a instância mais atual
-        if (!conv.has(m.telefone)) conv.set(m.telefone, { telefone: m.telefone, lead_ref: m.lead_ref || '', ultima: m.texto, quando: m.criado_em, nao_lidas: 0, pushName: m.push_name || '', instancia: m.instancia || '' });
+        // push_name só é confiável em mensagem RECEBIDA — em mensagem enviada
+        // pela equipe (direcao 'out'), o Baileys manda o nome da própria conta
+        // conectada, não do contato (defesa aqui cobre até dado antigo já
+        // gravado errado antes desse fix, sem precisar de migração de limpeza)
+        if (!conv.has(m.telefone)) conv.set(m.telefone, { telefone: m.telefone, lead_ref: m.lead_ref || '', ultima: m.texto, quando: m.criado_em, nao_lidas: 0, pushName: m.direcao === 'in' ? (m.push_name || '') : '', instancia: m.instancia || '' });
         const c = conv.get(m.telefone);
         if (!c.lead_ref && m.lead_ref) c.lead_ref = m.lead_ref;
-        if (!c.pushName && m.push_name) c.pushName = m.push_name;
+        if (!c.pushName && m.direcao === 'in' && m.push_name) c.pushName = m.push_name;
         if (m.direcao === 'in' && !m.lida) c.nao_lidas++;
       });
       return json({ ok: true, conversas: [...conv.values()] });
