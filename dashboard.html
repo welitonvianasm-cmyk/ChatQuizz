@@ -3762,7 +3762,14 @@ function abrirLeadModal(r) {
   if (!podeAcessarLead(r)) { avisarLeadBloqueado(r); return; }
   $('#lmTitulo').textContent = '' + (r.nome || '(sem nome)');
   const st = $('#lmTituloPills'); clear(st);
-  st.append(trilhaPill(r.call_track), agendPill(r.agendamento_status), respostaPill(r));
+  // trilhaPill() usa a cor do qualificador com um fundo bem clarinho (ótimo
+  // em cima de fundo branco, nas tabelas) — mas aqui o cabeçalho é o
+  // degradê azul da marca, então essa mesma combinação ficava apagada.
+  // Fundo quase-branco sólido garante contraste com a cor do qualificador
+  // não importa qual seja, sem depender do que está atrás.
+  const qPill = trilhaPill(r.call_track);
+  if (qPill instanceof HTMLElement) { qPill.style.background = 'rgba(255,255,255,.92)'; qPill.style.fontWeight = '800'; }
+  st.append(qPill, agendPill(r.agendamento_status), respostaPill(r));
   if (r.resultado === 'convertido') { const p = el('span', 'pill agendado'); p.textContent = '✓ CONVERTIDO'; st.appendChild(p); }
   if (r.resultado === 'perdido') { const p = el('span', 'pill parcial'); p.textContent = '✕ PERDIDO'; st.appendChild(p); }
   montarCartaoLead(r, $('#lmCorpo'), { rerender: () => abrirLeadModal(r) });
