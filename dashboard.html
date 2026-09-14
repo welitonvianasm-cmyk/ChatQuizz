@@ -2156,7 +2156,7 @@
       <h2>Editor do Quiz</h2>
       <div class="sub">
         Perguntas, Qualificadores, Níveis de Consciência, os textos de resultado e o roteamento de cada qualificador, tudo é editado aqui e publicado junto. Nada muda no site até você clicar em <b>Publicar</b>.<br>
-        Cada pergunta pode apontar suas opções pra um <b>Qualificador</b> e/ou um <b>Nível</b>; o lead é classificado pela resposta mais votada em cada eixo (empate é resolvido pela pergunta marcada como <b>critério de desempate</b>).
+        Cada pergunta pode apontar suas opções pra um <b>Qualificador</b> e/ou um <b>Nível</b>; o lead é classificado pela resposta mais votada em cada eixo (empate é resolvido pela pergunta marcada como <b>critério de desempate</b> daquele eixo — pode ter 1 pro Qualificador e 1 pro Nível ao mesmo tempo).
       </div>
       <div id="qeLista" style="margin-top:14px;"></div>
       <div id="qeFooter" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;">
@@ -4063,10 +4063,19 @@ function qeRenderPerguntas(box) {
     lmulti.append(cmulti, 'Aceita várias escolhas');
 
     const ldes = el('label'); ldes.style.cssText = lativa.style.cssText;
-    ldes.title = 'Em caso de empate na votação, a resposta desta pergunta decide (só pode haver 1)';
+    ldes.title = 'Em caso de empate na votação, a resposta desta pergunta decide (só pode haver 1 por eixo: nível e qualificador contam separado)';
     const cdes = el('input'); cdes.type = 'checkbox'; cdes.checked = !!p.desempate;
     cdes.onchange = () => {
-      if (cdes.checked) QE.perguntas.forEach((outra) => { outra.desempate = false; });
+      if (cdes.checked) {
+        // só destrava o desempate de outra pergunta se ela votar no(s)
+        // MESMO eixo(s) desta — nível e qualificador têm desempate próprio
+        const eixosDesta = new Set((p.opts || []).flatMap((o) => [o.nivel && 'nivel', o.qualificador && 'qualificador']).filter(Boolean));
+        QE.perguntas.forEach((outra) => {
+          if (outra === p) return;
+          const eixosDaOutra = new Set((outra.opts || []).flatMap((o) => [o.nivel && 'nivel', o.qualificador && 'qualificador']).filter(Boolean));
+          if ([...eixosDaOutra].some((e) => eixosDesta.has(e))) outra.desempate = false;
+        });
+      }
       p.desempate = cdes.checked; qeRenderTudo();
     };
     ldes.append(cdes, 'Critério de desempate');
@@ -4892,7 +4901,7 @@ function alertaLinha(a) {
   tag.style.marginLeft = '6px';
   l1.append(b, tag);
   const l2 = el('div'); l2.style.cssText = 'font-size:12px;color:var(--text-muted);margin-top:2px;';
-  const ROTULO_TIPO_ALERTA = { presenca: 'Presença registrada', agente_ia: 'Agente IA', tarefa: 'Tarefa vencendo' };
+  const ROTULO_TIPO_ALERTA = { presenca: 'Presença registrada', agente_ia: 'Agente IA', tarefa: 'Tarefa vencendo', revisao_manual: 'Revisão manual' };
   l2.textContent = (ROTULO_TIPO_ALERTA[a.tipo] || a.tipo) + ' · ' +
     new Date(a.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) +
     (a.atendente ? ' · para: ' + a.atendente : ' · para toda a equipe');

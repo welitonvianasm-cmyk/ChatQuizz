@@ -154,6 +154,11 @@ export function sanitizar(doc) {
       cor: String((q && q.cor) || '#22A55E').trim().slice(0, 20),
       ordem: Number.isFinite(+((q && q.ordem))) ? +q.ordem : qLimpo.length,
       ativo: q.ativo !== false,
+      // opcional: exige revisão manual (alerta pra equipe) antes do
+      // roteamento automático quando a pergunta marcada `areaAtuacao`
+      // vier vazia/genérica — desligado por padrão, não afeta ninguém
+      // que não marcar explicitamente.
+      exigeCoerenciaArea: !!(q && q.exigeCoerenciaArea),
     });
   }
 
@@ -174,7 +179,11 @@ export function sanitizar(doc) {
   const perguntas = Array.isArray(doc.perguntas) ? doc.perguntas : [];
   if (perguntas.length < 1 || perguntas.length > 30) return { erro: 'Quantidade de perguntas inválida (1 a 30).' };
   const pLimpo = [];
-  let desempates = 0;
+  // desempate é validado POR EIXO (no máx. 1 pergunta de desempate pro
+  // nível, 1 pro qualificador) — o motor de votação (votar(), abaixo)
+  // já resolve cada eixo de forma independente, então o mesmo quiz pode
+  // ter uma pergunta de desempate pra cada eixo sem conflito.
+  const desempatesPorEixo = { nivel: 0, qualificador: 0 };
   for (const p of perguntas) {
     if (!p || typeof p !== 'object') return { erro: 'Pergunta inválida.' };
     const texto = String(p.q || '').trim().slice(0, 300);
@@ -201,13 +210,23 @@ export function sanitizar(doc) {
     // de qualificador/nível pra decidir empate)
     if (ativo && !aberta && opts.length < 2) return { erro: `A pergunta "${texto.slice(0, 40)}..." precisa de pelo menos 2 opções.` };
     const desempate = !aberta && !!p.desempate;
-    if (desempate) desempates++;
+    if (desempate) {
+      const eixos = new Set();
+      opts.forEach((o) => { if (o.nivel) eixos.add('nivel'); if (o.qualificador) eixos.add('qualificador'); });
+      eixos.forEach((eixo) => { desempatesPorEixo[eixo]++; });
+    }
     pLimpo.push({
       id: String(p.id || '').trim().slice(0, 30) || ('p' + pLimpo.length),
       q: texto, multi: aberta ? false : !!p.multi, ativo, desempate, aberta, opts,
+      // opcional: marca esta pergunta (só faz sentido numa `aberta`) como a
+      // "área de atuação" usada pela regra de coerência acima — só 1 por
+      // documento; a 1ª marcada vence, as demais são ignoradas como marcação
+      areaAtuacao: aberta && !!p.areaAtuacao,
     });
   }
-  if (desempates > 1) return { erro: 'Só pode haver 1 pergunta marcada como critério de desempate.' };
+  if (desempatesPorEixo.nivel > 1 || desempatesPorEixo.qualificador > 1) {
+    return { erro: 'Só pode haver 1 pergunta marcada como critério de desempate por eixo (nível e qualificador).' };
+  }
 
   const roteamento = {};
   for (const chave of qChaves) {

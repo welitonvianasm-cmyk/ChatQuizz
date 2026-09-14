@@ -953,12 +953,22 @@ function safeData() {
   return { primeiro: esc((d.nome || '').split(' ')[0]) };
 }
 
+/* respostas do quiz disponíveis como variável nos textos de RESULTADOS,
+   ex.: {q6} vira a resposta literal (escapada) da pergunta de id "q6" —
+   permite citar qualquer resposta, não só a de uma pergunta fixa. */
+function varsRespostas() {
+  const vars = {};
+  QUIZ.forEach((p) => { if (p) vars[p.id] = esc(respostaLabel(p.id)); });
+  return vars;
+}
+
 /* renderiza um texto de RESULTADOS (nível ou qualificador) como sequência
    de balões — cada parágrafo separado por linha em branco vira 1 mensagem,
-   com {nome} interpolado. */
+   com {nome} e {qN} (resposta da pergunta qN) interpolados. */
 async function mostrarTemplate(texto, delay = 1000) {
   const s = safeData();
-  const paragrafos = interpolar(texto, { nome: s.primeiro }).split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  const vars = { nome: s.primeiro, ...varsRespostas() };
+  const paragrafos = interpolar(texto, vars).split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   for (const p of paragrafos) await bot(p, { delay });
 }
 

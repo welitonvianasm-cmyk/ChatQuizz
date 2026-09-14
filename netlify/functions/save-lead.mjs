@@ -118,6 +118,36 @@ export default async (req) => {
       const nivel = votar(doc.perguntas, respostas, 'nivel');
       row.qualificador = txt(qualificador, 40);
       row.nivel_consciencia = txt(nivel, 40);
+
+      // regra de coerência (opcional, por qualificador): se o produto
+      // indicado exige revisão manual e a pergunta marcada `areaAtuacao`
+      // veio vazia ou genérica, cria um alerta pro sino da equipe ANTES do
+      // roteamento automático — melhor-esforço, nunca derruba o save do lead.
+      const qCfg = qualificador && Array.isArray(doc.qualificadores)
+        ? doc.qualificadores.find((q) => q.chave === qualificador) : null;
+      if (qCfg && qCfg.exigeCoerenciaArea) {
+        const pArea = doc.perguntas.find((p) => p.areaAtuacao);
+        if (pArea) {
+          const valor = String((respostas && respostas[pArea.id]) || '').trim().toLowerCase();
+          const GENERICOS = ['não sei', 'nao sei', 'várias coisas', 'varias coisas', 'estudante',
+            'desempregada', 'desempregado', 'só começando', 'so comecando', 'nenhuma', 'nada ainda'];
+          const incoerente = !valor || GENERICOS.some((g) => valor.includes(g));
+          if (incoerente) {
+            try {
+              await fetch(`${SUPABASE_URL}/rest/v1/alertas`, {
+                method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
+                body: JSON.stringify({
+                  conta_id: contaId, lead_ref: row.lead_ref, lead_nome: row.nome,
+                  tipo: 'revisao_manual',
+                  descricao: '⚠ Revisão manual: área de atuação incoerente com o produto indicado (' + qualificador + ')',
+                  status: 'pendente',
+                }),
+              });
+            } catch (e) { console.warn('[revisao_manual] alerta falhou (seguindo normal):', e.message); }
+          }
+        }
+      }
+
       const rota = qualificador && doc.roteamento ? doc.roteamento[qualificador] : null;
       if (rota) {
         row.roteamento_tipo = txt(rota.tipo, 20);
