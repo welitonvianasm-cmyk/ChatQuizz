@@ -186,8 +186,10 @@ export default async (req) => {
 
     if (!jaConvertido) await moverNoKanban(contaId, lead.lead_ref, atendente, 'convertido');
 
-    /* ---------- notifica o atendente responsável (se tiver um) ---------- */
-    if (!duplicado && atendente) {
+    /* ---------- notifica o atendente responsável, ou a equipe toda se o
+       lead ainda não tinha um (pagamento confirmado é importante demais
+       pra passar batido só por falta de atribuição) ---------- */
+    if (!duplicado) {
       try {
         await fetch(`${SB_URL}/rest/v1/alertas`, {
           method: 'POST', headers: { ...H, Prefer: 'return=minimal' },

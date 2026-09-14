@@ -80,9 +80,18 @@ async function gerarUrlAssinada(storagePath) {
 
 async function criarAlerta(contaId, leadRef, nomeLead, motivo) {
   try {
+    // avisa o atendente RESPONSÁVEL pelo lead, se já tiver um — só cai pra
+    // "equipe toda" (atendente vazio) quando o lead ainda não foi atribuído
+    let atendente = '';
+    if (leadRef) {
+      try {
+        const rl = await fetch(`${SB_URL}/rest/v1/${TABLE}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(leadRef)}&select=atendente&limit=1`, { headers: H });
+        if (rl.ok) { const rows = await rl.json(); atendente = String((rows[0] && rows[0].atendente) || '').trim(); }
+      } catch { /* segue sem atendente (broadcast) */ }
+    }
     await fetch(`${SB_URL}/rest/v1/alertas`, {
       method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
-      body: JSON.stringify({ conta_id: contaId, lead_ref: leadRef || '', lead_nome: nomeLead || '', atendente: '', tipo: 'agente_ia', descricao: 'IA precisa de ajuda: ' + String(motivo || '').slice(0, 300), status: 'pendente' }),
+      body: JSON.stringify({ conta_id: contaId, lead_ref: leadRef || '', lead_nome: nomeLead || '', atendente, tipo: 'agente_ia', descricao: 'IA precisa de ajuda: ' + String(motivo || '').slice(0, 300), status: 'pendente' }),
     });
   } catch { /* alerta é melhor-esforço */ }
 }

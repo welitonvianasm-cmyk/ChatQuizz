@@ -260,7 +260,7 @@ async function avaliarAlertaVip(SB_URL, H, contaId, lead_ref, nome, qualificador
   const autom = ra.ok ? (await ra.json())[0] : null;
   if (!autom || !autom.destino) return;   // sem automação ativa pra esse qualificador (ou sem número configurado) = nada dispara
 
-  const rc = await fetch(`${SB_URL}/rest/v1/${TABLE}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(lead_ref)}&select=alerta_vip_enviado&limit=1`, { headers: H });
+  const rc = await fetch(`${SB_URL}/rest/v1/${TABLE}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(lead_ref)}&select=alerta_vip_enviado,atendente&limit=1`, { headers: H });
   const atual = rc.ok ? (await rc.json())[0] : null;
   if (!atual || atual.alerta_vip_enviado) return;
 
@@ -272,7 +272,9 @@ async function avaliarAlertaVip(SB_URL, H, contaId, lead_ref, nome, qualificador
     await fetch(`${SB_URL}/rest/v1/alertas`, {
       method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
       body: JSON.stringify({
-        conta_id: contaId, lead_ref, lead_nome: nome, atendente: '', tipo: 'lead_vip',
+        // atendente DO LEAD se já tiver um (raro nesse momento, mas
+        // acontece); senão broadcast pra equipe toda, como sempre
+        conta_id: contaId, lead_ref, lead_nome: nome, atendente: String(atual.atendente || '').trim(), tipo: 'lead_vip',
         descricao: 'Novo lead prioritário (qualificador: ' + qualificador + '), acabou de entrar.',
         data_hora: new Date().toISOString(), status: 'pendente',
       }),

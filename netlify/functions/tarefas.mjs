@@ -9,6 +9,10 @@
  *       (admin vê todas as da conta)
  *   POST /api/tarefas { token, action:'criar', lead_ref, titulo, vencimento, atendente? }
  *       → { ok, tarefa }
+ *       atendente (opcional) força quem é o dono; sem informar, usa o
+ *       atendente ATUAL do lead (quem precisa lembrar de agir nele) — lead
+ *       ainda sem atendente fica sem dono, e o alerta no vencimento avisa
+ *       a equipe toda (mesmo padrão do resto do sistema)
  *   POST /api/tarefas { token, action:'concluir', id }   → { ok }
  *   POST /api/tarefas { token, action:'reabrir', id }    → { ok }
  *   POST /api/tarefas { token, action:'excluir', id }    → { ok }
@@ -20,6 +24,7 @@ const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const AVISO_SQL = 'Falta rodar o setup-tarefas.sql no Supabase (módulo Tarefas).';
 const COLS = 'id,lead_ref,atendente,titulo,vencimento,concluida,criado_por,criado_em';
+const LEADS = 'diag_instagram_leads';
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { headers: cors() });
@@ -53,7 +58,19 @@ export default async (req) => {
       const titulo = String(body.titulo || '').trim().slice(0, 200);
       const vencimento = body.vencimento ? new Date(body.vencimento) : null;
       if (!leadRef || !titulo || !vencimento || isNaN(vencimento)) return json({ ok: false, error: 'Preencha o título e a data/hora.' });
-      const atendente = String(body.atendente || meuNome || '').trim().slice(0, 120);
+      // dono da tarefa: por padrão é o atendente DO LEAD (é o responsável por
+      // ele que precisa ser lembrado, não necessariamente quem criou a
+      // tarefa — ex.: admin criando em nome da equipe). Lead sem atendente
+      // ainda: fica sem dono (atendente vazio), o alerta no vencimento avisa
+      // a equipe toda, mesmo padrão já usado no resto do sistema. `body.
+      // atendente` continua podendo forçar outra pessoa explicitamente.
+      let atendente = String(body.atendente || '').trim().slice(0, 120);
+      if (!atendente) {
+        try {
+          const rl = await fetch(`${SB_URL}/rest/v1/${LEADS}?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(leadRef)}&select=atendente&limit=1`, { headers: H });
+          if (rl.ok) { const rows = await rl.json(); atendente = String((rows[0] && rows[0].atendente) || '').trim().slice(0, 120); }
+        } catch { /* segue sem atendente (broadcast) */ }
+      }
       const nova = {
         conta_id: contaId, lead_ref: leadRef, atendente, titulo,
         vencimento: vencimento.toISOString(), criado_por: meuNome,
