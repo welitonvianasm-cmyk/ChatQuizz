@@ -1,7 +1,11 @@
 /**
  * DISPAROS AGENDADOS — fila de envios do WhatsApp.
  *
- *   { token, action:'listar', status? }                       → { ok, disparos }
+ *   { token, action:'listar', status?, limit?, offset? }       → { ok, disparos, total, offset, limit }
+ *       total = quantos existem no total (não só os desta página) — a
+ *       tela usa isso pra "carregar mais" até mostrar todos de verdade
+ *       (antes tinha um limit=400 fixo sem paginação nenhuma, então
+ *       conta com mais de 400 disparos nunca via os excedentes)
  *   { token, action:'criar', contatos:[{telefone,nome,lead_ref}], enviar_em, mensagem }
  *   { token, action:'cancelar', id }      (só disparo pendente)
  *
@@ -32,9 +36,17 @@ export default async (req) => {
 
     if (a === 'listar') {
       const st = ['pendente', 'enviado', 'falhou'].includes(body.status) ? `&status=eq.${body.status}` : '';
-      const r = await fetch(`${SB_URL}/rest/v1/disparos?conta_id=eq.${contaId}&select=id,telefone,nome,lead_ref,mensagem,enviar_em,status,erro,origem,enviado_em&order=enviar_em.desc&limit=400${st}`, { headers: H });
+      const limit = Math.min(Math.max(Number(body.limit) || 200, 1), 1000);
+      const offset = Math.max(Number(body.offset) || 0, 0);
+      const r = await fetch(
+        `${SB_URL}/rest/v1/disparos?conta_id=eq.${contaId}&select=id,telefone,nome,lead_ref,mensagem,enviar_em,status,erro,origem,enviado_em&order=enviar_em.desc&limit=${limit}&offset=${offset}${st}`,
+        { headers: { ...H, Prefer: 'count=exact' } },
+      );
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
-      return json({ ok: true, disparos: await r.json() });
+      const disparos = await r.json();
+      const range = r.headers.get('content-range') || '';   // "0-199/1234"
+      const total = Number(range.split('/')[1]) || (offset + disparos.length);
+      return json({ ok: true, disparos, total, offset, limit });
     }
 
     if (a === 'criar') {
@@ -46,12 +58,17 @@ export default async (req) => {
         .map((c) => ({ telefone: String((c && c.telefone) || '').replace(/\D/g, ''), nome: String((c && c.nome) || '').slice(0, 120), lead_ref: String((c && c.lead_ref) || '') }))
         .filter((c) => c.telefone);
       if (!contatos.length) return json({ ok: false, error: 'Escolha pelo menos um contato com telefone.' });
+      // mais de 10 contatos de uma vez: escalona o horário de envio (1 a
+      // cada 8s) em vez de mandar tudo no mesmo instante — mesma proteção
+      // anti-bloqueio usada pelos gatilhos "agendado" (ver wa-cron.mjs)
+      const cadenciado = contatos.length > 10;
       // {{nome}} vira o primeiro nome de cada contato já na criação
-      const linhas = contatos.map((c) => ({
+      const linhas = contatos.map((c, i) => ({
         ...c,
         conta_id: contaId,
         mensagem: mensagem.replaceAll('{{nome}}', String(c.nome || '').trim().split(/\s+/)[0] || 'tudo bem'),
-        enviar_em: quando.toISOString(), status: 'pendente', origem: 'manual',
+        enviar_em: new Date(quando.getTime() + (cadenciado ? i * 8000 : 0)).toISOString(),
+        status: 'pendente', origem: 'manual',
       }));
       const r = await fetch(`${SB_URL}/rest/v1/disparos`, {
         method: 'POST', headers: { ...H, Prefer: 'return=minimal' },

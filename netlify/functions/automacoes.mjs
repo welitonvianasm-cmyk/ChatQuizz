@@ -2,14 +2,23 @@
  * AUTOMAÇÕES — mensagens automáticas 100% editáveis (moram no banco).
  *
  *   { token, action:'listar' }                                    → { ok, automacoes }
- *   { token, action:'criar',  nome, gatilho, mensagem }           (admin)
- *   { token, action:'editar', id, nome?, gatilho?, mensagem?, ativa? }  (admin)
+ *   { token, action:'criar',  nome, gatilho, mensagem, gatilho_id?, publico? }  (admin)
+ *   { token, action:'editar', id, nome?, gatilho?, mensagem?, ativa?, gatilho_id?, publico? }  (admin)
  *   { token, action:'excluir', id }                               (admin)
  *
- * Gatilhos: 'reuniao_1h' (lembrete 1h antes da reunião) | 'lead_vip' (alerta
- * de lead prioritário, dispara quando o qualificador computado do lead bate
- * com `qualificador_alvo`; a mensagem vai pro número de staff em `destino`,
- * não pro lead) | 'manual'.
+ * Gatilhos LEGADOS (continuam funcionando, nada mudou neles): 'reuniao_1h'
+ * (lembrete 1h antes da reunião) | 'lead_vip' (alerta de lead prioritário,
+ * dispara quando o qualificador computado do lead bate com
+ * `qualificador_alvo`; a mensagem vai pro número de staff em `destino`, não
+ * pro lead) | 'manual'.
+ *
+ * Gatilho NOVO (reformulação — ver netlify/functions/gatilhos.mjs): quando
+ * `gatilho === 'custom'`, a automação usa `gatilho_id` (aponta pra um
+ * gatilho criado pelo usuário em Gestão > Gatilhos: agendado/tag/
+ * qualificador) em vez do texto fixo. `publico` (JSON, só relevante quando
+ * o gatilho apontado é do tipo 'agendado' — os outros tipos já sabem pra
+ * quem mandar sozinhos) escolhe quem recebe: { tipo:'todos' } |
+ * { tipo:'qualificador', valor:<chave> } | { tipo:'etiqueta', valor:<id> }.
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
 
@@ -18,8 +27,10 @@ const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const AVISO_SQL = 'Falta rodar o setup-whatsapp.sql no Supabase (módulo WhatsApp).';
 const AVISO_SQL_VIP = 'Falta rodar o setup-automacoes-vip.sql no Supabase (colunas do alerta de lead prioritário).';
-const GATILHOS = ['manual', 'reuniao_1h', 'lead_vip'];
+const AVISO_SQL_GATILHOS = 'Falta rodar o setup-gatilhos.sql no Supabase (módulo Gatilhos).';
+const GATILHOS = ['manual', 'reuniao_1h', 'lead_vip', 'custom'];
 const COLS_VIP = ['destino', 'qualificador_alvo'];   // adicionadas por setup-automacoes-vip.sql, não por setup-whatsapp.sql
+const COLS_GATILHOS = ['gatilho_id', 'publico'];     // adicionadas por setup-gatilhos.sql
 
 // olha a mensagem de erro do Postgres pra apontar a coluna que falta de
 // verdade — sem isso, qualquer erro (mesmo um migration diferente, ainda
@@ -29,7 +40,9 @@ function colunaFaltando(errText) {
   return m ? m[1] : null;
 }
 function avisoPara(faltando) {
-  return (faltando && COLS_VIP.includes(faltando)) ? AVISO_SQL_VIP : AVISO_SQL;
+  if (faltando && COLS_VIP.includes(faltando)) return AVISO_SQL_VIP;
+  if (faltando && COLS_GATILHOS.includes(faltando)) return AVISO_SQL_GATILHOS;
+  return AVISO_SQL;
 }
 
 export default async (req) => {
@@ -48,8 +61,17 @@ export default async (req) => {
     const id = Number(body.id) || 0;
 
     if (a === 'listar') {
-      let colsAtivas = 'id,nome,gatilho,mensagem,ativa,destino,qualificador_alvo,criado_em';
+      let colsAtivas = 'id,nome,gatilho,mensagem,ativa,destino,qualificador_alvo,gatilho_id,publico,criado_em';
       let r = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&select=${colsAtivas}&order=criado_em.asc`, { headers: H });
+      if (!r.ok) {
+        const errText = await r.clone().text().catch(() => '');
+        const faltando = colunaFaltando(errText);
+        if (faltando && COLS_GATILHOS.includes(faltando)) {
+          // ainda sem setup-gatilhos.sql: lista sem gatilho_id/publico
+          colsAtivas = 'id,nome,gatilho,mensagem,ativa,destino,qualificador_alvo,criado_em';
+          r = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&select=${colsAtivas}&order=criado_em.asc`, { headers: H });
+        }
+      }
       if (!r.ok) {
         const errText = await r.clone().text().catch(() => '');
         const faltando = colunaFaltando(errText);
@@ -65,7 +87,8 @@ export default async (req) => {
         return json({ ok: false, error: avisoPara(colunaFaltando(errText)) });
       }
       let automacoes = await r.json();
-      automacoes = automacoes.map((am) => ({ destino: '', qualificador_alvo: '', ...am }));
+      automacoes = automacoes.map((am) => ({ destino: '', qualificador_alvo: '', gatilho_id: null, publico: '{}', ...am }));
+      automacoes.forEach((am) => { try { am.publico = JSON.parse(am.publico || '{}'); } catch { am.publico = {}; } });
       // número de staff é dado sensível — só a administradora vê de verdade
       if (!auth.admin) automacoes = automacoes.map((am) => ({ ...am, destino: am.destino ? '••••••' : '' }));
       return json({ ok: true, automacoes });
@@ -87,6 +110,31 @@ export default async (req) => {
       if ('destino' in body) patch.destino = String(body.destino || '').replace(/\D/g, '').slice(0, 20);
       if ('qualificador_alvo' in body) patch.qualificador_alvo = String(body.qualificador_alvo || '').trim().slice(0, 40);
       if ('ativa' in body) patch.ativa = !!body.ativa;
+      if (patch.gatilho === 'custom' || ('gatilho_id' in body)) {
+        const gatilhoId = Number(body.gatilho_id) || 0;
+        if (patch.gatilho === 'custom' && !gatilhoId) return json({ ok: false, error: 'Escolha um gatilho.' });
+        if (gatilhoId) {
+          const rg = await fetch(`${SB_URL}/rest/v1/gatilhos?id=eq.${gatilhoId}&conta_id=eq.${contaId}&select=id,tipo&limit=1`, { headers: H });
+          const gat = rg.ok ? (await rg.json())[0] : null;
+          if (!gat) return json({ ok: false, error: 'Gatilho não encontrado.' });
+          patch.gatilho_id = gatilhoId;
+          if (gat.tipo === 'agendado') {
+            const pub = (body.publico && typeof body.publico === 'object') ? body.publico : {};
+            const tipoPub = ['todos', 'qualificador', 'etiqueta'].includes(pub.tipo) ? pub.tipo : 'todos';
+            const limpoPub = { tipo: tipoPub };
+            if (tipoPub !== 'todos') {
+              if (!pub.valor) return json({ ok: false, error: 'Escolha o público-alvo (qualificador ou etiqueta).' });
+              limpoPub.valor = tipoPub === 'etiqueta' ? Number(pub.valor) : String(pub.valor).trim().slice(0, 40);
+            }
+            patch.publico = JSON.stringify(limpoPub);
+          } else {
+            patch.publico = JSON.stringify({});   // gatilho tag/qualificador já sabe pra quem, não precisa de público
+          }
+        } else {
+          patch.gatilho_id = null;
+          patch.publico = JSON.stringify({});
+        }
+      }
       if (a === 'criar') patch.conta_id = contaId;
       const r = a === 'criar'
         ? await fetch(`${SB_URL}/rest/v1/automacoes`, { method: 'POST', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch) })

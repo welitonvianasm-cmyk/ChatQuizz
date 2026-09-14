@@ -59,6 +59,104 @@ function preencher(msg, lead) {
     .replaceAll('{{horario}}', horario).replaceAll('{{link_reuniao}}', link);
 }
 
+/* ================================================================
+   GATILHOS "agendado" (reformulação de Automações — ver gatilhos.mjs) —
+   cria os disparos das Automações vinculadas quando a hora/data chega.
+   Público >10 leads é escalonado (1 msg a cada INTERVALO_CADENCIA_SEG)
+   pra não estourar o cap de 60/execução nem arriscar bloqueio do número.
+   ================================================================ */
+const INTERVALO_CADENCIA_SEG = 8;
+const LIMIAR_CADENCIA = 10;
+const TZ = 'America/Sao_Paulo';
+
+function diaLocal(d) { return new Date(d).toLocaleDateString('sv-SE', { timeZone: TZ }); }   // yyyy-mm-dd
+function horaLocalMin(d) {
+  const s = new Date(d).toLocaleTimeString('pt-BR', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false });
+  const [h, m] = s.split(':').map(Number);
+  return h * 60 + m;
+}
+function minutosDeHHMM(hhmm) {
+  const [h, m] = String(hhmm || '0:0').split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+function preencherSimples(msg, lead) {
+  const nome = String((lead && lead.nome) || '').trim().split(/\s+/)[0] || 'tudo bem';
+  return String(msg || '').replaceAll('{{nome}}', nome);
+}
+
+/* pra quem a automação de gatilho "agendado" manda — os outros tipos de
+   gatilho (tag/qualificador) já sabem pra quem sozinhos, não passam aqui */
+async function resolverPublico(contaId, publico) {
+  const tipo = (publico && publico.tipo) || 'todos';
+  if (tipo === 'qualificador' && publico.valor) {
+    const r = await sb(`diag_instagram_leads?conta_id=eq.${contaId}&call_track=eq.${encodeURIComponent(publico.valor)}&select=lead_ref,nome,whatsapp`);
+    return r.ok ? await r.json() : [];
+  }
+  if (tipo === 'etiqueta' && publico.valor) {
+    const rl = await sb(`lead_etiquetas?conta_id=eq.${contaId}&etiqueta_id=eq.${Number(publico.valor)}&select=lead_ref`);
+    const refs = rl.ok ? (await rl.json()).map((x) => x.lead_ref) : [];
+    if (!refs.length) return [];
+    const filtro = refs.map((r) => `"${r}"`).join(',');
+    const r = await sb(`diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=in.(${filtro})&select=lead_ref,nome,whatsapp`);
+    return r.ok ? await r.json() : [];
+  }
+  const r = await sb(`diag_instagram_leads?conta_id=eq.${contaId}&select=lead_ref,nome,whatsapp`);
+  return r.ok ? await r.json() : [];
+}
+
+async function processarGatilhosAgendados(contaId) {
+  const rg = await sb(`gatilhos?conta_id=eq.${contaId}&tipo=eq.agendado&ativo=eq.true&select=id,config,disparado_em`);
+  if (!rg.ok) return;   // setup-gatilhos.sql ainda não rodou nessa conta — segue sem essa etapa
+  const gatilhosAgendados = await rg.json();
+  if (!gatilhosAgendados.length) return;
+
+  const agora = new Date();
+  const hojeLocal = diaLocal(agora);
+  const minutoAgora = horaLocalMin(agora);
+
+  for (const g of gatilhosAgendados) {
+    let cfg = {}; try { cfg = JSON.parse(g.config || '{}'); } catch { continue; }
+    let deveDisparar = false;
+    if (cfg.modo === 'unica') {
+      deveDisparar = !g.disparado_em && cfg.data_hora && new Date(cfg.data_hora) <= agora;
+    } else {
+      const jaHoje = g.disparado_em && diaLocal(g.disparado_em) === hojeLocal;
+      const diaCerto = cfg.frequencia !== 'semanal' || (Array.isArray(cfg.dias_semana) && cfg.dias_semana.includes(agora.getDay()));
+      const minutoAlvo = minutosDeHHMM(cfg.hora);
+      const dentroDaJanela = minutoAgora >= minutoAlvo && (minutoAgora - minutoAlvo) < 5;   // janela do próprio ciclo de 5min do cron
+      deveDisparar = !jaHoje && diaCerto && !!cfg.hora && dentroDaJanela;
+    }
+    if (!deveDisparar) continue;
+
+    const ra = await sb(`automacoes?conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true&select=id,mensagem,destino,publico`);
+    const automs = ra.ok ? await ra.json() : [];
+    for (const am of automs) {
+      if (!am.mensagem) continue;
+      let publico = {}; try { publico = JSON.parse(am.publico || '{}'); } catch { /* 'todos' */ }
+      const alvos = am.destino
+        ? [{ lead_ref: '', nome: '', whatsapp: am.destino }]
+        : (await resolverPublico(contaId, publico));
+      const validos = alvos.filter((l) => String(l.whatsapp || '').replace(/\D/g, ''));
+      const cadenciado = validos.length > LIMIAR_CADENCIA;
+      for (let i = 0; i < validos.length; i++) {
+        const lead = validos[i];
+        const tel = String(lead.whatsapp || '').replace(/\D/g, '');
+        const atrasoMs = cadenciado ? i * INTERVALO_CADENCIA_SEG * 1000 : 0;
+        await sb('disparos', {
+          method: 'POST', headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            conta_id: contaId, telefone: tel, lead_ref: lead.lead_ref || '', nome: lead.nome || '',
+            mensagem: preencherSimples(am.mensagem, lead),
+            enviar_em: new Date(agora.getTime() + atrasoMs).toISOString(),
+            status: 'pendente', origem: 'automacao:' + am.id,
+          }),
+        }).catch(() => {});
+      }
+    }
+    await sb(`gatilhos?id=eq.${g.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ disparado_em: agora.toISOString() }) }).catch(() => {});
+  }
+}
+
 /* roda o ciclo (lembretes + fila) pra UMA conta */
 async function rodarConta(contaId) {
   const agora = Date.now();
@@ -88,6 +186,10 @@ async function rodarConta(contaId) {
       });
     }
   }
+
+  /* 1.5) gatilhos "agendado" das Automações reformuladas — cria os
+     disparos (cadenciados quando o público passa de 10) */
+  await processarGatilhosAgendados(contaId);
 
   /* 2) fila: envia os pendentes vencidos (uma vez só), pela instância padrão da conta */
   const inst = await obterInstanciaPadrao(contaId);

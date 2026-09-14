@@ -253,7 +253,20 @@ export async function baixarMidia(nomeInstancia, mensagemBruta) {
 
 /* envia texto por UMA instância específica — só a chamada crua à Evolution,
    sem gravar histórico (isso é responsabilidade de quem chama, que sabe o
-   contexto: lead_ref, quem mandou, etc. — ver enviarWhats em whatsapp.mjs) */
+   contexto: lead_ref, quem mandou, etc. — ver enviarWhats em whatsapp.mjs)
+
+   PREPARO PRA API OFICIAL DO WHATSAPP (Meta) — ainda não implementada,
+   só o terreno: `wa_instancias.canal` já existe (default 'evolution',
+   setup-gatilhos.sql) pra marcar qual API aquela instância usa. Só 3
+   arquivos no projeto chamam `enviarTexto`/`enviarMidia` (whatsapp.mjs,
+   agente-processar.mjs, wa-cron.mjs) — todos passam só `nomeInstancia`,
+   nunca montam request pra Evolution direto. Quando for implementar a
+   Oficial: (1) buscar `canal` de `wa_instancias` aqui dentro (1 SELECT
+   por envio, ou cachear); (2) se `canal==='oficial'`, chamar uma função
+   nova `enviarTextoOficial(...)` com a MESMA assinatura/retorno
+   `{ok, wa_id, error?}` em vez de montar o request Evolution abaixo.
+   Nenhum dos 3 chamadores precisa mudar — a decisão de canal fica
+   escondida aqui dentro, é só trocar o corpo desta função. */
 export async function enviarTexto(nomeInstancia, telefone, texto) {
   let tel = normalizarTelefoneBR(telefone);
   if (!tel || !texto) return { ok: false, error: 'telefone/mensagem vazios' };
