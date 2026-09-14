@@ -1105,6 +1105,8 @@
       </div>
       <div id="chMsgs" style="flex:1;overflow-y:auto;padding:14px;background:var(--bg-secondary);display:flex;flex-direction:column;gap:6px;"></div>
       <div style="display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:var(--card);">
+        <input type="file" id="chArquivo" accept="image/*,video/*,audio/*,application/pdf" style="display:none;">
+        <button id="chAnexar" title="Anexar arquivo" type="button" style="padding:0 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface-input);color:var(--text);cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
         <input id="chInput" placeholder="Escreva uma mensagem..." style="flex:1;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--surface-input);color:var(--text);">
         <button id="chEnviar" title="Enviar" style="padding:0 16px;border:none;border-radius:10px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
       </div>
@@ -1802,6 +1804,8 @@
             </div>
             <div class="cv-chat-msgs" id="cvChMsgs"></div>
             <div class="cv-chat-envio">
+              <input type="file" id="cvChArquivo" accept="image/*,video/*,audio/*,application/pdf" style="display:none;">
+              <button id="cvChAnexar" title="Anexar arquivo" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
               <input id="cvChInput" placeholder="Escreva uma mensagem...">
               <button id="cvChEnviar" title="Enviar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
             </div>
@@ -2330,6 +2334,34 @@ const el = (t, c) => { const e = document.createElement(t); if (c) e.className =
 const nf = (n) => Number(n || 0).toLocaleString('pt-BR');
 const pct = (a, b) => b ? Math.round((a / b) * 100) : 0;
 function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+/* catálogo pequeno de ícones inline (troca emoji usado como ÍCONE de UI por
+   SVG, mesmo estilo da barra lateral — stroke, 24x24, currentColor). Não
+   mexe em emoji usado como COPY/tom de voz (mensagem pro lead, texto do
+   quiz) nem dentro de <option>, que só aceita texto puro. */
+const ICONE_SVG = {
+  alerta: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  calendario: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+  conversa: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  link: '<path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/>',
+  pessoa: '<circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/>',
+  relogio: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 3"/><path d="M5 3 2 6"/><path d="M22 6l-3-3"/>',
+  microfone: '<path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/>',
+  imagem: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+  documento: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+  video: '<path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+  estrela: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  duvida: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  subindo: '<path d="M7 17 17 7"/><path d="M7 7h10v10"/>',
+  descendo: '<path d="M7 7 17 17"/><path d="M7 17h10V7"/>',
+  estavel: '<path d="M5 12h14"/>',
+};
+function icone(nome, tam) {
+  const svg = ICONE_SVG[nome];
+  if (!svg) return '';
+  const px = tam || 12;
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="' + px + '" height="' + px + '" style="display:inline;vertical-align:-1.5px;flex-shrink:0;">' + svg + '</svg>';
+}
 
 const STATUS_ORD = { parcial: 1, contato: 2, completo: 3, agendado: 4 };
 
@@ -7713,6 +7745,61 @@ function fecharChat() {
 $('#chFechar').onclick = fecharChat;
 $('#chatModal').addEventListener('click', (e) => { if (e.target === $('#chatModal')) fecharChat(); });
 $('#chVerLead').onclick = () => { if (CH.lead) { fecharChat(); abrirLeadModal(CH.lead); } };
+/* corpo de UMA mensagem — texto puro, ou mídia (imagem/vídeo/áudio/
+   documento) com legenda opcional. Compartilhado pelo chat popup e pelo
+   chat embutido de Conversas. */
+const ROTULO_MIDIA_SEM_PREVIA = { audio: '🎤 Áudio (sem prévia)', imagem: '📷 Imagem (sem prévia)', documento: '📄 Documento (sem prévia)', video: '🎬 Vídeo (sem prévia)', figurinha: '🌟 Figurinha' };
+function renderizarConteudoMensagem(m) {
+  const wrap = el('div');
+  if (m.midia_base64) {
+    if (m.tipo === 'imagem') {
+      const img = el('img'); img.src = m.midia_base64; img.style.cssText = 'max-width:100%;border-radius:8px;display:block;cursor:pointer;';
+      img.onclick = () => window.open(m.midia_base64, '_blank');
+      wrap.appendChild(img);
+    } else if (m.tipo === 'video') {
+      const vid = el('video'); vid.src = m.midia_base64; vid.controls = true; vid.style.cssText = 'max-width:100%;border-radius:8px;display:block;';
+      wrap.appendChild(vid);
+    } else if (m.tipo === 'audio') {
+      const aud = el('audio'); aud.src = m.midia_base64; aud.controls = true; aud.style.cssText = 'max-width:220px;display:block;';
+      wrap.appendChild(aud);
+    } else {
+      const a = el('a'); a.href = m.midia_base64; a.target = '_blank'; a.rel = 'noopener'; a.textContent = '📄 Baixar arquivo';
+      a.style.cssText = 'display:inline-flex;gap:5px;color:var(--text);font-weight:700;text-decoration:underline;';
+      wrap.appendChild(a);
+    }
+    if (m.texto) { const cap = el('div'); cap.textContent = m.texto; cap.style.marginTop = '5px'; wrap.appendChild(cap); }
+  } else if (m.tipo && m.tipo !== 'texto' && !m.texto) {
+    const v = el('div'); v.style.cssText = 'color:var(--text-muted);font-style:italic;'; v.textContent = ROTULO_MIDIA_SEM_PREVIA[m.tipo] || 'Mensagem sem prévia';
+    wrap.appendChild(v);
+  } else {
+    wrap.textContent = m.texto;
+  }
+  return wrap;
+}
+/* lê um arquivo escolhido em <input type=file>, envia por mídia (com a
+   legenda que já estava digitada no campo de texto) e recarrega o chat.
+   `inputArquivo`/`inputTexto` são os elementos, `tel`/`leadRef` a conversa
+   ativa, `aoRecarregar` a função que redesenha as mensagens depois. */
+async function anexarEEnviarMidia(inputArquivo, inputTexto, tel, leadRef, aoRecarregar) {
+  const arquivo = inputArquivo.files && inputArquivo.files[0];
+  if (!arquivo || !tel) return;
+  if (arquivo.size > 4 * 1024 * 1024) { toast('error', 'Aviso', 'Arquivo muito grande (máximo 4MB).'); inputArquivo.value = ''; return; }
+  let base64;
+  try {
+    base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+      reader.onerror = reject;
+      reader.readAsDataURL(arquivo);
+    });
+  } catch { toast('error', 'Aviso', 'Erro ao ler o arquivo.'); inputArquivo.value = ''; return; }
+  const texto = inputTexto.value.trim();
+  inputArquivo.value = '';
+  inputTexto.value = '';
+  const r = await waApi({ action: 'send', telefone: tel, texto, lead_ref: leadRef || '', midia: { base64, mimetype: arquivo.type || 'application/octet-stream', nomeArquivo: arquivo.name } });
+  if (!r.ok) { toast('error', 'Aviso', r.error || 'Erro ao enviar o arquivo.'); return; }
+  aoRecarregar();
+}
 async function carregarChat(primeira) {
   if (!CH.tel) return;
   const r = await waApi({ action: 'historico', telefone: CH.tel });
@@ -7727,7 +7814,7 @@ async function carregarChat(primeira) {
       + (m.direcao === 'out'
         ? 'align-self:flex-end;background:var(--lime-soft);border:1px solid rgba(47,111,237,.35);'
         : 'align-self:flex-start;background:var(--surface-card-2);border:1px solid var(--line);');
-    const tx = el('div'); tx.textContent = m.texto;
+    const tx = renderizarConteudoMensagem(m);
     const hs = el('div'); hs.textContent = (m.direcao === 'out' && m.quem ? m.quem + ' · ' : '') + dt;
     hs.style.cssText = 'font-size:10.5px;color:var(--text-dim);margin-top:3px;text-align:right;';
     b.append(tx, hs);
@@ -7767,6 +7854,8 @@ async function chMandar() {
 }
 $('#chEnviar').onclick = chMandar;
 $('#chInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); chMandar(); } });
+$('#chAnexar').onclick = () => $('#chArquivo').click();
+$('#chArquivo').addEventListener('change', () => anexarEEnviarMidia($('#chArquivo'), $('#chInput'), CH.tel, CH.lead ? CH.lead.lead_ref : '', () => carregarChat(true)));
 
 /* --- inbox (menu Conversas) --- */
 let CV_LISTA = [];
@@ -7888,7 +7977,7 @@ async function carregarChatCv(primeira) {
       + (m.direcao === 'out'
         ? 'align-self:flex-end;background:var(--lime-soft);border:1px solid rgba(47,111,237,.35);'
         : 'align-self:flex-start;background:var(--surface-card-2);border:1px solid var(--line);');
-    const tx = el('div'); tx.textContent = m.texto;
+    const tx = renderizarConteudoMensagem(m);
     const hs = el('div'); hs.textContent = (m.direcao === 'out' && m.quem ? m.quem + ' · ' : '') + dt;
     hs.style.cssText = 'font-size:10.5px;color:var(--text-dim);margin-top:3px;text-align:right;';
     b.append(tx, hs);
@@ -7912,6 +8001,8 @@ async function cvChMandar() {
 }
 $('#cvChEnviar').onclick = cvChMandar;
 $('#cvChInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); cvChMandar(); } });
+$('#cvChAnexar').onclick = () => $('#cvChArquivo').click();
+$('#cvChArquivo').addEventListener('change', () => anexarEEnviarMidia($('#cvChArquivo'), $('#cvChInput'), CV_ATIVO ? CV_ATIVO.tel : '', CV_ATIVO && CV_ATIVO.lead ? CV_ATIVO.lead.lead_ref : '', () => carregarChatCv(true)));
 
 /* painel lateral "Infos do Lead" — ações rápidas + dados do lead vinculado
    a esta conversa (quando o telefone bate com um lead do funil) */

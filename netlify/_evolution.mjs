@@ -286,6 +286,56 @@ export async function enviarTexto(nomeInstancia, telefone, texto) {
    (mesma prática já usada pro sendText nesse projeto): POST
    /message/sendMedia/:instance, {number, mediatype, mimetype, caption?,
    fileName?, media}. */
+/* reconstrói/descriptografa a mídia de UMA mensagem já RECEBIDA — o payload
+   do webhook só traz uma referência criptografada (key/mediaKey/directPath),
+   nunca o conteúdo em si. Formato conferido direto no código-fonte real da
+   Evolution API (mesma prática já usada nesse projeto pro resto da
+   integração, GitHub evolution-foundation/evolution-api): POST
+   /chat/getBase64FromMediaMessage/:instance, body { message: <objeto
+   COMPLETO da mensagem do webhook, key+message+pushName+... juntos, sem
+   reconstruir um subconjunto> } → devolve { mimetype, base64 } (base64 cru,
+   sem prefixo "data:"). `mensagemCompleta` aqui é o próprio `d` de
+   wa-webhook.mjs (1 item do array `data` do payload). */
+export async function buscarBase64Midia(nomeInstancia, mensagemCompleta) {
+  if (!configurada()) return null;
+  try {
+    const r = await ev(`/chat/getBase64FromMediaMessage/${nomeInstancia}`, {
+      method: 'POST', body: JSON.stringify({ message: mensagemCompleta }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json().catch(() => ({}));
+    if (!d.base64) return null;
+    return { mimetype: d.mimetype || 'application/octet-stream', base64: d.base64 };
+  } catch { return null; }
+}
+
+const BUCKET_MIDIA = 'agente-arquivos';   // reaproveita o bucket já existente do Agente IA (setup-agente-ia.sql)
+/* sobe um arquivo temporário no Storage e devolve uma URL assinada de
+   curta duração (5min) — a Evolution busca o arquivo por essa URL, não
+   recebemos bytes direto por trás. Usado pro envio manual de mídia nas
+   Conversas (o base64 vem do navegador, convertido de um <input type=file>).
+   O arquivo em si é descartável (só serve pra Evolution baixar 1x); o que
+   fica de histórico é o base64 salvo em wa_mensagens.midia_base64. */
+export async function subirMidiaTemporaria(contaId, base64, nomeArquivo) {
+  let bytes;
+  try { bytes = Buffer.from(base64, 'base64'); } catch { return null; }
+  if (!bytes.length) return null;
+  const path = `_conversas-temp/${contaId}/${Date.now()}-${String(nomeArquivo || 'arquivo').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  const rUp = await fetch(`${SB_URL}/storage/v1/object/${BUCKET_MIDIA}/${path}`, {
+    method: 'POST', headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/octet-stream' },
+    body: bytes,
+  });
+  if (!rUp.ok) return null;
+  const rSign = await fetch(`${SB_URL}/storage/v1/object/sign/${BUCKET_MIDIA}/${path}`, {
+    method: 'POST', headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expiresIn: 300 }),
+  });
+  if (!rSign.ok) return null;
+  const d = await rSign.json().catch(() => ({}));
+  const caminho = d.signedURL || d.signedUrl || '';
+  return caminho ? `${SB_URL}/storage/v1${caminho}` : null;
+}
+
 export async function enviarMidia(nomeInstancia, telefone, mediaUrl, mimetype, nomeArquivo, legenda) {
   const tel = normalizarTelefoneBR(telefone);
   if (!tel || !mediaUrl) return { ok: false, error: 'telefone/arquivo vazios' };

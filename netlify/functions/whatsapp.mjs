@@ -27,8 +27,9 @@ import {
   configurada, soDigitos, normalizarTelefoneBR, mensagemErroEvolution,
   listarInstancias, criarInstancia, qrInstancia, statusInstancia,
   removerInstancia, definirPadrao, atualizarEstadoLocal, obterInstanciaDaConversa,
-  enviarTexto,
+  enviarTexto, enviarMidia, subirMidiaTemporaria,
 } from '../_evolution.mjs';
+const MIDIA_MAX_ENVIO = 4 * 1024 * 1024;   // 4MB cru, mesmo teto já usado no upload do Agente IA
 import { lerEstadoConversa, definirPausaConversa } from '../_agenteIa.mjs';
 
 export { soDigitos, normalizarTelefoneBR, mensagemErroEvolution };   // outros módulos ainda importam daqui
@@ -66,6 +67,33 @@ export async function enviarWhats(contaId, telefone, texto, quem, lead_ref) {
     await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
       method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
       body: JSON.stringify({ conta_id: contaId, telefone: tel, lead_ref: lead_ref || '', direcao: 'out', texto: String(texto).slice(0, 4000), quem: quem || '', wa_id: r.wa_id || '', lida: true, instancia: inst.nome_instancia }),
+    });
+  } catch { /* histórico é melhor-esforço */ }
+  return { ok: true };
+}
+
+/* envia UM arquivo (imagem/vídeo/áudio/documento) pela instância certa da
+   conversa — sobe num Storage temporário (a Evolution busca por URL, não
+   aceita bytes direto), manda, e grava no histórico com o base64 já pronto
+   pra exibir depois (sem depender da URL temporária, que expira em 5min). */
+export async function enviarWhatsMidia(contaId, telefone, base64, mimetype, nomeArquivo, legenda, quem, lead_ref) {
+  const tel = normalizarTelefoneBR(telefone);
+  if (!tel || !base64) return { ok: false, error: 'telefone/arquivo vazios' };
+  const inst = await obterInstanciaDaConversa(contaId, tel);
+  if (!inst) return { ok: false, error: 'Nenhum WhatsApp conectado nesta conta ainda (Conexões → WhatsApp).' };
+  const url = await subirMidiaTemporaria(contaId, base64, nomeArquivo);
+  if (!url) return { ok: false, error: 'Erro ao preparar o arquivo pra envio.' };
+  const r = await enviarMidia(inst.nome_instancia, tel, url, mimetype, nomeArquivo, legenda);
+  if (!r.ok) return r;
+  const tipo = mimetype.startsWith('image/') ? 'imagem' : mimetype.startsWith('video/') ? 'video' : mimetype.startsWith('audio/') ? 'audio' : 'documento';
+  try {
+    await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
+      method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        conta_id: contaId, telefone: tel, lead_ref: lead_ref || '', direcao: 'out', tipo,
+        texto: String(legenda || '').slice(0, 4000), quem: quem || '', wa_id: r.wa_id || '', lida: true,
+        instancia: inst.nome_instancia, midia_base64: `data:${mimetype};base64,${base64}`,
+      }),
     });
   } catch { /* histórico é melhor-esforço */ }
   return { ok: true };
@@ -152,7 +180,13 @@ export default async (req) => {
     if (a === 'send') {
       const t = await lerToggles(contaId);
       if (!t.conversas) return json({ ok: false, error: 'As Conversas estão desativadas nas configurações do WhatsApp.' });
-      const r = await enviarWhats(contaId, body.telefone, String(body.texto || '').trim(), quem, body.lead_ref);
+      let r;
+      if (body.midia && body.midia.base64 && body.midia.mimetype) {
+        if (Buffer.byteLength(body.midia.base64, 'base64') > MIDIA_MAX_ENVIO) return json({ ok: false, error: 'Arquivo muito grande (máximo 4MB).' });
+        r = await enviarWhatsMidia(contaId, body.telefone, body.midia.base64, body.midia.mimetype, body.midia.nomeArquivo, String(body.texto || '').trim(), quem, body.lead_ref);
+      } else {
+        r = await enviarWhats(contaId, body.telefone, String(body.texto || '').trim(), quem, body.lead_ref);
+      }
       // um humano respondendo direto pelo painel É assumir a conversa — pausa
       // o Agente IA nesse lead pra não responder por cima na próxima mensagem
       // (antes só pausava pelo botão manual "Pausar IA" ou pela própria IA
@@ -165,8 +199,12 @@ export default async (req) => {
     }
 
     if (a === 'inbox') {
-      let colsInbox = 'telefone,lead_ref,direcao,texto,lida,criado_em,push_name,instancia';
+      let colsInbox = 'telefone,lead_ref,direcao,texto,lida,criado_em,push_name,instancia,tipo';
       let r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&select=${colsInbox}&order=criado_em.desc&limit=1200`, { headers: H });
+      if (!r.ok) {
+        colsInbox = 'telefone,lead_ref,direcao,texto,lida,criado_em,push_name,instancia';   // falta rodar setup-wa-midia.sql
+        r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&select=${colsInbox}&order=criado_em.desc&limit=1200`, { headers: H });
+      }
       if (!r.ok) {
         colsInbox = 'telefone,lead_ref,direcao,texto,lida,criado_em,push_name';   // falta rodar setup-wa-multi-instancia.sql
         r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&select=${colsInbox}&order=criado_em.desc&limit=1200`, { headers: H });
@@ -177,6 +215,7 @@ export default async (req) => {
       }
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       const msgs = await r.json();
+      const ROTULO_MIDIA = { audio: '🎤 Áudio', imagem: '📷 Imagem', documento: '📄 Documento', video: '🎬 Vídeo', figurinha: 'Figurinha' };
       const conv = new Map();
       msgs.forEach((m) => {
         // a lista já vem da mais recente pra mais antiga (order=criado_em.desc)
@@ -185,7 +224,8 @@ export default async (req) => {
         // pela equipe (direcao 'out'), o Baileys manda o nome da própria conta
         // conectada, não do contato (defesa aqui cobre até dado antigo já
         // gravado errado antes desse fix, sem precisar de migração de limpeza)
-        if (!conv.has(m.telefone)) conv.set(m.telefone, { telefone: m.telefone, lead_ref: m.lead_ref || '', ultima: m.texto, quando: m.criado_em, nao_lidas: 0, pushName: m.direcao === 'in' ? (m.push_name || '') : '', instancia: m.instancia || '' });
+        const ultima = m.texto || ROTULO_MIDIA[m.tipo] || '';
+        if (!conv.has(m.telefone)) conv.set(m.telefone, { telefone: m.telefone, lead_ref: m.lead_ref || '', ultima, quando: m.criado_em, nao_lidas: 0, pushName: m.direcao === 'in' ? (m.push_name || '') : '', instancia: m.instancia || '' });
         const c = conv.get(m.telefone);
         if (!c.lead_ref && m.lead_ref) c.lead_ref = m.lead_ref;
         if (!c.pushName && m.direcao === 'in' && m.push_name) c.pushName = m.push_name;
@@ -197,7 +237,12 @@ export default async (req) => {
     if (a === 'historico') {
       const tel = normalizarTelefoneBR(body.telefone);
       if (!tel) return json({ ok: false, error: 'telefone obrigatório' });
-      const r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&telefone=eq.${tel}&select=direcao,texto,quem,criado_em&order=criado_em.asc&limit=500`, { headers: H });
+      let colsHist = 'direcao,texto,quem,criado_em,tipo,midia_base64';
+      let r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&telefone=eq.${tel}&select=${colsHist}&order=criado_em.asc&limit=500`, { headers: H });
+      if (!r.ok) {
+        colsHist = 'direcao,texto,quem,criado_em';   // falta rodar setup-wa-midia.sql
+        r = await fetch(`${SB_URL}/rest/v1/wa_mensagens?conta_id=eq.${contaId}&telefone=eq.${tel}&select=${colsHist}&order=criado_em.asc&limit=500`, { headers: H });
+      }
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       const mensagens = await r.json();
       // abriu a conversa → recebidas viram lidas

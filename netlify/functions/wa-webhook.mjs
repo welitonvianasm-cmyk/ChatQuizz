@@ -30,7 +30,9 @@
  * pra Evolution não re-tentar a entrega).
  */
 import { marcarPrimeiroAtendimento } from '../_kpi.mjs';
-import { normalizarTelefoneBR, obterContaPorInstancia } from '../_evolution.mjs';
+import { normalizarTelefoneBR, obterContaPorInstancia, buscarBase64Midia } from '../_evolution.mjs';
+const TIPOS_MIDIA = new Set(['audio', 'imagem', 'documento', 'video', 'figurinha']);
+const MIDIA_MAX_BASE64 = 5 * 1024 * 1024;   // ~3.75MB de arquivo cru; mídia maior fica sem prévia, mensagem grava normal
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -123,11 +125,24 @@ export default async (req) => {
       if (!contaId) contaId = await contaPadrao();
       if (!contaId) continue;   // nenhuma conta cadastrada ainda — nada a fazer
 
+      // mídia RECEBIDA: baixa/descriptografa via Evolution e guarda como
+      // data URI direto na linha da mensagem (mesmo padrão já usado pro QR
+      // Code — sem upload em storage externo). Mídia grande demais (ex.
+      // vídeo longo) fica sem prévia, mas a mensagem grava normal do
+      // mesmo jeito (só o tipo já era gravado antes disso existir).
+      let midiaBase64 = '';
+      if (direcao === 'in' && TIPOS_MIDIA.has(tipo) && nomeInstancia) {
+        const midia = await buscarBase64Midia(nomeInstancia, d).catch(() => null);
+        if (midia && midia.base64 && midia.base64.length < MIDIA_MAX_BASE64) {
+          midiaBase64 = `data:${midia.mimetype};base64,${midia.base64}`;
+        }
+      }
+
       // pushName do Baileys, em mensagem fromMe:true, é o nome da PRÓPRIA
       // conta conectada, não do contato — só grava em mensagem recebida,
       // senão o nome do contato na lista de Conversas fica errado assim
       // que a equipe responde (mesma classe de bug já achada no MentoriaHub)
-      const linhaMsg = { conta_id: contaId, telefone, lead_ref, direcao, tipo, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out', push_name: direcao === 'in' ? pushName : '', instancia: nomeInstancia };
+      const linhaMsg = { conta_id: contaId, telefone, lead_ref, direcao, tipo, texto: String(texto).slice(0, 4000), wa_id, lida: direcao === 'out', push_name: direcao === 'in' ? pushName : '', instancia: nomeInstancia, midia_base64: midiaBase64 };
       const rIns = await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
         method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
         body: JSON.stringify(linhaMsg),
@@ -140,6 +155,7 @@ export default async (req) => {
         let mexeu = false;
         if (/push_name/i.test(errText) && 'push_name' in linhaMsg) { delete linhaMsg.push_name; mexeu = true; }
         if (/instancia/i.test(errText) && 'instancia' in linhaMsg) { delete linhaMsg.instancia; mexeu = true; }
+        if (/midia_base64/i.test(errText) && 'midia_base64' in linhaMsg) { delete linhaMsg.midia_base64; mexeu = true; }   // falta rodar setup-wa-midia.sql
         if (mexeu) {
           await fetch(`${SB_URL}/rest/v1/wa_mensagens`, {
             method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
