@@ -150,7 +150,7 @@ async function executarFerramenta(nome, input, ctx) {
     const googleEventId = await obterEventoAtual(ctx.contaId, ctx.leadRef);
     const evento = await sincronizarEventoGoogle(ctx.contaId, {
       googleEventId: googleEventId || undefined,
-      titulo: 'Encontro — ' + (ctx.nomeLead || 'Lead'),
+      titulo: 'Encontro: ' + (ctx.nomeLead || 'Lead'),
       inicioISO: inicio.toISOString(), fimISO: fim.toISOString(),
       participanteNome: ctx.nomeLead, participanteEmail: ctx.emailLead,
     });

@@ -113,7 +113,7 @@ export default async (req) => {
       const tipoArquivo = String(body.tipo_arquivo || (mimetype.startsWith('image/') ? 'imagem' : 'documento'));
       const quandoEnviar = String(body.quando_enviar || '').trim().slice(0, 500);
       if (!nome || !base64) return json({ ok: false, error: 'Nome e arquivo são obrigatórios.' });
-      if (!MIME_PERMITIDOS.includes(mimetype)) return json({ ok: false, error: 'Formato não permitido — use PNG, JPEG, WEBP ou PDF.' });
+      if (!MIME_PERMITIDOS.includes(mimetype)) return json({ ok: false, error: 'Formato não permitido, use PNG, JPEG, WEBP ou PDF.' });
       let bytes;
       try { bytes = Buffer.from(base64, 'base64'); } catch { return json({ ok: false, error: 'Arquivo inválido.' }); }
       if (!bytes.length) return json({ ok: false, error: 'Arquivo inválido.' });
@@ -127,7 +127,7 @@ export default async (req) => {
       if (!rUp.ok) {
         const errText = await rUp.text().catch(() => '');
         console.error('agente-config upload error:', rUp.status, errText.slice(0, 300));
-        return json({ ok: false, error: 'Erro ao subir o arquivo pro Storage (confira se o bucket "agente-arquivos" existe — rode o setup-agente-ia.sql).' });
+        return json({ ok: false, error: 'Erro ao subir o arquivo pro Storage (confira se o bucket "agente-arquivos" existe, rode o setup-agente-ia.sql).' });
       }
       const r = await fetch(`${SB_URL}/rest/v1/agente_arquivos`, {
         method: 'POST', headers: { ...H, Prefer: 'return=representation' },

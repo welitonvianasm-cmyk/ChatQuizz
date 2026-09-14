@@ -169,7 +169,7 @@ export default async (req) => {
     }
     if (!duplicado) {
       patch.venda_json = JSON.stringify(venda);
-      hist('Pagamento confirmado' + (jaConvertido ? ' (cliente recorrente)' : '') + ': ' + produtoFinal + ' — ' + fmtBRL(valor));
+      hist('Pagamento confirmado' + (jaConvertido ? ' (cliente recorrente)' : '') + ': ' + produtoFinal + ', ' + fmtBRL(valor));
       patch.equipe_json = JSON.stringify(eq);
     }
 
@@ -194,7 +194,7 @@ export default async (req) => {
           body: JSON.stringify({
             conta_id: contaId, lead_ref: lead.lead_ref, lead_nome: lead.nome || nome || '',
             atendente, tipo: 'pagamento',
-            descricao: 'Pagamento confirmado: ' + produtoFinal + ' — ' + fmtBRL(valor) + ' (' + (lead.nome || nome || 'cliente') + ')',
+            descricao: 'Pagamento confirmado: ' + produtoFinal + ', ' + fmtBRL(valor) + ' (' + (lead.nome || nome || 'cliente') + ')',
             data_hora: new Date().toISOString(), status: 'pendente',
           }),
         });

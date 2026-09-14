@@ -248,7 +248,7 @@ export function sanitizar(doc) {
     } else if (tipo === 'whatsapp') {
       rr.auto = !!r.auto;
       rr.botao = !!r.botao;
-      if (!rr.auto && !rr.botao) return { erro: `O qualificador "${chave}" está com roteamento WhatsApp mas sem "Enviar mensagem automática" nem "Mostrar botão de WhatsApp" marcados — marque pelo menos um.` };
+      if (!rr.auto && !rr.botao) return { erro: `O qualificador "${chave}" está com roteamento WhatsApp mas sem "Enviar mensagem automática" nem "Mostrar botão de WhatsApp" marcados, marque pelo menos um.` };
       if (rr.auto) {
         rr.mensagem = String(r.mensagem || '').trim().slice(0, 1000);
         if (!rr.mensagem) return { erro: `O qualificador "${chave}" está com envio automático marcado mas sem mensagem.` };

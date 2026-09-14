@@ -96,7 +96,7 @@ export default async (req) => {
         return json({ ok: true, calendarios: lista });
       } catch (e) {
         console.error('conexoes google_calendarios:', e?.message || e);
-        return json({ ok: false, error: 'Não consegui listar os calendários — tente reconectar o Google Agenda.' });
+        return json({ ok: false, error: 'Não consegui listar os calendários, tente reconectar o Google Agenda.' });
       }
     }
 

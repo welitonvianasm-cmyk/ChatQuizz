@@ -804,7 +804,7 @@
           <label style="font-size:11.5px;font-weight:700;">Facebook<input id="elFacebook" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="usuario ou link"></label>
         </div>
         <label style="font-size:11.5px;font-weight:700;">Qualificador<select id="elQualificador" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— sem qualificador —</option></select></label>
-        <div class="muted-cell">Pra corrigir a data do agendamento, use "Remarcar" dentro da seção Agendamento — assim, se for uma reunião real do Cal.com, ela também é movida lá.</div>
+        <div class="muted-cell">Pra corrigir a data do agendamento, use "Remarcar" dentro da seção Agendamento, assim, se for uma reunião real do Cal.com, ela também é movida lá.</div>
       </div>
       <div class="muted-cell" id="elErr" style="color:var(--red);margin-top:8px;"></div>
       <button id="elSalvar" style="margin-top:10px;width:100%;padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar alterações</button>
@@ -1075,7 +1075,7 @@
             </div>
           </label>
           <div id="eudModLista" style="display:none;gap:10px;max-height:220px;overflow:auto;"></div>
-          <div class="muted-cell" id="eudModBloqueado" style="display:none;padding:10px 0;">Você não pode alterar suas próprias permissões — peça a outra pessoa administradora.</div>
+          <div class="muted-cell" id="eudModBloqueado" style="display:none;padding:10px 0;">Você não pode alterar suas próprias permissões, peça a outra pessoa administradora.</div>
         </div>
 
         <button id="eudSalvarPerfil" style="margin-top:12px;padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar perfil</button>
@@ -1167,7 +1167,7 @@
         <h2 style="flex:1;margin:0;font-size:17px;">WhatsApp</h2>
         <button class="acao-btn" onclick="fecharModalConexao('modalConexaoWhatsapp')" title="Fechar">✕</button>
       </div>
-      <div class="sub" style="margin:0 0 12px;">Conecte um ou mais números pela Evolution API — útil se a equipe atende por mais de um WhatsApp. Com <b>Conversas</b> desligadas, os botões Conversar abrem o WhatsApp Web normalmente; com <b>Disparos</b> desligados, nenhuma mensagem automática sai.</div>
+      <div class="sub" style="margin:0 0 12px;">Conecte um ou mais números pela Evolution API, útil se a equipe atende por mais de um WhatsApp. Com <b>Conversas</b> desligadas, os botões Conversar abrem o WhatsApp Web normalmente; com <b>Disparos</b> desligados, nenhuma mensagem automática sai.</div>
       <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
         <div style="flex:1;min-width:280px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
@@ -1265,7 +1265,7 @@
         <h2 style="flex:1;margin:0;font-size:17px;">Google Agenda</h2>
         <button class="acao-btn" onclick="fecharModalConexao('modalConexaoGoogleAgenda')" title="Fechar">✕</button>
       </div>
-      <div class="sub" style="margin:0 0 12px;">Não é a "vitrine" de agendamento do lead — isso continua sendo o Cal.com. Aqui, cada reunião confirmada (pelo quiz via Cal.com ou marcada manualmente pelo painel) vira um evento espelho na sua Google Agenda, com uma sala do Google Meet criada automaticamente (preenche o link da reunião sozinho, se ainda estiver vazio).</div>
+      <div class="sub" style="margin:0 0 12px;">Não é a "vitrine" de agendamento do lead, isso continua sendo o Cal.com. Aqui, cada reunião confirmada (pelo quiz via Cal.com ou marcada manualmente pelo painel) vira um evento espelho na sua Google Agenda, com uma sala do Google Meet criada automaticamente (preenche o link da reunião sozinho, se ainda estiver vazio).</div>
       <div style="display:flex;align-items:center;gap:8px;margin:10px 0;">
         <b>Situação:</b> <span id="gaEstado" class="pill parcial">verificando…</span>
       </div>
@@ -1318,7 +1318,7 @@
         </div>
       </label>
 
-      <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);margin-bottom:6px;">Perguntas do quiz — 1 painel por pergunta marcada</div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);margin-bottom:6px;">Perguntas do quiz, 1 painel por pergunta marcada</div>
       <div id="kikPerguntas" style="display:grid;gap:8px;max-height:280px;overflow:auto;margin-bottom:14px;"></div>
 
       <div class="muted-cell" id="kikStatus" style="margin-bottom:8px;"></div>
@@ -1482,7 +1482,7 @@
 
     <div id="tabFunil">
     <div id="relatorioCabecalho" class="only-print">
-      <h1>Relatório — Visão Geral</h1>
+      <h1>Relatório de Visão Geral</h1>
       <div class="sub">Painel de indicadores do quiz e do atendimento</div>
       <div class="relatorio-meta">
         <span><b>Gerado em:</b> <span id="relatorioData"></span></span>
@@ -1504,9 +1504,9 @@
 
     <!-- Grupo 4 — Entrada de leads (dia e horário) -->
     <div class="panel" id="pEntradaDiaHora">
-      <h2>Entrada de leads — dia e horário</h2>
+      <h2>Entrada de leads por dia e horário</h2>
       <div class="sub">Volume por dia e por horário de entrada · identifica os picos (segue o filtro de período do topo)</div>
-      <div class="sub" style="margin-top:12px;font-weight:700;">Por dia e horário — cada barra é 1 dia, cada fatia é 1 hora daquele dia</div>
+      <div class="sub" style="margin-top:12px;font-weight:700;">Por dia e horário, cada barra é 1 dia, cada fatia é 1 hora daquele dia</div>
       <div id="entradaDiaHora"></div>
       <div class="dh-legenda"><span>00h</span><span class="dh-gradiente"></span><span>23h</span></div>
       <div class="sub" style="margin-top:18px;font-weight:700;">Por horário (soma do período) <span id="entradaPico" style="font-weight:400;"></span></div>
@@ -1568,7 +1568,7 @@
     <!-- ===== PERSONALIZADO — opcional, escolhido em "+ Inserir KPI" ===== -->
     <div id="tituloPersonalizado">
       <h2 style="margin:24px 0 2px;font-size:15.5px;font-weight:700;display:flex;align-items:center;gap:8px;">Personalizado</h2>
-      <div class="sub" style="margin-bottom:14px;">KPIs opcionais — ligue ou desligue em <b>"+ Inserir KPI"</b>, no topo desta tela.</div>
+      <div class="sub" style="margin-bottom:14px;">KPIs opcionais, ligue ou desligue em <b>"+ Inserir KPI"</b>, no topo desta tela.</div>
     </div>
 
     <div class="panel" id="pAgendaram" hidden>
@@ -1593,7 +1593,7 @@
         <dt>Lead perdido / Taxa de perda</dt><dd>Leads marcados como perdidos, e o percentual correspondente sobre o total.</dd>
         <dt>Ticket médio</dt><dd>Valor médio das vendas fechadas no período.</dd>
         <dt>Tempo de conversão</dt><dd>Tempo médio, em dias, da entrada do lead até a compra (só leads convertidos).</dd>
-        <dt>Taxa de resposta (WhatsApp)</dt><dd>Dos leads que receberam mensagem nossa, quantos responderam — e o tempo médio de resposta.</dd>
+        <dt>Taxa de resposta (WhatsApp)</dt><dd>Dos leads que receberam mensagem nossa, quantos responderam, e o tempo médio de resposta.</dd>
         <dt>Tipo de resposta (WhatsApp)</dt><dd>Formato mais comum das mensagens recebidas dos leads (texto, áudio, imagem, etc.) no período.</dd>
         <dt>Personalizado</dt><dd>Painéis opcionais, ligados em "+ Inserir KPI": Agendamento de conversas e/ou contagens por resposta de perguntas específicas do quiz.</dd>
       </dl>
@@ -1760,7 +1760,7 @@
     <!-- ===== PÓS-VENDA — Produtos ===== -->
     <div class="panel tem-banner" id="pPosProdutos" hidden>
       <h2>Pós-Venda · Produtos</h2>
-      <div class="sub">Cadastre os produtos e o valor de cada um. Quando o nome que chega pelo webhook de pagamento bater com um produto já vinculado, a venda se resolve sozinha — quando não, ele aparece em "Produtos sem vínculo" pra você ligar uma vez só.</div>
+      <div class="sub">Cadastre os produtos e o valor de cada um. Quando o nome que chega pelo webhook de pagamento bater com um produto já vinculado, a venda se resolve sozinha. Quando não, ele aparece em "Produtos sem vínculo" pra você ligar uma vez só.</div>
       <div class="fbar" data-pbanner="posProdutos">
         <button class="acao-btn" id="ppNovoProduto">+ Novo produto</button>
       </div>
@@ -1773,7 +1773,7 @@
     <!-- ===== CONVERSAS — inbox do WhatsApp ===== -->
     <div class="panel tem-banner" id="pConversas" hidden>
       <h2>Conversas</h2>
-      <div class="sub">Inbox do WhatsApp — selecione uma conversa à esquerda para abrir o chat. <span id="cvAviso"></span></div>
+      <div class="sub">Inbox do WhatsApp, selecione uma conversa à esquerda para abrir o chat. <span id="cvAviso"></span></div>
       <div class="fbar" data-pbanner="conversas">
         <input id="cvBusca" class="fbusca" placeholder="Buscar conversa por nome ou telefone...">
         <select id="cvInstanciaSel" title="Número de WhatsApp" style="display:none;">
@@ -2100,7 +2100,7 @@
           <label style="font-size:11.5px;font-weight:700;">Nome do agente<input id="agNome" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Ex: Ana"></label>
           <label style="font-size:11.5px;font-weight:700;">Função<input id="agCargo" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Ex: Consultora de vendas"></label>
         </div>
-        <label style="display:block;font-size:11.5px;font-weight:700;margin-top:10px;max-width:640px;">Persona — o que ele faz e como se comporta<textarea id="agPersona" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;min-height:90px;font-family:inherit;background:var(--surface-input);color:var(--text);" placeholder="Ex: Atende com simpatia, faz no máximo 3 perguntas de qualificação antes de oferecer o agendamento..."></textarea></label>
+        <label style="display:block;font-size:11.5px;font-weight:700;margin-top:10px;max-width:640px;">Persona (o que ele faz e como se comporta)<textarea id="agPersona" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;min-height:90px;font-family:inherit;background:var(--surface-input);color:var(--text);" placeholder="Ex: Atende com simpatia, faz no máximo 3 perguntas de qualificação antes de oferecer o agendamento..."></textarea></label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:640px;margin-top:10px;">
           <label style="font-size:11.5px;font-weight:700;">Número de WhatsApp<select id="agInstancia" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"><option value="">— nenhum conectado —</option></select></label>
           <label style="font-size:11.5px;font-weight:700;">Agendamento<select id="agEstrategiaAgenda" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);">
@@ -2121,14 +2121,14 @@
       </div>
 
       <div id="agAbaConhecimento" hidden>
-        <label style="display:block;font-size:11.5px;font-weight:700;margin:14px 0 4px;max-width:760px;">Base de conhecimento (texto livre — FAQ, políticas, informações do negócio)<textarea id="agConhecimento" style="width:100%;margin-top:4px;padding:11px 13px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;min-height:180px;font-family:inherit;background:var(--surface-input);color:var(--text);" placeholder="Cole aqui tudo que o agente precisa saber sobre o negócio..."></textarea></label>
+        <label style="display:block;font-size:11.5px;font-weight:700;margin:14px 0 4px;max-width:760px;">Base de conhecimento (texto livre: FAQ, políticas, informações do negócio)<textarea id="agConhecimento" style="width:100%;margin-top:4px;padding:11px 13px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;min-height:180px;font-family:inherit;background:var(--surface-input);color:var(--text);" placeholder="Cole aqui tudo que o agente precisa saber sobre o negócio..."></textarea></label>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px;">
           <button id="agSalvarConhecimento" style="padding:10px 18px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13.5px;cursor:pointer;">Salvar conhecimento</button>
           <span class="muted-cell" id="agConhecimentoStatus"></span>
         </div>
 
         <h2 style="font-size:15px;">Perguntas e respostas</h2>
-        <div class="sub" style="margin:0 0 10px;">Perguntas que o agente já sabe exatamente como responder — ele usa isso antes de tentar adivinhar.</div>
+        <div class="sub" style="margin:0 0 10px;">Perguntas que o agente já sabe exatamente como responder. Ele usa isso antes de tentar adivinhar.</div>
         <div style="display:grid;gap:8px;max-width:820px;margin-bottom:8px;">
           <input id="agQaPergunta" placeholder="Pergunta (ex: Vocês parcelam?)" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);">
           <textarea id="agQaResposta" placeholder="Resposta" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;min-height:60px;font-family:inherit;background:var(--surface-input);color:var(--text);"></textarea>
@@ -2139,7 +2139,7 @@
       </div>
 
       <div id="agAbaArquivos" hidden>
-        <div class="sub" style="margin:14px 0 10px;">Imagens e PDFs que o agente pode mandar pro lead — descreva EM QUE SITUAÇÃO cada um deve ser enviado (isso entra no treinamento dele).</div>
+        <div class="sub" style="margin:14px 0 10px;">Imagens e PDFs que o agente pode mandar pro lead. Descreva EM QUE SITUAÇÃO cada um deve ser enviado (isso entra no treinamento dele).</div>
         <div style="display:grid;gap:8px;max-width:640px;margin-bottom:14px;">
           <input type="file" id="agArqInput" accept="image/png,image/jpeg,image/webp,application/pdf">
           <input id="agArqNome" placeholder="Nome (ex: Tabela de preços)" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);">
@@ -2156,7 +2156,7 @@
       <h2>Editor do Quiz</h2>
       <div class="sub">
         Perguntas, Qualificadores, Níveis de Consciência, os textos de resultado e o roteamento de cada qualificador, tudo é editado aqui e publicado junto. Nada muda no site até você clicar em <b>Publicar</b>.<br>
-        Cada pergunta pode apontar suas opções pra um <b>Qualificador</b> e/ou um <b>Nível</b>; o lead é classificado pela resposta mais votada em cada eixo (empate é resolvido pela pergunta marcada como <b>critério de desempate</b> daquele eixo — pode ter 1 pro Qualificador e 1 pro Nível ao mesmo tempo).
+        Cada pergunta pode apontar suas opções pra um <b>Qualificador</b> e/ou um <b>Nível</b>; o lead é classificado pela resposta mais votada em cada eixo (empate é resolvido pela pergunta marcada como <b>critério de desempate</b> daquele eixo, pode ter 1 pro Qualificador e 1 pro Nível ao mesmo tempo).
       </div>
       <div id="qeLista" style="margin-top:14px;"></div>
       <div id="qeFooter" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;">
@@ -2583,7 +2583,7 @@ function descreverFiltroAtual() {
   if (RANGE === 'custom') {
     const ini = RANGE_CUSTOM.ini ? new Date(RANGE_CUSTOM.ini + 'T00:00:00-03:00').toLocaleDateString('pt-BR') : '—';
     const fim = RANGE_CUSTOM.fim ? new Date(RANGE_CUSTOM.fim + 'T00:00:00-03:00').toLocaleDateString('pt-BR') : '—';
-    return 'Personalizado — ' + ini + ' até ' + fim;
+    return 'Personalizado: ' + ini + ' até ' + fim;
   }
   if (!RANGE) return 'Tudo (sem filtro de período)';
   if (RANGE === 1) return 'Hoje';
@@ -3188,8 +3188,8 @@ function abrirRemarcarModal(r) {
   if (!podeAcessarLead(r)) { avisarLeadBloqueado(r); return; }
   RM_ATUAL = r;
   $('#rmAviso').textContent = r.booking_uid
-    ? 'Esse agendamento veio do Cal.com — ao salvar, a reunião é movida de verdade lá também.'
-    : 'Agendamento manual — a data é atualizada só aqui no painel.';
+    ? 'Esse agendamento veio do Cal.com, ao salvar, a reunião é movida de verdade lá também.'
+    : 'Agendamento manual, a data é atualizada só aqui no painel.';
   const d = r.agendamento_em ? new Date(r.agendamento_em) : new Date();
   const pad = (n) => String(n).padStart(2, '0');
   $('#rmData').value = isNaN(d) ? '' : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -3782,7 +3782,7 @@ function abrirCalModal(r) {
       toast('error', 'Aviso', 'Nenhuma agenda Cal.com configurada ainda (Configurações → Editor do Quiz → Roteamento).');
       return;
     }
-    toast('info', 'Agenda padrão', 'Este lead não tem qualificador com roteamento próprio — usando a primeira agenda Cal.com configurada.');
+    toast('info', 'Agenda padrão', 'Este lead não tem qualificador com roteamento próprio, usando a primeira agenda Cal.com configurada.');
   }
   CM_LINK = link;
   CM_LEAD = r;
@@ -4081,7 +4081,7 @@ function qeRenderPerguntas(box) {
     ldes.append(cdes, 'Critério de desempate');
 
     const laberta = el('label'); laberta.style.cssText = lativa.style.cssText;
-    laberta.title = 'O lead digita a resposta em texto livre, sem opções. Não entra na votação de qualificador/nível — fica disponível no Cartão do Lead e no contexto do Agente IA.';
+    laberta.title = 'O lead digita a resposta em texto livre, sem opções. Não entra na votação de qualificador/nível, fica disponível no Cartão do Lead e no contexto do Agente IA.';
     const caberta = el('input'); caberta.type = 'checkbox'; caberta.checked = !!p.aberta;
     caberta.onchange = () => {
       p.aberta = caberta.checked;
@@ -4106,7 +4106,7 @@ function qeRenderPerguntas(box) {
 
     if (p.aberta) {
       const hint = el('div', 'muted-cell');
-      hint.textContent = 'Resposta livre — o lead digita o texto, sem opções pra configurar. Fica visível no Cartão do Lead e disponível pro Agente IA, mas não entra na votação de qualificador/nível.';
+      hint.textContent = 'Resposta livre: o lead digita o texto, sem opções pra configurar. Fica visível no Cartão do Lead e disponível pro Agente IA, mas não entra na votação de qualificador/nível.';
       hint.style.cssText = 'font-size:12.5px;padding:6px 2px 0;';
       card.appendChild(hint);
     } else {
@@ -4228,7 +4228,7 @@ function qeRenderNivelResultado(box, n) {
   wrap.appendChild(cab);
 
   wrap.appendChild(qeCampoTexto(
-    entry.modo === 'personalizado' ? 'Texto padrão (reserva — usado quando faltar um texto específico abaixo)' : 'Texto',
+    entry.modo === 'personalizado' ? 'Texto padrão (reserva, usado quando faltar um texto específico abaixo)' : 'Texto',
     entry.texto, (v) => { entry.texto = v; }, entry.modo === 'personalizado' ? 3 : 5,
   ));
 
@@ -4248,7 +4248,7 @@ function qeRenderResultados(box) {
   QE.niveis.forEach((n) => qeRenderNivelResultado(box, n));
   const h2 = el('h3', 'qe-titulo'); h2.textContent = 'Por qualificador (convite)'; h2.style.margin = '16px 0 6px'; box.appendChild(h2);
   const subConvite = el('div', 'sub'); subConvite.style.marginBottom = '8px';
-  subConvite.textContent = 'Sempre mostrado logo depois do diagnóstico (e do "Encontro"/presente, quando ativo) — não muda com o modo Geral/Personalizado do nível, que só afeta o diagnóstico.';
+  subConvite.textContent = 'Sempre mostrado logo depois do diagnóstico (e do "Encontro"/presente, quando ativo), não muda com o modo Geral/Personalizado do nível, que só afeta o diagnóstico.';
   box.appendChild(subConvite);
   QE.qualificadores.forEach((q) => {
     QE.resultados.por_qualificador[q.chave] = QE.resultados.por_qualificador[q.chave] || { texto: '' };
@@ -4369,7 +4369,7 @@ function qeRenderRoteamento(box) {
       if (!QE_WA_CONECTADO) {
         const aviso = el('div', 'muted-cell');
         aviso.style.cssText = 'color:var(--amber);font-weight:600;margin-bottom:10px;';
-        aviso.textContent = '⚠ O WhatsApp ainda não está conectado (aba Conexões) — conecte pra poder ativar o envio automático.';
+        aviso.textContent = '⚠ O WhatsApp ainda não está conectado (aba Conexões), conecte pra poder ativar o envio automático.';
         card.appendChild(aviso);
       }
       if (rota.auto && QE_WA_CONECTADO) {
@@ -4392,7 +4392,7 @@ function qeRenderRoteamento(box) {
         il.oninput = () => { rota.numero_ou_link = il.value; };
         card.appendChild(il);
         const dica = el('div', 'muted-cell'); dica.style.cssText = 'font-size:11.5px;margin-top:4px;';
-        dica.textContent = 'Pode colar só os números (com DDI+DDD) ou um link wa.me/whatsapp.com já pronto — o sistema monta o link certo.';
+        dica.textContent = 'Pode colar só os números (com DDI+DDD) ou um link wa.me/whatsapp.com já pronto, o sistema monta o link certo.';
         card.appendChild(dica);
       }
     } else if (rota.tipo === 'url') {
@@ -4456,7 +4456,7 @@ function qeRenderAparencia(box) {
   box.appendChild(sub);
 
   box.appendChild(apCampo('Título (aparece no cabeçalho do quiz, ao lado do contador de perguntas)', AP.titulo, (v) => { AP.titulo = v; }));
-  box.appendChild(apCampo('Logo do cabeçalho (URL, aparece antes do título — deixe vazio se não tiver)', AP.logo_cabecalho_url, (v) => { AP.logo_cabecalho_url = v; }));
+  box.appendChild(apCampo('Logo do cabeçalho (URL, aparece antes do título, deixe vazio se não tiver)', AP.logo_cabecalho_url, (v) => { AP.logo_cabecalho_url = v; }));
   box.appendChild(apCorCampo('Cor do cabeçalho', AP.cor_cabecalho, (v) => { AP.cor_cabecalho = v; }));
   box.appendChild(apCorCampo('Cor do título', AP.cor_titulo, (v) => { AP.cor_titulo = v; }));
   box.appendChild(apCorCampo('Cor do contador de perguntas ("1 de 25")', AP.cor_contador, (v) => { AP.cor_contador = v; }));
@@ -6560,7 +6560,7 @@ async function carregarConexaoPagamento() {
   espelharPill(estado, 'ctPgPill');
 }
 $('#pgBtnGerar').onclick = async () => {
-  if ($('#pgUrl').value && !confirm('Gerar um novo segredo invalida a URL atual — o cenário do MAKE precisa ser atualizado com a nova URL. Continuar?')) return;
+  if ($('#pgUrl').value && !confirm('Gerar um novo segredo invalida a URL atual. O cenário do MAKE precisa ser atualizado com a nova URL. Continuar?')) return;
   $('#pgMsg').textContent = 'gerando…';
   const r = await fetch('/api/conexoes', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -6652,7 +6652,7 @@ function verificarRetornoGoogle() {
   history.replaceState(null, '', location.pathname);
   navGo('conexoes');
   if (resultado === 'conectado') toast('success', 'Google Agenda conectado!', 'Agora é só escolher o calendário.');
-  else toast('error', 'Não consegui conectar', 'O Google recusou ou algo deu errado — tente de novo.');
+  else toast('error', 'Não consegui conectar', 'O Google recusou ou algo deu errado. Tente de novo.');
   setTimeout(() => abrirModalConexao('modalConexaoGoogleAgenda'), 200);
 }
 
@@ -7136,7 +7136,7 @@ function renderPosProdutosSemVinculo() {
 $('#ppNovoProduto').onclick = async () => {
   const resp = await promptModal({
     titulo: 'Novo produto',
-    sub: 'Os 3 últimos campos são usados pelo Agente IA na hora de indicar este produto — pode deixar em branco e preencher depois.',
+    sub: 'Os 3 últimos campos são usados pelo Agente IA na hora de indicar este produto, pode deixar em branco e preencher depois.',
     campos: [
       { id: 'nome', label: 'Nome do produto', obrigatorio: true },
       { id: 'valor', label: 'Valor (R$)', valor: '0' },
@@ -7242,7 +7242,7 @@ async function gerarQrInstancia(inst) {
   $('#waMsg').textContent = 'Depois de escanear, aguarde alguns segundos e feche/reabra esta tela pra ver a situação atualizada.';
 }
 $('#waBtnNovaInstancia').onclick = async () => {
-  const resp = await promptModal({ titulo: 'Novo número de WhatsApp', sub: 'Um nome só pra você identificar (ex: Vendas, Suporte) — não precisa ser o número em si.', campos: [{ id: 'rotulo', label: 'Nome', obrigatorio: true, placeholder: 'Principal' }], textoOk: 'Criar' });
+  const resp = await promptModal({ titulo: 'Novo número de WhatsApp', sub: 'Um nome só pra você identificar (ex: Vendas, Suporte), não precisa ser o número em si.', campos: [{ id: 'rotulo', label: 'Nome', obrigatorio: true, placeholder: 'Principal' }], textoOk: 'Criar' });
   if (!resp) return;
   $('#waMsg').textContent = 'criando…';
   const r = await waApi({ action: 'instancias_criar', rotulo: resp.rotulo });
@@ -7923,7 +7923,7 @@ function abrirNovoAgendamentoBasico(googleOk) {
   if (!IS_ADMIN && USUARIO) sel.value = USUARIO;
   $('#naAviso').textContent = googleOk
     ? 'Esse agendamento cria um evento na Google Agenda conectada, com sala do Meet automática.'
-    : 'Nenhuma agenda externa conectada — o agendamento fica só aqui no sistema.';
+    : 'Nenhuma agenda externa conectada, o agendamento fica só aqui no sistema.';
   $('#novoAgendamentoModal').style.display = 'flex';
   $('#naNome').focus();
 }
@@ -7964,7 +7964,7 @@ $('#naNome').addEventListener('input', (e) => {
     b.onclick = () => naSelecionarLead(l);
     box.appendChild(b);
   });
-  $('#naNovoAviso').textContent = achados.length ? '' : 'Nenhum lead encontrado — um lead novo vai ser criado com esse nome.';
+  $('#naNovoAviso').textContent = achados.length ? '' : 'Nenhum lead encontrado, um lead novo vai ser criado com esse nome.';
 });
 $('#naSalvar').onclick = async () => {
   const nome = $('#naNome').value.trim();

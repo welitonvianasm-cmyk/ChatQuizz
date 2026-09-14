@@ -133,7 +133,7 @@ export default async (req) => {
       const agora = new Date().toISOString();
       const eq = {
         obs: '', campos: [],
-        historico: [{ t: agora, quem: quem0, txt: 'Lead cadastrado manualmente pelo painel' + (atendente ? ' — atribuído a ' + atendente : '') }],
+        historico: [{ t: agora, quem: quem0, txt: 'Lead cadastrado manualmente pelo painel' + (atendente ? ', atribuído a ' + atendente : '') }],
       };
       const novo = {
         conta_id: contaId, lead_ref, nome,
@@ -301,7 +301,7 @@ export default async (req) => {
       if (uidAtual) {
         viaCalcom = true;
         const apiKey = await obterCalcomApiKey(contaId);
-        if (!apiKey) return json({ ok: false, error: 'Chave do Cal.com não configurada (aba Conexões) — não dá pra remarcar esse agendamento de verdade.' });
+        if (!apiKey) return json({ ok: false, error: 'Chave do Cal.com não configurada (aba Conexões), não dá pra remarcar esse agendamento de verdade.' });
         let rcal;
         try {
           rcal = await fetch(`${CAL_API}/bookings/${encodeURIComponent(uidAtual)}/reschedule`, {
@@ -339,7 +339,7 @@ export default async (req) => {
       });
       let rg2 = await gravar2();
       if (!rg2.ok) { delete patch2.equipe_json; delete patch2.agendamento_status; delete patch2.agendamento_origem; temColunaEquipe2 = false; rg2 = await gravar2(); }
-      if (!rg2.ok) return json({ ok: false, error: viaCalcom ? 'A reunião foi remarcada no Cal.com, mas não consegui salvar aqui no painel — confira manualmente.' : 'Erro ao salvar.' });
+      if (!rg2.ok) return json({ ok: false, error: viaCalcom ? 'A reunião foi remarcada no Cal.com, mas não consegui salvar aqui no painel. Confira manualmente.' : 'Erro ao salvar.' });
       await cancelarLembretesPendentes(refUrl);
       dispararMentoriaHub(contaId, 'agendamento_reagendado', {
         chatquizzLeadRef: ref, agendamentoEm: emISO2, bookingUid: novoUid,
@@ -382,7 +382,7 @@ export default async (req) => {
         }
         if ('cs_nome' in v) {
           venda.cs_nome = String(v.cs_nome || '').trim().slice(0, 120);
-          if (venda.cs_nome) hist2('Pós-venda: responsável CS definido — ' + venda.cs_nome);
+          if (venda.cs_nome) hist2('Pós-venda: responsável CS definido (' + venda.cs_nome + ')');
         }
         hist2('Pós-venda: dados da venda atualizados' + (venda.produto ? ' (' + venda.produto + ')' : ''));
       } else {
@@ -547,7 +547,7 @@ export default async (req) => {
             atendente: destinatario,
             tipo: 'presenca',
             descricao: (st === 'compareceu' ? '✓ Compareceu' : '✕ NÃO compareceu') + ' ao Encontro de ' + quando + '. Registrado por ' + quem + '.'
-              + (destinatario ? '' : ' Lead SEM atendente — para toda a equipe.'),
+              + (destinatario ? '' : ' Lead SEM atendente, para toda a equipe.'),
             data_hora: atual.agendamento_em || null,
             status: 'pendente',
           };
@@ -571,7 +571,7 @@ export default async (req) => {
         patch.resultado_motivo = rs === 'perdido' ? motivo : '';
         if (temColunaEtapa && rs) patch.etapa = '';   // convertido/perdido saem das etapas ativas
         hist(rs === 'convertido' ? '✓ Lead CONVERTIDO'
-          : rs === 'perdido' ? ('✕ Lead PERDIDO' + (motivo ? ' — motivo: ' + motivo : ''))
+          : rs === 'perdido' ? ('✕ Lead PERDIDO' + (motivo ? ', motivo: ' + motivo : ''))
           : 'Lead reativado (voltou para os ativos)');
         mexeuEquipe = true;
       }

@@ -160,7 +160,7 @@ export async function criarInstancia(contaId, rotulo) {
     method: 'POST', headers: { ...H, Prefer: 'return=representation' },
     body: JSON.stringify({ conta_id: contaId, nome_instancia: nomeInstancia, rotulo: String(rotulo || '').trim().slice(0, 60), padrao }),
   });
-  if (!r.ok) return { ok: false, error: 'A instância foi criada na Evolution, mas falhou ao salvar no painel — tente remover e criar de novo.' };
+  if (!r.ok) return { ok: false, error: 'A instância foi criada na Evolution, mas falhou ao salvar no painel. Tente remover e criar de novo.' };
   const linha = (await r.json())[0];
   return { ok: true, instancia: linha };
 }
@@ -269,7 +269,7 @@ export async function enviarTexto(nomeInstancia, telefone, texto) {
     const alt = formatoAlternativo(tel);
     const altExiste = alt ? await existeNoWhatsapp(nomeInstancia, alt) : null;
     if (altExiste) { tel = alt; numeroCorrigido = alt; }
-    else return { ok: false, error: 'Esse número não tem WhatsApp — confira se está certo.', semWhatsapp: true };
+    else return { ok: false, error: 'Esse número não tem WhatsApp, confira se está certo.', semWhatsapp: true };
   }
 
   const r = await ev(`/message/sendText/${nomeInstancia}`, { method: 'POST', body: JSON.stringify({ number: tel, text: texto }) });

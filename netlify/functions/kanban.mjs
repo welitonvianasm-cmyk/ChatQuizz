@@ -122,7 +122,7 @@ export default async (req) => {
         patch.resultado_por = quem;
         patch.resultado_motivo = tipo === 'perdido' ? String(motivo || '').trim().slice(0, 300) : '';
         patch.etapa = '';
-        eq.historico.unshift({ t: new Date().toISOString(), quem, txt: 'Status: ' + rotulos[tipo] + ' (movido no Kanban)' + (patch.resultado_motivo ? ' — motivo: ' + patch.resultado_motivo : '') });
+        eq.historico.unshift({ t: new Date().toISOString(), quem, txt: 'Status: ' + rotulos[tipo] + ' (movido no Kanban)' + (patch.resultado_motivo ? ', motivo: ' + patch.resultado_motivo : '') });
       }
     } else {
       // sair de convertido/perdido de volta pro funil = reativação (só admin)

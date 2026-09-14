@@ -82,7 +82,7 @@ export default async (req) => {
 
     if (a === 'create' || a === 'update') {
       if ('permissoes' in body && a === 'update' && Number(body.id) === auth.user.id) {
-        return json({ ok: false, error: 'Você não pode alterar as próprias permissões — peça a outra pessoa administradora.' });
+        return json({ ok: false, error: 'Você não pode alterar as próprias permissões, peça a outra pessoa administradora.' });
       }
       const u = {
         nome: String(body.nome || '').trim().slice(0, 120),

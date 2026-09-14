@@ -51,7 +51,7 @@ export default async (req) => {
     if (a === 'salvar_dominio') {
       if (!auth.admin) return json({ ok: false, error: 'Somente a administradora da conta pode configurar o domínio.' });
       const dominio = String(body.dominio || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-      if (!DOMINIO_RE.test(dominio)) return json({ ok: false, error: 'Domínio inválido — use algo como quiz.suaempresa.com.br (sem https:// e sem barras).' });
+      if (!DOMINIO_RE.test(dominio)) return json({ ok: false, error: 'Domínio inválido, use algo como quiz.suaempresa.com.br (sem https:// e sem barras).' });
 
       const rDup = await fetch(`${SB_URL}/rest/v1/contas?dominio_proprio=eq.${encodeURIComponent(dominio)}&id=neq.${contaId}&select=id&limit=1`, { headers: H });
       if (rDup.ok && (await rDup.json()).length) {
