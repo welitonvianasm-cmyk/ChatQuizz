@@ -18,6 +18,7 @@
  * — desde a Fase 1 do WhatsApp multi-instância, não é mais um número global).
  */
 import { obterInstanciaPadrao, enviarTexto } from '../_evolution.mjs';
+import { leadCombinaPublico } from '../_publico.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -85,11 +86,16 @@ function preencherSimples(msg, lead) {
 }
 
 /* pra quem a automação de gatilho "agendado" manda — os outros tipos de
-   gatilho (tag/qualificador) já sabem pra quem sozinhos, não passam aqui */
+   gatilho (tag/qualificador/agendamento) já sabem qual lead disparou o
+   evento, usam leadCombinaPublico (netlify/_publico.mjs) em cima dele */
 async function resolverPublico(contaId, publico) {
   const tipo = (publico && publico.tipo) || 'todos';
   if (tipo === 'qualificador' && publico.valor) {
     const r = await sb(`diag_instagram_leads?conta_id=eq.${contaId}&call_track=eq.${encodeURIComponent(publico.valor)}&select=lead_ref,nome,whatsapp`);
+    return r.ok ? await r.json() : [];
+  }
+  if (tipo === 'atendente' && publico.valor) {
+    const r = await sb(`diag_instagram_leads?conta_id=eq.${contaId}&atendente=eq.${encodeURIComponent(publico.valor)}&select=lead_ref,nome,whatsapp`);
     return r.ok ? await r.json() : [];
   }
   if (tipo === 'etiqueta' && publico.valor) {
@@ -100,8 +106,31 @@ async function resolverPublico(contaId, publico) {
     const r = await sb(`diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=in.(${filtro})&select=lead_ref,nome,whatsapp`);
     return r.ok ? await r.json() : [];
   }
+  if (tipo === 'pergunta' && publico.valor) {
+    // respostas_json é TEXT serializado (não jsonb) — não dá pra filtrar
+    // na query, então busca tudo da conta e filtra em JS (mesmo padrão do
+    // "+ Inserir KPI" em kpis-config.mjs, que já faz essa mesma leitura)
+    const r = await sb(`diag_instagram_leads?conta_id=eq.${contaId}&select=lead_ref,nome,whatsapp,respostas_json`);
+    const todos = r.ok ? await r.json() : [];
+    return todos.filter((l) => leadCombinaPublico(l, publico));
+  }
   const r = await sb(`diag_instagram_leads?conta_id=eq.${contaId}&select=lead_ref,nome,whatsapp`);
   return r.ok ? await r.json() : [];
+}
+
+/* carrega o conjunto de etiquetas de cada lead da lista — só chamado quando
+   alguma automação em jogo usa publico.tipo='etiqueta' como filtro extra */
+async function carregarEtiquetaIds(contaId, leadRefs) {
+  if (!leadRefs.length) return new Map();
+  const filtro = leadRefs.map((r) => `"${r}"`).join(',');
+  const r = await sb(`lead_etiquetas?conta_id=eq.${contaId}&lead_ref=in.(${filtro})&select=lead_ref,etiqueta_id`);
+  const linhas = r.ok ? await r.json() : [];
+  const mapa = new Map();
+  linhas.forEach((l) => {
+    if (!mapa.has(l.lead_ref)) mapa.set(l.lead_ref, []);
+    mapa.get(l.lead_ref).push(l.etiqueta_id);
+  });
+  return mapa;
 }
 
 async function processarGatilhosAgendados(contaId) {
@@ -157,6 +186,65 @@ async function processarGatilhosAgendados(contaId) {
   }
 }
 
+/* ================================================================
+   GATILHO "agendamento" — generaliza o legado 'reuniao_1h' (que continua
+   existindo intocado, ver rodarConta abaixo): X horas/dias ANTES (lembrete)
+   ou DEPOIS (follow-up) da reunião marcada do lead, configurável pelo
+   usuário em vez de fixo em "1h antes". Mesma janela de 5min do próprio
+   ciclo do cron, mesma dedup por chave_unica já usada pelo lembrete legado.
+   ================================================================ */
+async function processarGatilhosAgendamento(contaId) {
+  const rg = await sb(`gatilhos?conta_id=eq.${contaId}&tipo=eq.agendamento&ativo=eq.true&select=id,config`);
+  if (!rg.ok) return;   // setup-gatilhos.sql ainda não rodou nessa conta
+  const gatilhos = await rg.json();
+  if (!gatilhos.length) return;
+
+  const agora = Date.now();
+  for (const g of gatilhos) {
+    let cfg = {}; try { cfg = JSON.parse(g.config || '{}'); } catch { continue; }
+    const valor = Number(cfg.valor) || 0;
+    if (!valor) continue;
+    const offsetMs = valor * (cfg.unidade === 'dias' ? 86400000 : 3600000);
+    // "antes": reunião ~ daqui a `offset` (lembrete). "depois": reunião foi
+    // há `offset` (follow-up pós-reunião) — janela de 5min pra bater com o
+    // próprio ciclo do cron, igual ao lembrete legado (janela 55-65min p/ 1h)
+    const alvo = agora + (cfg.quando === 'depois' ? -offsetMs : offsetMs);
+    const ini = new Date(alvo - 5 * 60000).toISOString();
+    const fim = new Date(alvo + 5 * 60000).toISOString();
+
+    const ra = await sb(`automacoes?conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true&select=id,mensagem,destino,publico`);
+    const automs = ra.ok ? await ra.json() : [];
+    if (!automs.length) continue;
+
+    const rl = await sb(`diag_instagram_leads?conta_id=eq.${contaId}&agendado=eq.true&agendamento_em=gte.${ini}&agendamento_em=lte.${fim}&select=lead_ref,nome,whatsapp,agendamento_em,agendamento_status,booking_uid,video_url,atendente,call_track,respostas_json`);
+    const leads = (rl.ok ? await rl.json() : []).filter((l) => !['cancelado', 'reagendado'].includes(l.agendamento_status || ''));
+    if (!leads.length) continue;
+
+    const precisaEtiqueta = automs.some((am) => { try { return (JSON.parse(am.publico || '{}').tipo === 'etiqueta'); } catch { return false; } });
+    const etiquetasPorLead = precisaEtiqueta ? await carregarEtiquetaIds(contaId, leads.map((l) => l.lead_ref)) : new Map();
+
+    for (const am of automs) {
+      if (!am.mensagem) continue;
+      let publico = {}; try { publico = JSON.parse(am.publico || '{}'); } catch { /* sem filtro extra */ }
+      for (const l of leads) {
+        const tel = String(l.whatsapp || '').replace(/\D/g, '');
+        if (!tel) continue;
+        const leadComEtiquetas = { ...l, etiqueta_ids: etiquetasPorLead.get(l.lead_ref) || [] };
+        if (!leadCombinaPublico(leadComEtiquetas, publico)) continue;
+        await sb('disparos', {
+          method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
+          body: JSON.stringify({
+            conta_id: contaId, telefone: am.destino || tel, lead_ref: l.lead_ref, nome: l.nome || '',
+            mensagem: preencher(am.mensagem, l),
+            enviar_em: new Date().toISOString(), status: 'pendente', origem: 'automacao:' + am.id,
+            chave_unica: 'gatilho' + g.id + '|' + am.id + '|' + l.lead_ref + '|' + l.agendamento_em,
+          }),
+        }).catch(() => {});
+      }
+    }
+  }
+}
+
 /* roda o ciclo (lembretes + fila) pra UMA conta */
 async function rodarConta(contaId) {
   const agora = Date.now();
@@ -190,6 +278,9 @@ async function rodarConta(contaId) {
   /* 1.5) gatilhos "agendado" das Automações reformuladas — cria os
      disparos (cadenciados quando o público passa de 10) */
   await processarGatilhosAgendados(contaId);
+
+  /* 1.6) gatilhos "agendamento" — lembrete/follow-up configurável de reunião */
+  await processarGatilhosAgendamento(contaId);
 
   /* 2) fila: envia os pendentes vencidos (uma vez só), pela instância padrão da conta */
   const inst = await obterInstanciaPadrao(contaId);

@@ -15,12 +15,13 @@
  * Gatilho NOVO (reformulação — ver netlify/functions/gatilhos.mjs): quando
  * `gatilho === 'custom'`, a automação usa `gatilho_id` (aponta pra um
  * gatilho criado pelo usuário em Gestão > Gatilhos: agendado/tag/
- * qualificador) em vez do texto fixo. `publico` (JSON, só relevante quando
- * o gatilho apontado é do tipo 'agendado' — os outros tipos já sabem pra
- * quem mandar sozinhos) escolhe quem recebe: { tipo:'todos' } |
- * { tipo:'qualificador', valor:<chave> } | { tipo:'etiqueta', valor:<id> }.
+ * qualificador/agendamento) em vez do texto fixo. `publico` (ver
+ * netlify/_publico.mjs) escolhe quem recebe — pra gatilho 'agendado' é
+ * OBRIGATÓRIO (não tem lead de origem); pra tag/qualificador/agendamento é
+ * um filtro EXTRA opcional em cima do lead que já disparou o evento.
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
+import { limparPublico } from '../_publico.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -118,18 +119,13 @@ export default async (req) => {
           const gat = rg.ok ? (await rg.json())[0] : null;
           if (!gat) return json({ ok: false, error: 'Gatilho não encontrado.' });
           patch.gatilho_id = gatilhoId;
-          if (gat.tipo === 'agendado') {
-            const pub = (body.publico && typeof body.publico === 'object') ? body.publico : {};
-            const tipoPub = ['todos', 'qualificador', 'etiqueta'].includes(pub.tipo) ? pub.tipo : 'todos';
-            const limpoPub = { tipo: tipoPub };
-            if (tipoPub !== 'todos') {
-              if (!pub.valor) return json({ ok: false, error: 'Escolha o público-alvo (qualificador ou etiqueta).' });
-              limpoPub.valor = tipoPub === 'etiqueta' ? Number(pub.valor) : String(pub.valor).trim().slice(0, 40);
-            }
-            patch.publico = JSON.stringify(limpoPub);
-          } else {
-            patch.publico = JSON.stringify({});   // gatilho tag/qualificador já sabe pra quem, não precisa de público
-          }
+          // 'agendado' não tem lead de origem: público decide pra quem manda.
+          // tag/qualificador/agendamento já sabem pra quem mandar sozinhos — público
+          // aqui é um filtro EXTRA opcional (ex.: só manda se o atendente for X).
+          // Sem publico no body cai em 'todos' (sem filtro) nos dois casos.
+          const pv = limparPublico(body.publico);
+          if (pv.erro) return json({ ok: false, error: pv.erro });
+          patch.publico = JSON.stringify(pv.limpo);
         } else {
           patch.gatilho_id = null;
           patch.publico = JSON.stringify({});

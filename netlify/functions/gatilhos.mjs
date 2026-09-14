@@ -6,11 +6,23 @@
  *   'agendado'     → config: { modo:'unica', data_hora } ou
  *                    { modo:'recorrente', hora:'HH:MM', frequencia:'diaria'|'semanal', dias_semana?:[0..6] }
  *                    Não tem lead associado — quem recebe é escolhido na
- *                    Automação (campo `publico`, ver automacoes.mjs).
- *   'tag'          → config: { etiqueta_id } — dispara quando um lead
+ *                    Automação (campo `publico`, ver automacoes.mjs — agora
+ *                    também aceita 'atendente' e 'pergunta' além de
+ *                    'qualificador'/'etiqueta').
+ *   'tag'          → config: { etiqueta_id, atraso? } — dispara quando um lead
  *                    RECEBE essa etiqueta (ver netlify/functions/etiquetas.mjs, lead_definir)
- *   'qualificador' → config: { qualificador_chave } — dispara quando um
+ *   'qualificador' → config: { qualificador_chave, atraso? } — dispara quando um
  *                    lead é salvo com esse qualificador (ver save-lead.mjs)
+ *   'agendamento'  → config: { quando:'antes'|'depois', valor, unidade:'horas'|'dias' }
+ *                    — dispara X horas/dias antes (lembrete) ou depois
+ *                    (follow-up) da reunião marcada do lead (generaliza o
+ *                    gatilho legado 'reuniao_1h', que continua existindo
+ *                    intocado — ver netlify/functions/wa-cron.mjs)
+ *
+ *   `atraso` (opcional, só em 'tag'/'qualificador'): { modo:'imediato' } —
+ *   padrão, manda na hora — ou { modo:'apos', valor, unidade:'minutos'|'horas'|'dias' }
+ *   pra mandar um tempo depois do evento (entra na fila de disparos em vez
+ *   de mandar direto).
  *
  *   POST /api/gatilhos { token, action:'listar' }                         → { ok, gatilhos }
  *   POST /api/gatilhos { token, action:'criar', nome, tipo, config }      → { ok, gatilho }   [admin]
@@ -27,11 +39,30 @@ const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const AVISO_SQL = 'Falta rodar o setup-gatilhos.sql no Supabase (módulo Gatilhos).';
-const TIPOS = ['agendado', 'tag', 'qualificador'];
+const TIPOS = ['agendado', 'tag', 'qualificador', 'agendamento'];
 const HORA_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const UNIDADES_ATRASO = ['minutos', 'horas', 'dias'];
+
+// { modo:'imediato' } ou { modo:'apos', valor, unidade } — usado em
+// 'tag'/'qualificador' pra atrasar o envio em vez de mandar na hora
+function validarAtraso(c) {
+  const a = (c && typeof c === 'object') ? c : {};
+  if (a.modo !== 'apos') return { limpo: { modo: 'imediato' } };
+  const valor = Number(a.valor) || 0;
+  if (valor <= 0) return { erro: 'Informe quanto tempo depois do evento a mensagem deve ir.' };
+  const unidade = UNIDADES_ATRASO.includes(a.unidade) ? a.unidade : 'horas';
+  return { limpo: { modo: 'apos', valor, unidade } };
+}
 
 async function validarConfig(contaId, tipo, config) {
   const c = (config && typeof config === 'object') ? config : {};
+  if (tipo === 'agendamento') {
+    const quando = c.quando === 'depois' ? 'depois' : 'antes';
+    const valor = Number(c.valor) || 0;
+    if (valor <= 0) return { erro: 'Informe quanto tempo antes/depois da reunião.' };
+    const unidade = c.unidade === 'dias' ? 'dias' : 'horas';
+    return { limpo: { quando, valor, unidade } };
+  }
   if (tipo === 'agendado') {
     const modo = c.modo === 'recorrente' ? 'recorrente' : 'unica';
     if (modo === 'unica') {
@@ -54,14 +85,18 @@ async function validarConfig(contaId, tipo, config) {
     if (!etiquetaId) return { erro: 'Escolha uma etiqueta.' };
     const r = await fetch(`${SB_URL}/rest/v1/etiquetas?id=eq.${etiquetaId}&conta_id=eq.${contaId}&select=id&limit=1`, { headers: H });
     if (!r.ok || !(await r.json())[0]) return { erro: 'Etiqueta não encontrada.' };
-    return { limpo: { etiqueta_id: etiquetaId } };
+    const va = validarAtraso(c.atraso);
+    if (va.erro) return va;
+    return { limpo: { etiqueta_id: etiquetaId, atraso: va.limpo } };
   }
   if (tipo === 'qualificador') {
     const chave = String(c.qualificador_chave || '').trim().slice(0, 40);
     if (!chave) return { erro: 'Escolha um qualificador.' };
     const { doc } = await carregarConfigPublicada(SB_URL, H, contaId);
     if (!(doc.qualificadores || []).some((q) => q.chave === chave)) return { erro: 'Qualificador não encontrado.' };
-    return { limpo: { qualificador_chave: chave } };
+    const va = validarAtraso(c.atraso);
+    if (va.erro) return va;
+    return { limpo: { qualificador_chave: chave, atraso: va.limpo } };
   }
   return { erro: 'Tipo de gatilho inválido.' };
 }

@@ -1821,7 +1821,7 @@
     <!-- ===== GATILHOS ===== -->
     <div class="panel tem-banner" id="pGatilhos" hidden>
       <h2>Gatilhos</h2>
-      <div class="sub">Crie as condições que disparam uma Automação: um horário/data que você escolhe, quando um lead recebe uma etiqueta, ou quando ele é qualificado como X. Depois é só escolher esse gatilho ao criar a Automação (aba ao lado).</div>
+      <div class="sub">Crie as condições que disparam uma Automação: um horário/data que você escolhe, quando um lead recebe uma etiqueta, quando ele é qualificado como X, ou X horas/dias antes ou depois de uma reunião marcada. Depois é só escolher esse gatilho ao criar a Automação (aba ao lado) — lá também dá pra filtrar quem recebe (por qualificador, etiqueta, atendente ou resposta de uma pergunta do quiz).</div>
 
       <div id="gtForm" style="display:none;flex-direction:column;gap:10px;margin:12px 0;padding:14px 16px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface-card-2);max-width:560px;">
         <label style="font-size:11.5px;font-weight:700;">Nome<input id="gtNome" placeholder="Ex: Toda sexta às 18h" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
@@ -1829,6 +1829,7 @@
           <option value="agendado">Agendado (data/horário)</option>
           <option value="tag">Quando o lead recebe uma etiqueta</option>
           <option value="qualificador">Quando o lead é qualificado como</option>
+          <option value="agendamento">Antes/depois de uma reunião marcada</option>
         </select></label>
 
         <div id="gtCamposAgendado" style="display:flex;flex-direction:column;gap:8px;">
@@ -1856,8 +1857,40 @@
             </div>
           </div>
         </div>
-        <label id="gtCamposTag" style="display:none;font-size:11.5px;font-weight:700;">Etiqueta<select id="gtEtiquetaSel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"></select></label>
+        <div id="gtCamposTagWrap" style="display:none;flex-direction:column;gap:6px;">
+          <label id="gtCamposTag" style="font-size:11.5px;font-weight:700;">Etiqueta<select id="gtEtiquetaSel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"></select></label>
+          <div class="muted-cell" style="font-size:11.5px;">Quer mandar pra quem JÁ TEM essa etiqueta, numa data agendada (em vez de disparar na hora que ela é aplicada)? Crie um gatilho do tipo "Agendado" e escolha esta etiqueta como público, na Automação.</div>
+        </div>
         <label id="gtCamposQualificador" style="display:none;font-size:11.5px;font-weight:700;">Qualificador<select id="gtQualificadorSel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"></select></label>
+
+        <div id="gtCamposAtraso" style="display:none;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:14px;font-size:12.5px;">
+            <label style="display:flex;gap:5px;align-items:center;cursor:pointer;font-weight:600;"><input type="radio" name="gtAtrasoModo" id="gtAtrasoImediato" value="imediato" checked>Enviar imediatamente</label>
+            <label style="display:flex;gap:5px;align-items:center;cursor:pointer;font-weight:600;"><input type="radio" name="gtAtrasoModo" id="gtAtrasoApos" value="apos">Enviar um tempo depois</label>
+          </div>
+          <div id="gtCamposAtrasoValor" style="display:none;grid-template-columns:1fr 1fr;gap:8px;">
+            <label style="font-size:11.5px;font-weight:700;">Quanto tempo depois<input id="gtAtrasoValor" type="number" min="1" step="1" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+            <label style="font-size:11.5px;font-weight:700;">Unidade<select id="gtAtrasoUnidade" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);">
+              <option value="minutos">Minutos</option>
+              <option value="horas" selected>Horas</option>
+              <option value="dias">Dias</option>
+            </select></label>
+          </div>
+        </div>
+
+        <div id="gtCamposAgendamento" style="display:none;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:14px;font-size:12.5px;">
+            <label style="display:flex;gap:5px;align-items:center;cursor:pointer;font-weight:600;"><input type="radio" name="gtAgQuando" id="gtAgAntes" value="antes" checked>Antes da reunião (lembrete)</label>
+            <label style="display:flex;gap:5px;align-items:center;cursor:pointer;font-weight:600;"><input type="radio" name="gtAgQuando" id="gtAgDepois" value="depois">Depois da reunião (follow-up)</label>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <label style="font-size:11.5px;font-weight:700;">Quanto tempo<input id="gtAgValor" type="number" min="1" step="1" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);"></label>
+            <label style="font-size:11.5px;font-weight:700;">Unidade<select id="gtAgUnidade" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);">
+              <option value="horas" selected>Horas</option>
+              <option value="dias">Dias</option>
+            </select></label>
+          </div>
+        </div>
 
         <div style="display:flex;gap:8px;">
           <button id="gtSalvarBtn" style="padding:9px 16px;border:none;border-radius:9px;background:var(--lime);background-image:var(--brand-gradient);color:var(--brand-ink);font-weight:700;font-size:13px;cursor:pointer;">Salvar</button>
@@ -1892,13 +1925,18 @@
         </div>
         <div id="amCustomCampos" style="display:none;flex-direction:column;gap:8px;">
           <label style="font-size:11.5px;font-weight:700;">Qual gatilho<select id="amGatilhoIdSel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"></select></label>
-          <div id="amPublicoCampos" style="display:none;grid-template-columns:1.2fr 1fr;gap:8px;">
-            <label style="font-size:11.5px;font-weight:700;">Enviar para<select id="amPublicoTipo" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);">
-              <option value="todos">Todos os leads</option>
-              <option value="qualificador">Só quem tem o qualificador</option>
-              <option value="etiqueta">Só quem tem a etiqueta</option>
-            </select></label>
-            <label style="font-size:11.5px;font-weight:700;">Qual<select id="amPublicoValor" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"></select></label>
+          <div id="amPublicoCampos" style="display:none;flex-direction:column;gap:8px;">
+            <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:8px;">
+              <label style="font-size:11.5px;font-weight:700;" id="amPublicoTipoLabel">Enviar para<select id="amPublicoTipo" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);">
+                <option value="todos">Todos os leads</option>
+                <option value="qualificador">Só quem tem o qualificador</option>
+                <option value="etiqueta">Só quem tem a etiqueta</option>
+                <option value="atendente">Só leads de um atendente</option>
+                <option value="pergunta">Só quem respondeu X numa pergunta do quiz</option>
+              </select></label>
+              <label style="font-size:11.5px;font-weight:700;">Qual<select id="amPublicoValor" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"></select></label>
+            </div>
+            <label id="amPublicoValor2Wrap" style="display:none;font-size:11.5px;font-weight:700;">Resposta esperada (texto exato)<input id="amPublicoValor2" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="Ex: Sim"></label>
           </div>
           <label style="font-size:11.5px;font-weight:700;">Avisar este WhatsApp em vez do lead <span class="muted-cell" style="font-weight:400;">(opcional — deixe vazio pra mandar pro próprio lead)</span><input id="amDestinoCustom" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="55DDDNÚMERO (opcional)"></label>
         </div>
@@ -1909,6 +1947,7 @@
             <button class="acao-btn" data-v="{{data}}">{{data}}</button>
             <button class="acao-btn" data-v="{{horario}}">{{horario}}</button>
             <button class="acao-btn" data-v="{{link_reuniao}}">{{link_reuniao}}</button>
+            <button class="acao-btn" data-v="{{qualificador}}">{{qualificador}}</button>
           </div>
           <textarea id="amMsg" rows="4" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;resize:vertical;background:var(--surface-input);color:var(--text);" placeholder="Oi {{nome}}! Nosso Encontro é hoje às {{horario}} 💚 Te espero aqui: {{link_reuniao}}"></textarea>
         </div>
@@ -8197,7 +8236,12 @@ async function carregarGatilhos() {
   GT_LISTA = GATILHOS_CACHE;
   renderGatilhos();
 }
-const GT_ROTULO_TIPO = { agendado: 'Agendado', tag: 'Etiqueta', qualificador: 'Qualificador' };
+const GT_ROTULO_TIPO = { agendado: 'Agendado', tag: 'Etiqueta', qualificador: 'Qualificador', agendamento: 'Reunião' };
+function gtResumoAtraso(c) {
+  const a = c.atraso || {};
+  if (a.modo !== 'apos' || !a.valor) return '';
+  return ' · envia ' + a.valor + ' ' + (a.unidade === 'dias' ? 'dia(s)' : a.unidade === 'minutos' ? 'minuto(s)' : 'hora(s)') + ' depois';
+}
 function gtResumoConfig(g) {
   const c = g.config || {};
   if (g.tipo === 'agendado') {
@@ -8208,11 +8252,15 @@ function gtResumoConfig(g) {
   }
   if (g.tipo === 'tag') {
     const et = ETIQUETAS_CACHE.find((e) => e.id === c.etiqueta_id);
-    return 'etiqueta "' + (et ? et.nome : c.etiqueta_id) + '"';
+    return 'etiqueta "' + (et ? et.nome : c.etiqueta_id) + '"' + gtResumoAtraso(c);
   }
   if (g.tipo === 'qualificador') {
     const q = qualificadoresOuFallback().find((x) => x.chave === c.qualificador_chave);
-    return 'qualificador "' + (q ? (q.nome || q.chave) : c.qualificador_chave) + '"';
+    return 'qualificador "' + (q ? (q.nome || q.chave) : c.qualificador_chave) + '"' + gtResumoAtraso(c);
+  }
+  if (g.tipo === 'agendamento') {
+    const unidade = c.unidade === 'dias' ? 'dia(s)' : 'hora(s)';
+    return (c.valor || '?') + ' ' + unidade + ' ' + (c.quando === 'depois' ? 'depois da' : 'antes da') + ' reunião';
   }
   return '';
 }
@@ -8253,8 +8301,10 @@ function renderGatilhos() {
 function gtAtualizarCampos() {
   const tipo = $('#gtTipo').value;
   $('#gtCamposAgendado').style.display = tipo === 'agendado' ? 'flex' : 'none';
-  $('#gtCamposTag').style.display = tipo === 'tag' ? 'block' : 'none';
+  $('#gtCamposTagWrap').style.display = tipo === 'tag' ? 'flex' : 'none';
   $('#gtCamposQualificador').style.display = tipo === 'qualificador' ? 'block' : 'none';
+  $('#gtCamposAtraso').style.display = (tipo === 'tag' || tipo === 'qualificador') ? 'flex' : 'none';
+  $('#gtCamposAgendamento').style.display = tipo === 'agendamento' ? 'flex' : 'none';
   if (tipo === 'tag') {
     const sel = $('#gtEtiquetaSel'); const atual = sel.value; clear(sel);
     ETIQUETAS_CACHE.filter((e) => e.ativo !== false).forEach((e) => { const o = el('option'); o.value = e.id; o.textContent = e.nome; sel.appendChild(o); });
@@ -8275,6 +8325,9 @@ function gtAtualizarModo() {
 $('#gtModoUnica').addEventListener('change', gtAtualizarModo);
 $('#gtModoRecorrente').addEventListener('change', gtAtualizarModo);
 $('#gtFrequencia').addEventListener('change', () => { $('#gtDiasSemana').style.display = $('#gtFrequencia').value === 'semanal' ? 'flex' : 'none'; });
+function gtAtualizarAtraso() { $('#gtCamposAtrasoValor').style.display = $('#gtAtrasoApos').checked ? 'grid' : 'none'; }
+$('#gtAtrasoImediato').addEventListener('change', gtAtualizarAtraso);
+$('#gtAtrasoApos').addEventListener('change', gtAtualizarAtraso);
 async function gtAbrirForm(g) {
   if (!ETIQUETAS_CACHE.length) await carregarEtiquetasCache();
   GT_EDIT = g ? g.id : null;
@@ -8293,6 +8346,16 @@ async function gtAbrirForm(g) {
   gtAtualizarModo();
   if (g && g.tipo === 'tag') $('#gtEtiquetaSel').value = c.etiqueta_id || '';
   if (g && g.tipo === 'qualificador') $('#gtQualificadorSel').value = c.qualificador_chave || '';
+  const atraso = c.atraso || { modo: 'imediato' };
+  $('#gtAtrasoImediato').checked = atraso.modo !== 'apos';
+  $('#gtAtrasoApos').checked = atraso.modo === 'apos';
+  $('#gtAtrasoValor').value = atraso.valor || '';
+  $('#gtAtrasoUnidade').value = atraso.unidade || 'horas';
+  gtAtualizarAtraso();
+  $('#gtAgAntes').checked = c.quando !== 'depois';
+  $('#gtAgDepois').checked = c.quando === 'depois';
+  $('#gtAgValor').value = c.valor || '';
+  $('#gtAgUnidade').value = c.unidade || 'horas';
   $('#gtForm').style.display = 'flex';
   $('#gtStatus').textContent = '';
   $('#gtNome').focus();
@@ -8300,6 +8363,10 @@ async function gtAbrirForm(g) {
 function gtFecharForm() { GT_EDIT = null; $('#gtForm').style.display = 'none'; $('#gtTipo').disabled = false; }
 $('#gtNovoBtn').onclick = () => gtAbrirForm(null);
 $('#gtCancelarBtn').onclick = gtFecharForm;
+function gtLerAtraso() {
+  if (!$('#gtAtrasoApos').checked) return { modo: 'imediato' };
+  return { modo: 'apos', valor: $('#gtAtrasoValor').value, unidade: $('#gtAtrasoUnidade').value };
+}
 $('#gtSalvarBtn').onclick = async () => {
   const nome = $('#gtNome').value.trim();
   if (!nome) { $('#gtStatus').textContent = 'Dê um nome ao gatilho.'; return; }
@@ -8313,9 +8380,11 @@ $('#gtSalvarBtn').onclick = async () => {
       config = { modo: 'unica', data_hora: $('#gtDataHora').value ? new Date($('#gtDataHora').value).toISOString() : '' };
     }
   } else if (tipo === 'tag') {
-    config = { etiqueta_id: $('#gtEtiquetaSel').value };
+    config = { etiqueta_id: $('#gtEtiquetaSel').value, atraso: gtLerAtraso() };
   } else if (tipo === 'qualificador') {
-    config = { qualificador_chave: $('#gtQualificadorSel').value };
+    config = { qualificador_chave: $('#gtQualificadorSel').value, atraso: gtLerAtraso() };
+  } else if (tipo === 'agendamento') {
+    config = { quando: $('#gtAgDepois').checked ? 'depois' : 'antes', valor: $('#gtAgValor').value, unidade: $('#gtAgUnidade').value };
   }
   $('#gtStatus').textContent = 'salvando…';
   const r = GT_EDIT
@@ -8385,22 +8454,33 @@ function amAtualizarCampos() {
     amAtualizarPublico();
   }
 }
-/* campo "Enviar para" só aparece quando o gatilho escolhido é 'agendado'
-   (tag/qualificador já sabem pra quem sozinhos, o próprio lead que gerou o evento) */
+/* "público" sempre aparece quando o gatilho escolhido é um dos meus
+   (custom): pro tipo 'agendado' é OBRIGATÓRIO (escolhe quem recebe, já que
+   não tem lead de origem); pros outros (tag/qualificador/agendamento) é um
+   filtro EXTRA opcional em cima do lead que já disparou o evento. */
 function amAtualizarPublico() {
   const g = GATILHOS_CACHE.find((x) => x.id === Number($('#amGatilhoIdSel').value));
-  const ehAgendado = g && g.tipo === 'agendado';
-  $('#amPublicoCampos').style.display = ehAgendado ? 'grid' : 'none';
-  if (ehAgendado) amAtualizarPublicoValor();
+  if (!g) { $('#amPublicoCampos').style.display = 'none'; return; }
+  const ehAgendado = g.tipo === 'agendado';
+  $('#amPublicoCampos').style.display = 'flex';
+  $('#amPublicoTipoLabel').firstChild.textContent = ehAgendado ? 'Enviar para' : 'Filtrar por (opcional)';
+  amAtualizarPublicoValor();
 }
 function amAtualizarPublicoValor() {
   const tipo = $('#amPublicoTipo').value;
   const sel = $('#amPublicoValor'); const atual = sel.value; clear(sel);
+  $('#amPublicoValor2Wrap').style.display = tipo === 'pergunta' ? '' : 'none';
   if (tipo === 'qualificador') {
     qualificadoresOuFallback().forEach((q) => { const o = el('option'); o.value = q.chave; o.textContent = q.nome || q.chave; sel.appendChild(o); });
     sel.style.display = '';
   } else if (tipo === 'etiqueta') {
     ETIQUETAS_CACHE.filter((e) => e.ativo !== false).forEach((e) => { const o = el('option'); o.value = e.id; o.textContent = e.nome; sel.appendChild(o); });
+    sel.style.display = '';
+  } else if (tipo === 'atendente') {
+    ATENDENTES.forEach((nome) => { const o = el('option'); o.value = nome; o.textContent = nome; sel.appendChild(o); });
+    sel.style.display = '';
+  } else if (tipo === 'pergunta') {
+    (QUIZ_PERGUNTAS_CACHE || []).forEach((p) => { const o = el('option'); o.value = p.id; o.textContent = String(p.q || p.id).replace(/<[^>]+>/g, '').slice(0, 50); sel.appendChild(o); });
     sel.style.display = '';
   } else {
     sel.style.display = 'none';
@@ -8423,13 +8503,14 @@ function amEditar(a) {
     $('#amPublicoTipo').value = publico.tipo || 'todos';
     amAtualizarPublicoValor();
     $('#amPublicoValor').value = publico.valor != null ? String(publico.valor) : '';
+    $('#amPublicoValor2').value = publico.valor2 || '';
   }
   $('#amSalvar').textContent = 'Salvar alterações'; $('#amCancelar').style.display = '';
   $('#amNome').focus();
 }
 function amLimpar() {
   AM_EDIT = null; $('#amNome').value = ''; $('#amMsg').value = ''; $('#amGatilho').value = 'custom';
-  $('#amQualAlvo').value = ''; $('#amDestino').value = ''; $('#amDestinoCustom').value = '';
+  $('#amQualAlvo').value = ''; $('#amDestino').value = ''; $('#amDestinoCustom').value = ''; $('#amPublicoValor2').value = '';
   amAtualizarCampos();
   $('#amSalvar').textContent = 'Salvar automação'; $('#amCancelar').style.display = 'none';
 }
@@ -8447,7 +8528,7 @@ $('#amSalvar').onclick = async () => {
     payload.gatilho_id = Number($('#amGatilhoIdSel').value);
     payload.destino = $('#amDestinoCustom').value;
     if ($('#amPublicoCampos').style.display !== 'none') {
-      payload.publico = { tipo: $('#amPublicoTipo').value, valor: $('#amPublicoValor').value };
+      payload.publico = { tipo: $('#amPublicoTipo').value, valor: $('#amPublicoValor').value, valor2: $('#amPublicoValor2').value };
     }
   }
   $('#amStatus').textContent = 'salvando…';

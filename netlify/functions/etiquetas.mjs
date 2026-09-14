@@ -14,17 +14,29 @@
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
 import { enviarWhats } from './whatsapp.mjs';
+import { leadCombinaPublico } from '../_publico.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 const AVISO_SQL = 'Falta rodar o setup-etiquetas.sql no Supabase (módulo Etiquetas).';
 
+// { modo:'imediato' } → undefined (manda na hora); { modo:'apos', valor, unidade } → ms de atraso
+function atrasoMs(atraso) {
+  if (!atraso || atraso.modo !== 'apos') return 0;
+  const unidadeMs = atraso.unidade === 'dias' ? 86400000 : atraso.unidade === 'minutos' ? 60000 : 3600000;
+  return (Number(atraso.valor) || 0) * unidadeMs;
+}
+
 /* dispara as Automações com gatilho tipo 'tag' quando o lead RECEBE uma
    etiqueta nova (não redispara se a etiqueta já estava lá — só quando
    entra no conjunto pela primeira vez). Melhor-esforço: nunca derruba o
    salvar da etiqueta em si. Sem `destino` configurado na automação, manda
-   pro próprio lead; com `destino`, manda pra esse número (aviso interno). */
+   pro próprio lead; com `destino`, manda pra esse número (aviso interno).
+   `publico` da automação (se houver) é um filtro EXTRA sobre esse mesmo
+   lead (ex.: só dispara se o atendente dele for X). `atraso` do gatilho
+   (imediato ou X tempo depois) decide se manda na hora ou entra na fila
+   de disparos (netlify/functions/disparos.mjs, processada pelo cron). */
 async function dispararGatilhosTag(contaId, leadRef, etiquetaIdsNovas) {
   if (!etiquetaIdsNovas.length) return;
   try {
@@ -36,19 +48,37 @@ async function dispararGatilhosTag(contaId, leadRef, etiquetaIdsNovas) {
     });
     if (!gatilhos.length) return;
 
-    const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(leadRef)}&select=nome,whatsapp&limit=1`, { headers: H });
+    const rl = await fetch(`${SB_URL}/rest/v1/diag_instagram_leads?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(leadRef)}&select=nome,whatsapp,atendente,call_track,respostas_json&limit=1`, { headers: H });
     const lead = rl.ok ? (await rl.json())[0] : null;
     if (!lead) return;
     const nome = String(lead.nome || '').trim().split(/\s+/)[0] || 'tudo bem';
 
+    const rEt = await fetch(`${SB_URL}/rest/v1/lead_etiquetas?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(leadRef)}&select=etiqueta_id`, { headers: H });
+    const leadComEtiquetas = { ...lead, etiqueta_ids: rEt.ok ? (await rEt.json()).map((x) => x.etiqueta_id) : [] };
+
     for (const g of gatilhos) {
-      const ra = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true&select=mensagem,destino`, { headers: H });
+      let cfg = {}; try { cfg = JSON.parse(g.config || '{}'); } catch { /* vazio */ }
+      const ra = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true&select=id,mensagem,destino,publico`, { headers: H });
       const automs = ra.ok ? await ra.json() : [];
       for (const am of automs) {
         const alvo = am.destino || lead.whatsapp;
         if (!alvo || !am.mensagem) continue;
+        let publico = {}; try { publico = JSON.parse(am.publico || '{}'); } catch { /* sem filtro extra */ }
+        if (!leadCombinaPublico(leadComEtiquetas, publico)) continue;
         const texto = String(am.mensagem).replaceAll('{{nome}}', nome);
-        await enviarWhats(contaId, alvo, texto, 'Automação', leadRef).catch(() => {});
+        const atraso = atrasoMs(cfg.atraso);
+        if (atraso > 0) {
+          await fetch(`${SB_URL}/rest/v1/disparos`, {
+            method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
+            body: JSON.stringify({
+              conta_id: contaId, telefone: alvo.replace(/\D/g, ''), lead_ref: leadRef, nome: lead.nome || '',
+              mensagem: texto, enviar_em: new Date(Date.now() + atraso).toISOString(),
+              status: 'pendente', origem: 'automacao:' + am.id,
+            }),
+          }).catch(() => {});
+        } else {
+          await enviarWhats(contaId, alvo, texto, 'Automação', leadRef).catch(() => {});
+        }
       }
     }
   } catch { /* automação de tag é melhor-esforço */ }

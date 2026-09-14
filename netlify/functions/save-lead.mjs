@@ -27,6 +27,7 @@ import { votar, interpolar, carregarConfigPublicada, respostasLegiveis } from '.
 import { dispararMentoriaHub, obterConexaoMentoriaHub } from '../_conexoes.mjs';
 import { resolverContaPorHost } from '../_tenant.mjs';
 import { enviarWhats } from './whatsapp.mjs';
+import { leadCombinaPublico } from '../_publico.mjs';
 import { sincronizarEventoGoogle } from '../_googleAgenda.mjs';
 import { normalizarTelefoneBR } from '../_evolution.mjs';
 
@@ -229,7 +230,7 @@ export default async (req) => {
         },
       });
       try { await avaliarAlertaVip(SUPABASE_URL, H, contaId, row.lead_ref, row.nome, row.qualificador); } catch (e) { console.error('alerta-vip:', e?.message || e); }
-      try { await avaliarAutomacoesQualificador(SUPABASE_URL, H, contaId, row.lead_ref, row.nome, e164, row.qualificador); } catch (e) { console.error('automacao-qualificador:', e?.message || e); }
+      try { await avaliarAutomacoesQualificador(SUPABASE_URL, H, contaId, row.lead_ref, row.nome, e164, row.qualificador, row.atendente, respostas); } catch (e) { console.error('automacao-qualificador:', e?.message || e); }
     }
     /* Agendamento confirmado pelo embed do Cal.com dentro do próprio quiz —
        reflete na Agenda/Reuniões do MentoriaHub (mesmo chatquizzLeadRef do
@@ -296,8 +297,17 @@ async function avaliarAlertaVip(SB_URL, H, contaId, lead_ref, nome, qualificador
    trava de "só 1 automação por qualificador" (pode ter várias), e sem
    `destino` configurado manda pro PRÓPRIO LEAD (o `lead_vip` legado só
    manda pro staff; aqui o padrão é o contrário, mais natural pra uma
-   automação tipo "chegou o resultado, aqui vai sua oferta"). */
-async function avaliarAutomacoesQualificador(SB_URL, H, contaId, lead_ref, nome, telefone, qualificador) {
+   automação tipo "chegou o resultado, aqui vai sua oferta"). `publico` da
+   automação (se houver) filtra ESSE MESMO lead (ex.: só manda se o
+   atendente for X) e `atraso` do gatilho (imediato ou X tempo depois)
+   decide se manda na hora ou entra na fila de disparos. */
+// { modo:'imediato' } → 0 (manda na hora); { modo:'apos', valor, unidade } → ms de atraso
+function atrasoMs(atraso) {
+  if (!atraso || atraso.modo !== 'apos') return 0;
+  const unidadeMs = atraso.unidade === 'dias' ? 86400000 : atraso.unidade === 'minutos' ? 60000 : 3600000;
+  return (Number(atraso.valor) || 0) * unidadeMs;
+}
+async function avaliarAutomacoesQualificador(SB_URL, H, contaId, lead_ref, nome, telefone, qualificador, atendente, respostas) {
   if (!qualificador) return;
   const rg = await fetch(`${SB_URL}/rest/v1/gatilhos?conta_id=eq.${contaId}&tipo=eq.qualificador&ativo=eq.true&select=id,config`, { headers: H });
   if (!rg.ok) return;
@@ -307,14 +317,35 @@ async function avaliarAutomacoesQualificador(SB_URL, H, contaId, lead_ref, nome,
   });
   if (!gatilhos.length) return;
   const primeiroNome = String(nome || '').trim().split(/\s+/)[0] || 'tudo bem';
+  const rEt = await fetch(`${SB_URL}/rest/v1/lead_etiquetas?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(lead_ref)}&select=etiqueta_id`, { headers: H }).catch(() => null);
+  const leadFiltro = {
+    call_track: qualificador, atendente: atendente || '',
+    respostas_json: JSON.stringify(respostas || {}),
+    etiqueta_ids: (rEt && rEt.ok) ? (await rEt.json()).map((x) => x.etiqueta_id) : [],
+  };
   for (const g of gatilhos) {
-    const ra = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true&select=mensagem,destino`, { headers: H });
+    let cfg = {}; try { cfg = JSON.parse(g.config || '{}'); } catch { cfg = {}; }
+    const ra = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true&select=id,mensagem,destino,publico`, { headers: H });
     const automs = ra.ok ? await ra.json() : [];
     for (const am of automs) {
       const alvo = am.destino || telefone;
       if (!alvo || !am.mensagem) continue;
+      let publico = {}; try { publico = JSON.parse(am.publico || '{}'); } catch { /* sem filtro extra */ }
+      if (!leadCombinaPublico(leadFiltro, publico)) continue;
       const texto = String(am.mensagem).replaceAll('{{nome}}', primeiroNome).replaceAll('{{qualificador}}', qualificador);
-      try { await enviarWhats(contaId, alvo, texto, 'Automação', lead_ref); } catch { /* melhor-esforço */ }
+      const atraso = atrasoMs(cfg.atraso);
+      if (atraso > 0) {
+        await fetch(`${SB_URL}/rest/v1/disparos`, {
+          method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            conta_id: contaId, telefone: String(alvo).replace(/\D/g, ''), lead_ref, nome: nome || '',
+            mensagem: texto, enviar_em: new Date(Date.now() + atraso).toISOString(),
+            status: 'pendente', origem: 'automacao:' + am.id,
+          }),
+        }).catch(() => {});
+      } else {
+        try { await enviarWhats(contaId, alvo, texto, 'Automação', lead_ref); } catch { /* melhor-esforço */ }
+      }
     }
   }
 }
