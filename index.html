@@ -972,10 +972,11 @@ async function mostrarTemplate(texto, delay = 1000) {
   for (const p of paragrafos) await bot(p, { delay });
 }
 
-/* resolve o texto de diagnóstico certo pra esta combinação nível+qualificador:
-   nível em modo 'personalizado' com um texto preenchido pra ESTE qualificador
-   usa esse texto (substitui geral + convite); senão cai no texto geral do
-   nível como sempre foi. */
+/* resolve o texto de DIAGNÓSTICO certo pra esta combinação nível+qualificador
+   (nível em modo 'personalizado' com um texto preenchido pra ESTE qualificador
+   usa esse texto; senão cai no texto geral do nível como sempre foi). O
+   convite (por_qualificador) é sempre mostrado depois, em finalPresente() —
+   não é afetado por isso, é um bloco separado. */
 function textoDiagnostico(nivelChave, qualificadorChave) {
   const n = RESULTADOS.por_nivel[nivelChave] || Object.values(RESULTADOS.por_nivel)[0];
   if (!n) return { texto: '', personalizado: false };
@@ -1499,16 +1500,14 @@ async function etapaResultado() {
   await sleep(2500);
   await loader.done();
 
-  const diagPersonalizado = await mostrarResultado(res);
+  await mostrarResultado(res);
 
-  await finalPresente(diagPersonalizado);
+  await finalPresente();
   state.done = true; persist();
 }
 
-/* ---------- FINAL (todas): presente + roteamento pelo qualificador ----------
-   `diagPersonalizado` true = o diagnóstico já usou o texto personalizado por
-   qualificador (substitui tudo) — não repete o convite separado abaixo. */
-async function finalPresente(diagPersonalizado) {
+/* ---------- FINAL (todas): presente + roteamento pelo qualificador ---------- */
+async function finalPresente() {
   const s = safeData();
   await sleep(400);
   if (APARENCIA.tem_presente) {
@@ -1524,10 +1523,8 @@ async function finalPresente(diagPersonalizado) {
   }
 
   const qualificador = state.data.qualificador;
-  if (!diagPersonalizado) {
-    const convite = RESULTADOS.por_qualificador[qualificador];
-    if (convite) await mostrarTemplate(convite.texto, 4000);
-  }
+  const convite = RESULTADOS.por_qualificador[qualificador];
+  if (convite) await mostrarTemplate(convite.texto, 4000);
 
   const rota = (qualificador && ROTEAMENTO[qualificador]) || { tipo: 'crm' };
   if (rota.tipo === 'calcom' && rota.calLink) await renderAgendaEmbutida(rota.calLink, qualificador);

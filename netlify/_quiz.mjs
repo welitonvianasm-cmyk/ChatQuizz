@@ -19,11 +19,12 @@
  *     niveis:        [{ chave, nome, ordem }],
  *     resultados:    {
  *       por_nivel: { [chave]: { texto, modo:'geral'|'personalizado', porQualificador:{ [qualificadorChave]: texto } } },
- *         `modo:'personalizado'` = 1 texto próprio por qualificador PRA ESTE
- *         nível (substitui o texto geral e o convite separado de uma vez só);
- *         qualificador sem entrada preenchida em `porQualificador` cai pro
- *         `texto` geral automaticamente.
- *       por_qualificador: { [chave]: { texto } },  // "convite" — só é mostrado quando o nível não usou texto personalizado pra esse qualificador
+ *         `modo:'personalizado'` = 1 texto de DIAGNÓSTICO próprio por
+ *         qualificador PRA ESTE nível; qualificador sem entrada preenchida
+ *         em `porQualificador` cai pro `texto` geral automaticamente. Só
+ *         troca o diagnóstico — o convite (por_qualificador, abaixo) sempre
+ *         é mostrado depois, é um bloco separado.
+ *       por_qualificador: { [chave]: { texto } },  // "convite" — sempre mostrado, depois do diagnóstico
  *     },
  *     roteamento:    { [qualificadorChave]: { tipo: 'calcom'|'whatsapp'|'url'|'crm', calLink?, mensagem?, url? } },
  *   }
@@ -268,10 +269,10 @@ export function sanitizar(doc) {
     const entrada = (doc.resultados && doc.resultados.por_nivel && doc.resultados.por_nivel[chave]) || {};
     const texto = String(entrada.texto || '').trim().slice(0, 4000);
     if (!texto) return { erro: `O nível "${chave}" está sem texto de resultado.` };
-    // modo 'personalizado': 1 texto próprio por qualificador pra este nível
-    // (substitui o texto geral E o convite separado, pra quem tiver o campo
-    // preenchido); sem preencher pra um qualificador específico, cai pro
-    // texto geral automaticamente — nunca fica sem nada.
+    // modo 'personalizado': 1 texto de diagnóstico próprio por qualificador
+    // pra este nível (troca só o texto geral, o convite/por_qualificador
+    // continua sendo mostrado depois, sempre); qualificador sem texto
+    // próprio preenchido cai pro texto geral automaticamente.
     const modo = entrada.modo === 'personalizado' ? 'personalizado' : 'geral';
     const porQualificador = {};
     if (modo === 'personalizado' && entrada.porQualificador && typeof entrada.porQualificador === 'object') {

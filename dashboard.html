@@ -4201,11 +4201,11 @@ function qeCampoTexto(titulo, valor, onInput, linhas) {
   wrap.appendChild(ta);
   return wrap;
 }
-/* 1 nível: texto "Geral" (serve pra qualquer qualificador) ou "Personalizado
-   por qualificador" (1 texto por qualificador cadastrado — quantos existirem;
-   qualificador sem texto próprio cai pro texto geral sozinho). Personalizado
-   substitui TUDO pra essa combinação (diagnóstico + convite), então o convite
-   separado (por_qualificador, abaixo) não repete nesse caso. */
+/* 1 nível: texto de DIAGNÓSTICO "Geral" (serve pra qualquer qualificador) ou
+   "Personalizado por qualificador" (1 texto por qualificador cadastrado —
+   quantos existirem; qualificador sem texto próprio cai pro texto geral
+   sozinho). Só troca o diagnóstico — o convite (por_qualificador, abaixo)
+   sempre aparece depois, é um bloco separado que não muda com isso. */
 function qeRenderNivelResultado(box, n) {
   const entry = QE.resultados.por_nivel[n.chave] = QE.resultados.por_nivel[n.chave] || { texto: '', modo: 'geral', porQualificador: {} };
   entry.modo = entry.modo === 'personalizado' ? 'personalizado' : 'geral';
@@ -4248,7 +4248,7 @@ function qeRenderResultados(box) {
   QE.niveis.forEach((n) => qeRenderNivelResultado(box, n));
   const h2 = el('h3', 'qe-titulo'); h2.textContent = 'Por qualificador (convite)'; h2.style.margin = '16px 0 6px'; box.appendChild(h2);
   const subConvite = el('div', 'sub'); subConvite.style.marginBottom = '8px';
-  subConvite.textContent = 'Mostrado logo depois do diagnóstico — some sozinho quando o nível tem um texto personalizado preenchido pra este qualificador (o personalizado já substitui o convite).';
+  subConvite.textContent = 'Sempre mostrado logo depois do diagnóstico (e do "Encontro"/presente, quando ativo) — não muda com o modo Geral/Personalizado do nível, que só afeta o diagnóstico.';
   box.appendChild(subConvite);
   QE.qualificadores.forEach((q) => {
     QE.resultados.por_qualificador[q.chave] = QE.resultados.por_qualificador[q.chave] || { texto: '' };
@@ -4300,27 +4300,20 @@ function qeRenderPreview() {
     const quali = QE.qualificadores.find((q) => q.chave === selQuali.value);
     const entryNivel = QE.resultados.por_nivel[selNivel.value] || {};
     const personalizado = entryNivel.modo === 'personalizado' && entryNivel.porQualificador && entryNivel.porQualificador[selQuali.value];
+    const textoNivel = personalizado ? entryNivel.porQualificador[selQuali.value] : (entryNivel.texto || '');
+    const textoQuali = (QE.resultados.por_qualificador[selQuali.value] || {}).texto || '';
 
-    if (personalizado) {
-      const l1 = el('div', 'muted-cell'); l1.textContent = 'Diagnóstico personalizado (nível: ' + (nivel?.nome || selNivel.value) + ' + qualificador: ' + (quali?.nome || selQuali.value) + ')';
-      l1.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;';
-      out.appendChild(l1);
-      out.appendChild(qePreviewBalao(entryNivel.porQualificador[selQuali.value]));
-      const aviso = el('div', 'muted-cell'); aviso.style.cssText = 'font-size:11.5px;margin-top:4px;';
-      aviso.textContent = 'Personalizado substitui o convite — o bloco "Por qualificador" abaixo não aparece pra essa combinação.';
-      out.appendChild(aviso);
-    } else {
-      const textoNivel = entryNivel.texto || '';
-      const textoQuali = (QE.resultados.por_qualificador[selQuali.value] || {}).texto || '';
+    const l1 = el('div', 'muted-cell');
+    l1.textContent = personalizado
+      ? 'Diagnóstico personalizado (nível: ' + (nivel?.nome || selNivel.value) + ' + qualificador: ' + (quali?.nome || selQuali.value) + ')'
+      : 'Diagnóstico (nível: ' + (nivel?.nome || selNivel.value) + ')';
+    l1.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;';
+    out.appendChild(l1);
+    out.appendChild(textoNivel ? qePreviewBalao(textoNivel) : (() => { const e = el('div', 'muted-cell'); e.textContent = 'Sem texto configurado pra esse nível.'; return e; })());
 
-      const l1 = el('div', 'muted-cell'); l1.textContent = 'Diagnóstico (nível: ' + (nivel?.nome || selNivel.value) + ')'; l1.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;';
-      out.appendChild(l1);
-      out.appendChild(textoNivel ? qePreviewBalao(textoNivel) : (() => { const e = el('div', 'muted-cell'); e.textContent = 'Sem texto configurado pra esse nível.'; return e; })());
-
-      const l2 = el('div', 'muted-cell'); l2.textContent = 'Convite (qualificador: ' + (quali?.nome || selQuali.value) + ')'; l2.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:14px 0 6px;';
-      out.appendChild(l2);
-      out.appendChild(textoQuali ? qePreviewBalao(textoQuali) : (() => { const e = el('div', 'muted-cell'); e.textContent = 'Sem texto configurado pra esse qualificador.'; return e; })());
-    }
+    const l2 = el('div', 'muted-cell'); l2.textContent = 'Convite (qualificador: ' + (quali?.nome || selQuali.value) + ')'; l2.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:14px 0 6px;';
+    out.appendChild(l2);
+    out.appendChild(textoQuali ? qePreviewBalao(textoQuali) : (() => { const e = el('div', 'muted-cell'); e.textContent = 'Sem texto configurado pra esse qualificador.'; return e; })());
 
     const rota = QE.roteamento[selQuali.value] || { tipo: 'crm' };
     const l3 = el('div', 'muted-cell'); l3.textContent = 'Como termina'; l3.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:14px 0 6px;';
