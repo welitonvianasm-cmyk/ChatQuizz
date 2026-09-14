@@ -17,7 +17,14 @@
  *       de desempate — fica só como contexto (Cartão do Lead + Agente IA).
  *     qualificadores:[{ chave, nome, cor, ordem, ativo }],
  *     niveis:        [{ chave, nome, ordem }],
- *     resultados:    { por_nivel: { [chave]: { texto } }, por_qualificador: { [chave]: { texto } } },
+ *     resultados:    {
+ *       por_nivel: { [chave]: { texto, modo:'geral'|'personalizado', porQualificador:{ [qualificadorChave]: texto } } },
+ *         `modo:'personalizado'` = 1 texto próprio por qualificador PRA ESTE
+ *         nível (substitui o texto geral e o convite separado de uma vez só);
+ *         qualificador sem entrada preenchida em `porQualificador` cai pro
+ *         `texto` geral automaticamente.
+ *       por_qualificador: { [chave]: { texto } },  // "convite" — só é mostrado quando o nível não usou texto personalizado pra esse qualificador
+ *     },
  *     roteamento:    { [qualificadorChave]: { tipo: 'calcom'|'whatsapp'|'url'|'crm', calLink?, mensagem?, url? } },
  *   }
  */
@@ -91,7 +98,7 @@ export const PADRAO = {
   ],
   resultados: {
     por_nivel: {
-      low: { texto:
+      low: { modo: 'geral', porQualificador: {}, texto:
         '{nome}, li tudo o que você me contou.\n\n' +
         'O que eu percebo é que você está num momento de <b>Baixa Consciência</b>: você sente que precisa de uma mudança, mas ainda não deu o primeiro passo de verdade.\n\n' +
         '<b>Isso é mais comum do que parece.</b> A maioria das pessoas que chegam até aqui já pensou em mudar antes, mas algo sempre atrapalhou: falta de tempo, de clareza, ou a sensação de que "ainda não é a hora".\n\n' +
@@ -99,7 +106,7 @@ export const PADRAO = {
         '<b>Se isso continuar assim, 3 coisas tendem a acontecer:</b><br>• A sensação de estar andando em círculos vai continuar.<br>• O tempo que já passou sem mudança vai pesar cada vez mais.<br>• Vai ficar mais difícil recomeçar quanto mais tempo passar.\n\n' +
         '<b>A boa notícia: dar o primeiro passo certo já muda tudo.</b> Você não precisa ter todas as respostas agora, só precisa de uma direção clara.\n\n' +
         '💬 <i>"Você não precisa ver a escada inteira, só precisa dar o primeiro passo."</i>' },
-      mid: { texto:
+      mid: { modo: 'geral', porQualificador: {}, texto:
         '{nome}, li tudo o que você me contou.\n\n' +
         'O que eu percebo é que você está num momento de <b>Média Consciência</b>: você já sabe que precisa de ajuda, mas ainda está avaliando se vale investir tempo e recursos nisso agora.\n\n' +
         '<b>Você já está no caminho certo, só falta decisão.</b> Diferente de quem ainda nem começou a pensar no assunto, você já entende o problema, só não deu o passo final.\n\n' +
@@ -107,7 +114,7 @@ export const PADRAO = {
         '<b>Se você não decidir agora, 3 coisas tendem a acontecer:</b><br>• A situação atual vai continuar consumindo energia todo dia.<br>• Você vai continuar adiando uma decisão que, no fundo, já sabe que precisa tomar.<br>• O custo de esperar mais tende a ser maior que o de agir agora.\n\n' +
         '<b>Investir em resolver isso agora costuma custar menos do que continuar convivendo com o problema.</b>\n\n' +
         '💬 <i>"Decisão adiada também é uma decisão, só que geralmente a pior."</i>' },
-      high: { texto:
+      high: { modo: 'geral', porQualificador: {}, texto:
         '{nome}, li tudo o que você me contou.\n\n' +
         'O que eu percebo é que você está num momento de <b>Alta Consciência</b>: você já sabe o que quer, já entende o problema, e chegou a hora de agir. Parabéns por chegar até aqui.\n\n' +
         '<b>Você está no ponto ideal pra dar o próximo passo.</b> Você já reconhece o valor de resolver isso e topa investir tempo e recursos no caminho certo.\n\n' +
@@ -258,9 +265,22 @@ export function sanitizar(doc) {
 
   const resultados = { por_nivel: {}, por_qualificador: {} };
   for (const chave of nChaves) {
-    const texto = String((doc.resultados && doc.resultados.por_nivel && doc.resultados.por_nivel[chave] && doc.resultados.por_nivel[chave].texto) || '').trim().slice(0, 4000);
+    const entrada = (doc.resultados && doc.resultados.por_nivel && doc.resultados.por_nivel[chave]) || {};
+    const texto = String(entrada.texto || '').trim().slice(0, 4000);
     if (!texto) return { erro: `O nível "${chave}" está sem texto de resultado.` };
-    resultados.por_nivel[chave] = { texto };
+    // modo 'personalizado': 1 texto próprio por qualificador pra este nível
+    // (substitui o texto geral E o convite separado, pra quem tiver o campo
+    // preenchido); sem preencher pra um qualificador específico, cai pro
+    // texto geral automaticamente — nunca fica sem nada.
+    const modo = entrada.modo === 'personalizado' ? 'personalizado' : 'geral';
+    const porQualificador = {};
+    if (modo === 'personalizado' && entrada.porQualificador && typeof entrada.porQualificador === 'object') {
+      for (const qc of qChaves) {
+        const t = String(entrada.porQualificador[qc] || '').trim().slice(0, 4000);
+        if (t) porQualificador[qc] = t;
+      }
+    }
+    resultados.por_nivel[chave] = { texto, modo, porQualificador };
   }
   for (const chave of qChaves) {
     const texto = String((doc.resultados && doc.resultados.por_qualificador && doc.resultados.por_qualificador[chave] && doc.resultados.por_qualificador[chave].texto) || '').trim().slice(0, 4000);
