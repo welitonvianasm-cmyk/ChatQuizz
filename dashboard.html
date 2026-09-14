@@ -1961,6 +1961,9 @@
         <span class="muted-cell" id="dpCount"></span>
       </div>
       <div class="tbl-wrap"><table id="dpTabela"></table></div>
+      <div style="display:flex;justify-content:center;padding:10px 0;">
+        <button class="btn" id="dpCarregarMais" style="display:none;">Carregar mais</button>
+      </div>
     </div>
 
     <!-- ===== AGENDA — Dashboard (calendário) ===== -->
@@ -8494,11 +8497,17 @@ $('#dpAgendar').onclick = async () => {
   $('#dpStatus').textContent = r.ok ? '✓ ' + r.criados + ' disparo(s) na fila' : (r.error || 'erro');
   if (r.ok) { DP_CONTATOS = []; dpRenderEscolhidos(); $('#dpMsg').value = ''; carregarDisparos(); }
 };
-async function carregarDisparos() {
-  const r = await dpApi({ action: 'listar', status: DP_FILTRO });
-  const lista = r.ok ? (r.disparos || []) : [];
-  if (!r.ok && r.error) $('#dpCount').textContent = r.error;
-  else $('#dpCount').textContent = nf(lista.length) + ' disparo(s)';
+const DP_PAGINA = 200;
+let DP_ACUMULADOS = [];
+let DP_TOTAL = 0;
+function dpOrigemLabel(origem) {
+  if (origem === 'reuniao_1h') return 'Lembrete de reunião';
+  if (String(origem || '').startsWith('automacao:')) return 'Automação (gatilho)';
+  return 'Manual';
+}
+function dpRenderTabela() {
+  const lista = DP_ACUMULADOS;
+  $('#dpCount').textContent = nf(lista.length) + ' de ' + nf(DP_TOTAL) + ' disparo(s)';
   const t = $('#dpTabela'); if (!t) return; clear(t);
   t.appendChild(tableHead(['Enviar em', 'Contato', 'Telefone', 'Mensagem', 'Origem', 'Situação', '']));
   const tb = el('tbody');
@@ -8513,14 +8522,29 @@ async function carregarDisparos() {
       acao = el('button', 'acao-btn'); acao.textContent = 'Cancelar';
       acao.onclick = async () => { if (confirm('Cancelar este disparo?')) { await dpApi({ action: 'cancelar', id: d.id }); carregarDisparos(); } };
     }
-    tr.append(td(fmtDateTime(d.enviar_em)), td(d.nome, 'nome'), td(d.telefone), td(msg), td(d.origem === 'reuniao_1h' ? 'Lembrete de reunião' : 'Manual'), td(pill), td(acao));
+    tr.append(td(fmtDateTime(d.enviar_em)), td(d.nome, 'nome'), td(d.telefone), td(msg), td(dpOrigemLabel(d.origem)), td(pill), td(acao));
     tb.appendChild(tr);
   });
   if (!lista.length) { const tr = el('tr'); const c = td('Fila vazia.'); c.colSpan = 7; c.className = 'muted-cell'; tr.appendChild(c); tb.appendChild(tr); }
   t.appendChild(tb);
+  $('#dpCarregarMais').style.display = lista.length < DP_TOTAL ? '' : 'none';
+}
+async function carregarDisparos() {
+  DP_ACUMULADOS = []; DP_TOTAL = 0;
+  const r = await dpApi({ action: 'listar', status: DP_FILTRO, limit: DP_PAGINA, offset: 0 });
+  if (!r.ok) { $('#dpCount').textContent = r.error || 'erro ao carregar'; return; }
+  DP_ACUMULADOS = r.disparos || []; DP_TOTAL = r.total || DP_ACUMULADOS.length;
+  dpRenderTabela();
+}
+async function dpCarregarMais() {
+  const r = await dpApi({ action: 'listar', status: DP_FILTRO, limit: DP_PAGINA, offset: DP_ACUMULADOS.length });
+  if (!r.ok) return;
+  DP_ACUMULADOS = DP_ACUMULADOS.concat(r.disparos || []); DP_TOTAL = r.total || DP_TOTAL;
+  dpRenderTabela();
 }
 $('#dpFiltro').addEventListener('change', (e) => { DP_FILTRO = e.target.value; carregarDisparos(); });
 $('#dpAtualizar').onclick = carregarDisparos;
+$('#dpCarregarMais').onclick = dpCarregarMais;
 
 function utmCell(r) {
   const s = String(r.utm_source || '').trim();
