@@ -1334,7 +1334,7 @@
   <!-- DASHBOARD -->
   <div id="app">
     <div id="impersonarBar" hidden style="margin-left:225px;padding:10px clamp(20px,3vw,48px);background:var(--warning-bg);color:var(--warning-text);font-size:13px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-      <span>⚠ Você está vendo como: <b id="impersonarNome">—</b></span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="display:inline;vertical-align:-2px;"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Você está vendo como: <b id="impersonarNome">—</b></span>
       <span style="flex:1"></span>
       <button id="btnSairImpersonar" style="padding:7px 14px;border:none;border-radius:8px;background:var(--warning-text);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;">Voltar pro meu painel</button>
     </div>
@@ -3619,7 +3619,7 @@ function montarCartaoLead(r, container, opts = {}) {
       const meio = el('div'); meio.style.cssText = 'flex:1;min-width:0;';
       const tit = el('div'); tit.textContent = t.titulo;
       tit.style.cssText = 'font-weight:600;' + (t.concluida ? 'text-decoration:line-through;color:var(--text-muted);' : '');
-      const quando = el('div'); quando.textContent = '⏰ ' + fmtDateTime(t.vencimento);
+      const quando = el('div'); quando.innerHTML = icone('relogio') + ' ' + fmtDateTime(t.vencimento);
       quando.style.cssText = 'font-size:11.5px;margin-top:2px;' + (vencida ? 'color:var(--red);font-weight:700;' : 'color:var(--text-muted);');
       meio.append(tit, quando);
       const bConcluir = el('button', 'acao-btn'); bConcluir.textContent = t.concluida ? 'Reabrir' : '✓ Concluir';
@@ -4376,20 +4376,20 @@ function qeRenderPreview() {
     const l3 = el('div', 'muted-cell'); l3.textContent = 'Como termina'; l3.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:14px 0 6px;';
     out.appendChild(l3);
     const fim = el('div'); fim.style.cssText = 'font-size:13px;';
-    if (rota.tipo === 'calcom') fim.textContent = '📅 Agenda do Cal.com embutida (' + (rota.calLink || 'sem link configurado') + ')';
+    if (rota.tipo === 'calcom') fim.innerHTML = icone('calendario') + ' Agenda do Cal.com embutida (' + (rota.calLink || 'sem link configurado') + ')';
     else if (rota.tipo === 'whatsapp') {
       const partes = [];
-      if (rota.auto) partes.push('💬 Mensagem automática de WhatsApp (fora daqui, no número do lead)');
-      if (rota.botao) partes.push('🔗 Botão de WhatsApp, direciona pra ' + escapeHtmlMaster(rota.numero_ou_link || '(sem número/link configurado)'));
-      fim.innerHTML = partes.join('<br>') || '⚠ Nenhuma das duas opções (automático/botão) está marcada.';
+      if (rota.auto) partes.push(icone('conversa') + ' Mensagem automática de WhatsApp (fora daqui, no número do lead)');
+      if (rota.botao) partes.push(icone('link') + ' Botão de WhatsApp, direciona pra ' + escapeHtmlMaster(rota.numero_ou_link || '(sem número/link configurado)'));
+      fim.innerHTML = partes.join('<br>') || (icone('alerta') + ' Nenhuma das duas opções (automático/botão) está marcada.');
     }
     else if (rota.tipo === 'url') {
-      fim.innerHTML = '🔗 Botão configurável, direciona pra ' + escapeHtmlMaster(rota.url || '(sem link configurado)');
+      fim.innerHTML = icone('link') + ' Botão configurável, direciona pra ' + escapeHtmlMaster(rota.url || '(sem link configurado)');
       const btn = el('a'); btn.href = '#'; btn.onclick = (e) => e.preventDefault();
-      btn.style.cssText = 'display:inline-flex;margin-top:8px;padding:11px 16px;border-radius:11px;font-weight:700;font-size:13px;color:#fff;background:' + (AP?.cta_url_cor || '#a155f2') + ';';
-      btn.textContent = '🔗  ' + (AP?.cta_url_texto || 'Continuar');
+      btn.style.cssText = 'display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:11px 16px;border-radius:11px;font-weight:700;font-size:13px;color:#fff;background:' + (AP?.cta_url_cor || '#a155f2') + ';';
+      btn.innerHTML = icone('link') + ' ' + escapeHtmlMaster(AP?.cta_url_texto || 'Continuar');
       fim.appendChild(el('br')); fim.appendChild(btn);
-    } else fim.textContent = '👤 Sem ação automática, a equipe (CRM) entra em contato depois.';
+    } else fim.innerHTML = icone('pessoa') + ' Sem ação automática, a equipe (CRM) entra em contato depois.';
     out.appendChild(fim);
   };
   return box;
@@ -4426,7 +4426,7 @@ function qeRenderRoteamento(box) {
       if (!QE_WA_CONECTADO) {
         const aviso = el('div', 'muted-cell');
         aviso.style.cssText = 'color:var(--amber);font-weight:600;margin-bottom:10px;';
-        aviso.textContent = '⚠ O WhatsApp ainda não está conectado (aba Conexões), conecte pra poder ativar o envio automático.';
+        aviso.innerHTML = icone('alerta') + ' O WhatsApp ainda não está conectado (aba Conexões), conecte pra poder ativar o envio automático.';
         card.appendChild(aviso);
       }
       if (rota.auto && QE_WA_CONECTADO) {
@@ -5036,7 +5036,7 @@ function montarTabelaReuniaoGoogle(det, eventos) {
     const tr = el('tr');
     const hora = isNaN(new Date(e.inicio)) ? '—' : new Date(e.inicio).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
     let linkCell = '—';
-    if (e.linkReuniao) { const a = el('a'); a.href = e.linkReuniao; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Abrir ↗'; linkCell = a; }
+    if (e.linkReuniao) { const a = el('a'); a.href = e.linkReuniao; a.target = '_blank'; a.rel = 'noopener'; a.innerHTML = 'Abrir ' + icone('subindo'); linkCell = a; }
     tr.append(td(hora), td(e.titulo, 'nome'), td(linkCell));
     tb.appendChild(tr);
   });
@@ -5734,15 +5734,15 @@ function tendenciaPill(t) {
   if (!t.anterior) {
     if (!t.atual) { p.classList.add('novo'); p.textContent = '—'; return p; }
     p.classList.add(t.favoravel === 'alta' ? 'up' : 'down');
-    p.textContent = '↗ novo';
+    p.innerHTML = icone('subindo') + ' novo';
     return p;
   }
   const delta = Math.round(((t.atual - t.anterior) / t.anterior) * 100);
   const subiu = delta > 0;
   const bom = delta === 0 ? null : (subiu ? t.favoravel === 'alta' : t.favoravel === 'baixa');
   p.classList.add(bom == null ? 'novo' : (bom ? 'up' : 'down'));
-  const seta = delta > 0 ? '↗' : delta < 0 ? '↘' : '→';
-  p.textContent = seta + ' ' + Math.abs(delta) + '%';
+  const iconeSeta = delta > 0 ? 'subindo' : delta < 0 ? 'descendo' : 'estavel';
+  p.innerHTML = icone(iconeSeta) + ' ' + Math.abs(delta) + '%';
   return p;
 }
 /* ===== Visão Geral — helpers de cálculo dos 5 grupos padrão de KPI ===== */
@@ -7748,7 +7748,7 @@ $('#chVerLead').onclick = () => { if (CH.lead) { fecharChat(); abrirLeadModal(CH
 /* corpo de UMA mensagem — texto puro, ou mídia (imagem/vídeo/áudio/
    documento) com legenda opcional. Compartilhado pelo chat popup e pelo
    chat embutido de Conversas. */
-const ROTULO_MIDIA_SEM_PREVIA = { audio: '🎤 Áudio (sem prévia)', imagem: '📷 Imagem (sem prévia)', documento: '📄 Documento (sem prévia)', video: '🎬 Vídeo (sem prévia)', figurinha: '🌟 Figurinha' };
+const ROTULO_MIDIA_SEM_PREVIA = { audio: icone('microfone') + ' Áudio (sem prévia)', imagem: icone('imagem') + ' Imagem (sem prévia)', documento: icone('documento') + ' Documento (sem prévia)', video: icone('video') + ' Vídeo (sem prévia)', figurinha: icone('estrela') + ' Figurinha' };
 function renderizarConteudoMensagem(m) {
   const wrap = el('div');
   if (m.midia_base64) {
@@ -7763,13 +7763,13 @@ function renderizarConteudoMensagem(m) {
       const aud = el('audio'); aud.src = m.midia_base64; aud.controls = true; aud.style.cssText = 'max-width:220px;display:block;';
       wrap.appendChild(aud);
     } else {
-      const a = el('a'); a.href = m.midia_base64; a.target = '_blank'; a.rel = 'noopener'; a.textContent = '📄 Baixar arquivo';
+      const a = el('a'); a.href = m.midia_base64; a.target = '_blank'; a.rel = 'noopener'; a.innerHTML = icone('documento') + ' Baixar arquivo';
       a.style.cssText = 'display:inline-flex;gap:5px;color:var(--text);font-weight:700;text-decoration:underline;';
       wrap.appendChild(a);
     }
     if (m.texto) { const cap = el('div'); cap.textContent = m.texto; cap.style.marginTop = '5px'; wrap.appendChild(cap); }
   } else if (m.tipo && m.tipo !== 'texto' && !m.texto) {
-    const v = el('div'); v.style.cssText = 'color:var(--text-muted);font-style:italic;'; v.textContent = ROTULO_MIDIA_SEM_PREVIA[m.tipo] || 'Mensagem sem prévia';
+    const v = el('div'); v.style.cssText = 'color:var(--text-muted);font-style:italic;'; v.innerHTML = ROTULO_MIDIA_SEM_PREVIA[m.tipo] || 'Mensagem sem prévia';
     wrap.appendChild(v);
   } else {
     wrap.textContent = m.texto;
