@@ -5310,21 +5310,27 @@ function kbRender() {
   }
   const byRef = new Map(ALL.map((l) => [l.lead_ref, l]));
   const boardPorId = new Map(vis.map((b) => [b.id, b]));
-  const colsIter = geral
-    ? vis.flatMap((b) => KB.cols.filter((c) => c.board_id === b.id && (c.tipo || c.mostrar_geral !== false)))
-    : KB.cols.filter((c) => c.board_id === KB_BOARD);
+  const colIdParaBoard = new Map(KB.cols.map((c) => [c.id, c.board_id]));
+  /* Kanban Geral: junta as colunas de mesmo NOME de todos os quadros numa
+     coluna só (ex.: "Atribuído" do Weliton + "Atribuído" da Maria viram 1),
+     em vez de repetir o funil inteiro 1x por atendente — cada card mostra
+     de qual quadro veio (rótulo por card, já que a coluna agora é mista). */
+  let colsIter;
+  if (geral) {
+    const porNome = new Map();
+    vis.forEach((b) => {
+      KB.cols.filter((c) => c.board_id === b.id && (c.tipo || c.mostrar_geral !== false)).forEach((c) => {
+        if (!porNome.has(c.nome)) porNome.set(c.nome, { id: 'geral:' + c.nome, nome: c.nome, cor: c.cor, tipo: c.tipo, origensCols: [] });
+        porNome.get(c.nome).origensCols.push(c);
+      });
+    });
+    colsIter = [...porNome.values()];
+  } else {
+    colsIter = KB.cols.filter((c) => c.board_id === KB_BOARD);
+  }
 
   colsIter.forEach((col) => {
     const cEl = el('div', 'kb-col');
-
-    /* Kanban Geral: visão fixa e só-leitura que junta todos os quadros —
-       cada coluna leva um rótulo de qual quadro/atendente é a origem dela */
-    if (geral) {
-      const b = boardPorId.get(col.board_id);
-      const rot = el('div'); rot.textContent = b ? (b.nome + (b.atendente ? ' · ' + b.atendente : '')) : '';
-      rot.style.cssText = 'font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--text-muted);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-      cEl.appendChild(rot);
-    }
 
     /* ===== cabeçalho: cor + nome + contagem + lupa + menu ⋮ ===== */
     const corHex = KB_CORES[col.cor] || '';
@@ -5421,7 +5427,8 @@ function kbRender() {
         kbCarregar();
       };
     }
-    const cardsAll = KB.cards.filter((k) => k.col_id === col.id);
+    const colIdsDoGrupo = geral ? new Set(col.origensCols.map((c) => c.id)) : null;
+    const cardsAll = geral ? KB.cards.filter((k) => colIdsDoGrupo.has(k.col_id)) : KB.cards.filter((k) => k.col_id === col.id);
     const desenharCards = () => {
       clear(body);
       const q = (KB_BUSCA.get(col.id) || '').trim().toLowerCase();
@@ -5450,6 +5457,16 @@ function kbRender() {
         const qualifNome = lead && lead.call_track ? (qualificadoresOuFallback().find((x) => x.chave === lead.call_track) || {}).nome || lead.call_track : '';
         const sm = el('small'); sm.textContent = lead ? [(lead.whatsapp || ''), qualifNome].filter(Boolean).join(' · ') : '';
         k.append(nm, sm);
+        if (geral) {
+          // coluna do Geral é mista (junta o mesmo nome de vários quadros) —
+          // por isso o rótulo de origem vai por CARD, não mais por coluna
+          const b = boardPorId.get(colIdParaBoard.get(card.col_id));
+          if (b) {
+            const org = el('div'); org.style.cssText = 'font-size:9.5px;color:var(--text-dim);margin-top:2px;';
+            org.textContent = b.nome + (b.atendente ? ' · ' + b.atendente : '');
+            k.appendChild(org);
+          }
+        }
         if (lead) {
           const etRow = el('div'); etRow.style.cssText = 'display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:5px;';
           (ETIQUETAS_POR_LEAD[card.lead_ref] || []).forEach((id) => {
