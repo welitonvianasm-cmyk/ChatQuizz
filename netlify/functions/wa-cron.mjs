@@ -142,6 +142,7 @@ async function processarGatilhosAgendados(contaId) {
   const agora = new Date();
   const hojeLocal = diaLocal(agora);
   const minutoAgora = horaLocalMin(agora);
+  const inicioHojeISO = new Date(hojeLocal + 'T00:00:00-03:00').toISOString();   // América/São_Paulo não tem horário de verão desde 2019, offset fixo
 
   for (const g of gatilhosAgendados) {
     let cfg = {}; try { cfg = JSON.parse(g.config || '{}'); } catch { continue; }
@@ -156,6 +157,19 @@ async function processarGatilhosAgendados(contaId) {
       deveDisparar = !jaHoje && diaCerto && !!cfg.hora && dentroDaJanela;
     }
     if (!deveDisparar) continue;
+
+    // reivindica o gatilho ANTES de criar qualquer disparo (PATCH condicional:
+    // só marca disparado_em se ele ainda não tinha sido marcado nessa janela) —
+    // sem isso, 2 execuções do cron sobrepostas podiam ver disparado_em vazio
+    // ao mesmo tempo e criar a leva inteira em dobro pra todo o público (mesma
+    // classe de bug já corrigida na fila de envio, ver comentário em rodarConta)
+    const filtroClaim = cfg.modo === 'unica' ? '&disparado_em=is.null' : `&or=(disparado_em.is.null,disparado_em.lt.${inicioHojeISO})`;
+    const rClaim = await sb(`gatilhos?id=eq.${g.id}${filtroClaim}`, {
+      method: 'PATCH', headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ disparado_em: agora.toISOString() }),
+    });
+    const claimado = rClaim.ok ? await rClaim.json().catch(() => []) : [];
+    if (!claimado.length) continue;   // outra execução do cron já pegou esse gatilho agora
 
     const ra = await sb(`automacoes?conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true&select=id,mensagem,destino,publico`);
     const automs = ra.ok ? await ra.json() : [];
@@ -182,7 +196,6 @@ async function processarGatilhosAgendados(contaId) {
         }).catch(() => {});
       }
     }
-    await sb(`gatilhos?id=eq.${g.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ disparado_em: agora.toISOString() }) }).catch(() => {});
   }
 }
 
