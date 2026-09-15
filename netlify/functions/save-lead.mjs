@@ -27,9 +27,9 @@ import { votar, interpolar, carregarConfigPublicada, respostasLegiveis } from '.
 import { dispararMentoriaHub, obterConexaoMentoriaHub } from '../_conexoes.mjs';
 import { resolverContaPorHost } from '../_tenant.mjs';
 import { enviarWhats } from './whatsapp.mjs';
-import { leadCombinaPublico, reconciliarDisparosPendentes, reivindicarEnvioImediato, marcarResultadoEnvioImediato } from '../_publico.mjs';
+import { leadCombinaPublico, reconciliarDisparosPendentes, reivindicarEnvioImediato, marcarResultadoEnvioImediato, inserirDisparoSeguro } from '../_publico.mjs';
 import { sincronizarEventoGoogle } from '../_googleAgenda.mjs';
-import { normalizarTelefoneBR } from '../_evolution.mjs';
+import { normalizarTelefoneBR, nomeInstanciaPorId } from '../_evolution.mjs';
 
 const SUPABASE_URL = (process.env.SUPABASE_DIAG_URL || 'https://aktktxizmpwckvxbdjzf.supabase.co').replace(/\/+$/, '');
 const TABLE = 'diag_instagram_leads';
@@ -310,6 +310,13 @@ function atrasoMs(atraso) {
   const unidadeMs = atraso.unidade === 'dias' ? 86400000 : atraso.unidade === 'minutos' ? 60000 : 3600000;
   return (Number(atraso.valor) || 0) * unidadeMs;
 }
+// automações de um gatilho, incluindo instancia_id quando a coluna já
+// existe (setup-automacoes-instancia.sql) — sem quebrar a leitura se não
+async function automacoesComInstancia(SB_URL, H, query) {
+  let r = await fetch(`${SB_URL}/rest/v1/automacoes?${query}&select=id,mensagem,destino,publico,instancia_id`, { headers: H });
+  if (!r.ok) r = await fetch(`${SB_URL}/rest/v1/automacoes?${query}&select=id,mensagem,destino,publico`, { headers: H });
+  return r.ok ? await r.json() : [];
+}
 async function avaliarAutomacoesQualificador(SB_URL, H, contaId, lead_ref, nome, telefone, qualificador, atendente, respostas) {
   if (!qualificador) return;
   const rg = await fetch(`${SB_URL}/rest/v1/gatilhos?conta_id=eq.${contaId}&tipo=eq.qualificador&ativo=eq.true&select=id,config`, { headers: H });
@@ -328,8 +335,7 @@ async function avaliarAutomacoesQualificador(SB_URL, H, contaId, lead_ref, nome,
   };
   for (const g of gatilhos) {
     let cfg = {}; try { cfg = JSON.parse(g.config || '{}'); } catch { cfg = {}; }
-    const ra = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true&select=id,mensagem,destino,publico`, { headers: H });
-    const automs = ra.ok ? await ra.json() : [];
+    const automs = await automacoesComInstancia(SB_URL, H, `conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true`);
     for (const am of automs) {
       const alvo = am.destino || telefone;
       if (!alvo || !am.mensagem) continue;
@@ -341,15 +347,14 @@ async function avaliarAutomacoesQualificador(SB_URL, H, contaId, lead_ref, nome,
         // chave_unica por minuto: protege contra a MESMA requisição chegando
         // duplicada (retry de rede) criar 2 disparos atrasados idênticos
         const balde = Math.floor(Date.now() / 60000);
-        await fetch(`${SB_URL}/rest/v1/disparos`, {
-          method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
-          body: JSON.stringify({
-            conta_id: contaId, telefone: String(alvo).replace(/\D/g, ''), lead_ref, nome: nome || '',
-            mensagem: texto, enviar_em: new Date(Date.now() + atraso).toISOString(),
-            status: 'pendente', origem: 'automacao:' + am.id,
-            chave_unica: 'atrasado:' + am.id + '|' + lead_ref + '|' + balde,
-          }),
-        }).catch(() => {});
+        const nomeInstAm = await nomeInstanciaPorId(am.instancia_id).catch(() => null);
+        await inserirDisparoSeguro(SB_URL, H, {
+          conta_id: contaId, telefone: String(alvo).replace(/\D/g, ''), lead_ref, nome: nome || '',
+          mensagem: texto, enviar_em: new Date(Date.now() + atraso).toISOString(),
+          status: 'pendente', origem: 'automacao:' + am.id,
+          chave_unica: 'atrasado:' + am.id + '|' + lead_ref + '|' + balde,
+          instancia_nome: nomeInstAm,
+        }, { Prefer: 'resolution=ignore-duplicates,return=minimal' });
       } else {
         const disparoId = await reivindicarEnvioImediato(SB_URL, H, contaId, am.id, lead_ref, nome, alvo, texto);
         if (disparoId === null) continue;   // requisição duplicada, já reivindicado por outra chamada

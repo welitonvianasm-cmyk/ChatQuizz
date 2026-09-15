@@ -38,10 +38,12 @@ export default async (req) => {
       const st = ['pendente', 'enviado', 'falhou'].includes(body.status) ? `&status=eq.${body.status}` : '';
       const limit = Math.min(Math.max(Number(body.limit) || 200, 1), 1000);
       const offset = Math.max(Number(body.offset) || 0, 0);
-      const r = await fetch(
-        `${SB_URL}/rest/v1/disparos?conta_id=eq.${contaId}&select=id,telefone,nome,lead_ref,mensagem,enviar_em,status,erro,origem,enviado_em&order=enviar_em.desc&limit=${limit}&offset=${offset}${st}`,
-        { headers: { ...H, Prefer: 'count=exact' } },
-      );
+      const base = `${SB_URL}/rest/v1/disparos?conta_id=eq.${contaId}&order=enviar_em.desc&limit=${limit}&offset=${offset}${st}`;
+      let r = await fetch(`${base}&select=id,telefone,nome,lead_ref,mensagem,enviar_em,status,erro,origem,enviado_em,instancia_nome`, { headers: { ...H, Prefer: 'count=exact' } });
+      if (!r.ok) {
+        // setup-automacoes-instancia.sql ainda não rodou nessa conta: lista sem instancia_nome
+        r = await fetch(`${base}&select=id,telefone,nome,lead_ref,mensagem,enviar_em,status,erro,origem,enviado_em`, { headers: { ...H, Prefer: 'count=exact' } });
+      }
       if (!r.ok) return json({ ok: false, error: AVISO_SQL });
       const disparos = await r.json();
       const range = r.headers.get('content-range') || '';   // "0-199/1234"

@@ -15,10 +15,14 @@
  * NADA é enviado com o toggle Disparos desligado (por conta).
  *
  * Cada conta manda pela sua própria instância padrão (ver netlify/_evolution.mjs
- * — desde a Fase 1 do WhatsApp multi-instância, não é mais um número global).
+ * — desde a Fase 1 do WhatsApp multi-instância, não é mais um número global),
+ * A MENOS que a Automação tenha escolhido um número específico
+ * (automacoes.instancia_id, setup-automacoes-instancia.sql) — nesse caso o
+ * disparo já nasce com `instancia_nome` gravado (snapshot, igual a
+ * mensagem) e esse número é usado na hora de enviar, não o padrão.
  */
-import { obterInstanciaPadrao, enviarTexto } from '../_evolution.mjs';
-import { leadCombinaPublico } from '../_publico.mjs';
+import { obterInstanciaPadrao, enviarTexto, nomeInstanciaPorId } from '../_evolution.mjs';
+import { leadCombinaPublico, inserirDisparoSeguro } from '../_publico.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -118,6 +122,15 @@ async function resolverPublico(contaId, publico) {
   return r.ok ? await r.json() : [];
 }
 
+/* automações de um gatilho, incluindo `instancia_id` quando a coluna já
+   existe (setup-automacoes-instancia.sql) — cai pra sem ela em vez de
+   quebrar a leitura inteira (e silenciar a automação) se ainda não rodou */
+async function automacoesComInstancia(filtro, colunas) {
+  let r = await sb(`automacoes?${filtro}&select=${colunas},instancia_id`);
+  if (!r.ok) r = await sb(`automacoes?${filtro}&select=${colunas}`);
+  return r.ok ? await r.json() : [];
+}
+
 /* carrega o conjunto de etiquetas de cada lead da lista — só chamado quando
    alguma automação em jogo usa publico.tipo='etiqueta' como filtro extra */
 async function carregarEtiquetaIds(contaId, leadRefs) {
@@ -171,8 +184,7 @@ async function processarGatilhosAgendados(contaId) {
     const claimado = rClaim.ok ? await rClaim.json().catch(() => []) : [];
     if (!claimado.length) continue;   // outra execução do cron já pegou esse gatilho agora
 
-    const ra = await sb(`automacoes?conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true&select=id,mensagem,destino,publico`);
-    const automs = ra.ok ? await ra.json() : [];
+    const automs = await automacoesComInstancia(`conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true`, 'id,mensagem,destino,publico');
     for (const am of automs) {
       if (!am.mensagem) continue;
       let publico = {}; try { publico = JSON.parse(am.publico || '{}'); } catch { /* 'todos' */ }
@@ -181,19 +193,18 @@ async function processarGatilhosAgendados(contaId) {
         : (await resolverPublico(contaId, publico));
       const validos = alvos.filter((l) => String(l.whatsapp || '').replace(/\D/g, ''));
       const cadenciado = validos.length > LIMIAR_CADENCIA;
+      const nomeInstAm = await nomeInstanciaPorId(am.instancia_id).catch(() => null);
       for (let i = 0; i < validos.length; i++) {
         const lead = validos[i];
         const tel = String(lead.whatsapp || '').replace(/\D/g, '');
         const atrasoMs = cadenciado ? i * INTERVALO_CADENCIA_SEG * 1000 : 0;
-        await sb('disparos', {
-          method: 'POST', headers: { Prefer: 'return=minimal' },
-          body: JSON.stringify({
-            conta_id: contaId, telefone: tel, lead_ref: lead.lead_ref || '', nome: lead.nome || '',
-            mensagem: preencherSimples(am.mensagem, lead),
-            enviar_em: new Date(agora.getTime() + atrasoMs).toISOString(),
-            status: 'pendente', origem: 'automacao:' + am.id,
-          }),
-        }).catch(() => {});
+        await inserirDisparoSeguro(SB_URL, H, {
+          conta_id: contaId, telefone: tel, lead_ref: lead.lead_ref || '', nome: lead.nome || '',
+          mensagem: preencherSimples(am.mensagem, lead),
+          enviar_em: new Date(agora.getTime() + atrasoMs).toISOString(),
+          status: 'pendente', origem: 'automacao:' + am.id,
+          instancia_nome: nomeInstAm,
+        }, { Prefer: 'return=minimal' });
       }
     }
   }
@@ -225,8 +236,7 @@ async function processarGatilhosAgendamento(contaId) {
     const ini = new Date(alvo - 5 * 60000).toISOString();
     const fim = new Date(alvo + 5 * 60000).toISOString();
 
-    const ra = await sb(`automacoes?conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true&select=id,mensagem,destino,publico`);
-    const automs = ra.ok ? await ra.json() : [];
+    const automs = await automacoesComInstancia(`conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true`, 'id,mensagem,destino,publico');
     if (!automs.length) continue;
 
     const rl = await sb(`diag_instagram_leads?conta_id=eq.${contaId}&agendado=eq.true&agendamento_em=gte.${ini}&agendamento_em=lte.${fim}&select=lead_ref,nome,whatsapp,agendamento_em,agendamento_status,booking_uid,video_url,atendente,call_track,respostas_json`);
@@ -239,20 +249,19 @@ async function processarGatilhosAgendamento(contaId) {
     for (const am of automs) {
       if (!am.mensagem) continue;
       let publico = {}; try { publico = JSON.parse(am.publico || '{}'); } catch { /* sem filtro extra */ }
+      const nomeInstAm = await nomeInstanciaPorId(am.instancia_id).catch(() => null);
       for (const l of leads) {
         const tel = String(l.whatsapp || '').replace(/\D/g, '');
         if (!tel) continue;
         const leadComEtiquetas = { ...l, etiqueta_ids: etiquetasPorLead.get(l.lead_ref) || [] };
         if (!leadCombinaPublico(leadComEtiquetas, publico)) continue;
-        await sb('disparos', {
-          method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
-          body: JSON.stringify({
-            conta_id: contaId, telefone: am.destino || tel, lead_ref: l.lead_ref, nome: l.nome || '',
-            mensagem: preencher(am.mensagem, l),
-            enviar_em: new Date().toISOString(), status: 'pendente', origem: 'automacao:' + am.id,
-            chave_unica: 'gatilho' + g.id + '|' + am.id + '|' + l.lead_ref + '|' + l.agendamento_em,
-          }),
-        }).catch(() => {});
+        await inserirDisparoSeguro(SB_URL, H, {
+          conta_id: contaId, telefone: am.destino || tel, lead_ref: l.lead_ref, nome: l.nome || '',
+          mensagem: preencher(am.mensagem, l),
+          enviar_em: new Date().toISOString(), status: 'pendente', origem: 'automacao:' + am.id,
+          chave_unica: 'gatilho' + g.id + '|' + am.id + '|' + l.lead_ref + '|' + l.agendamento_em,
+          instancia_nome: nomeInstAm,
+        }, { Prefer: 'resolution=ignore-duplicates,return=minimal' });
       }
     }
   }
@@ -264,9 +273,9 @@ async function rodarConta(contaId) {
   let ok = 0, falha = 0;
 
   /* 1) lembretes de reunião — direto do módulo Reuniões */
-  const ra = await sb(`automacoes?conta_id=eq.${contaId}&gatilho=eq.reuniao_1h&ativa=eq.true&select=mensagem&limit=1`);
-  const autom = ra.ok ? (await ra.json())[0] : null;
+  const autom = (await automacoesComInstancia(`conta_id=eq.${contaId}&gatilho=eq.reuniao_1h&ativa=eq.true&limit=1`, 'mensagem'))[0] || null;
   if (autom && autom.mensagem) {
+    const nomeInstAutom = await nomeInstanciaPorId(autom.instancia_id).catch(() => null);
     const ini = new Date(agora + 55 * 60000).toISOString();
     const fim = new Date(agora + 65 * 60000).toISOString();
     const rl = await sb(`diag_instagram_leads?conta_id=eq.${contaId}&agendado=eq.true&agendamento_em=gte.${ini}&agendamento_em=lte.${fim}&select=lead_ref,nome,whatsapp,agendamento_em,agendamento_status,booking_uid,video_url`);
@@ -276,15 +285,13 @@ async function rodarConta(contaId) {
       const tel = String(l.whatsapp || '').replace(/\D/g, '');
       if (!tel) continue;
       // chave única = lembrete_enviado por lead+reunião (duplicado é ignorado)
-      await sb('disparos', {
-        method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
-        body: JSON.stringify({
-          conta_id: contaId, telefone: tel, lead_ref: l.lead_ref, nome: l.nome || '',
-          mensagem: preencher(autom.mensagem, l),
-          enviar_em: new Date().toISOString(), status: 'pendente', origem: 'reuniao_1h',
-          chave_unica: 'lembrete|' + l.lead_ref + '|' + l.agendamento_em,
-        }),
-      });
+      await inserirDisparoSeguro(SB_URL, H, {
+        conta_id: contaId, telefone: tel, lead_ref: l.lead_ref, nome: l.nome || '',
+        mensagem: preencher(autom.mensagem, l),
+        enviar_em: new Date().toISOString(), status: 'pendente', origem: 'reuniao_1h',
+        chave_unica: 'lembrete|' + l.lead_ref + '|' + l.agendamento_em,
+        instancia_nome: nomeInstAutom,
+      }, { Prefer: 'resolution=ignore-duplicates,return=minimal' });
     }
   }
 
@@ -295,12 +302,19 @@ async function rodarConta(contaId) {
   /* 1.6) gatilhos "agendamento" — lembrete/follow-up configurável de reunião */
   await processarGatilhosAgendamento(contaId);
 
-  /* 2) fila: envia os pendentes vencidos (uma vez só), pela instância padrão da conta */
+  /* 2) fila: envia os pendentes vencidos (uma vez só), pela instância padrão da
+     conta — a menos que o disparo já tenha um `instancia_nome` próprio (a
+     Automação que o criou escolheu um número específico, ver instancia_id) */
   const inst = await obterInstanciaPadrao(contaId);
   if (!inst) return { ok, falha };   // conta sem nenhum número conectado ainda
 
   const limite = new Date(agora + 60000).toISOString();
-  const rp = await sb(`disparos?conta_id=eq.${contaId}&status=eq.pendente&enviar_em=lte.${limite}&select=id,telefone,mensagem&order=enviar_em.asc&limit=60`);
+  let rp = await sb(`disparos?conta_id=eq.${contaId}&status=eq.pendente&enviar_em=lte.${limite}&select=id,telefone,mensagem,instancia_nome&order=enviar_em.asc&limit=60`);
+  if (!rp.ok) {
+    // setup-automacoes-instancia.sql ainda não rodou nessa conta: segue a
+    // fila normalmente, só sem escolha de número (comportamento de sempre)
+    rp = await sb(`disparos?conta_id=eq.${contaId}&status=eq.pendente&enviar_em=lte.${limite}&select=id,telefone,mensagem&order=enviar_em.asc&limit=60`);
+  }
   const candidatos = rp.ok ? await rp.json() : [];
   // reivindica as linhas ANTES de mandar (PATCH ainda filtrado por
   // status=eq.pendente — só quem realmente seguia pendente nesse instante
@@ -319,7 +333,7 @@ async function rodarConta(contaId) {
     fila = reivindicadas.map((rw) => porId.get(rw.id)).filter(Boolean);
   }
   for (const d of fila) {
-    const res = await enviarTexto(inst.nome_instancia, d.telefone, d.mensagem);
+    const res = await enviarTexto(d.instancia_nome || inst.nome_instancia, d.telefone, d.mensagem);
     await sb(`disparos?id=eq.${d.id}&conta_id=eq.${contaId}`, {
       method: 'PATCH', headers: { Prefer: 'return=minimal' },
       body: JSON.stringify(res.ok

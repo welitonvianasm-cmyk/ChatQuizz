@@ -142,6 +142,22 @@ export async function reivindicarEnvioImediato(SB_URL, H, contaId, automacaoId, 
     return linhas.length ? linhas[0].id : null;   // null = outra requisição já reivindicou este minuto
   } catch { return -1; }
 }
+/* insere um disparo tolerando a coluna `instancia_nome` ainda não existir
+   (setup-automacoes-instancia.sql pode não ter rodado ainda nessa conta) —
+   tenta COM ela; se falhar (coluna não existe), tenta de novo SEM ela, em
+   vez de perder o disparo inteiro por causa de 1 coluna nova opcional.
+   Usado em todo canto que cria disparo com número escolhido pela
+   automação: wa-cron.mjs, etiquetas.mjs, save-lead.mjs. */
+export async function inserirDisparoSeguro(SB_URL, H, body, headersExtra) {
+  const headers = { ...H, ...(headersExtra || {}) };
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/disparos`, { method: 'POST', headers, body: JSON.stringify(body) });
+    if (r.ok || body.instancia_nome === undefined) return r;
+    const { instancia_nome, ...semInstancia } = body;
+    return await fetch(`${SB_URL}/rest/v1/disparos`, { method: 'POST', headers, body: JSON.stringify(semInstancia) });
+  } catch { return null; }
+}
+
 export async function marcarResultadoEnvioImediato(SB_URL, H, disparoId, ok, erro) {
   if (!disparoId || disparoId === -1) return;
   try {

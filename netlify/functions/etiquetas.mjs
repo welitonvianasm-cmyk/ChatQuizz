@@ -23,7 +23,8 @@
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
 import { enviarWhats } from './whatsapp.mjs';
-import { leadCombinaPublico, reconciliarDisparosPendentes, reivindicarEnvioImediato, marcarResultadoEnvioImediato } from '../_publico.mjs';
+import { leadCombinaPublico, reconciliarDisparosPendentes, reivindicarEnvioImediato, marcarResultadoEnvioImediato, inserirDisparoSeguro } from '../_publico.mjs';
+import { nomeInstanciaPorId } from '../_evolution.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -35,6 +36,13 @@ function atrasoMs(atraso) {
   if (!atraso || atraso.modo !== 'apos') return 0;
   const unidadeMs = atraso.unidade === 'dias' ? 86400000 : atraso.unidade === 'minutos' ? 60000 : 3600000;
   return (Number(atraso.valor) || 0) * unidadeMs;
+}
+// automações de um gatilho, incluindo instancia_id quando a coluna já
+// existe (setup-automacoes-instancia.sql) — sem quebrar a leitura se não
+async function automacoesComInstancia(query) {
+  let r = await fetch(`${SB_URL}/rest/v1/automacoes?${query}&select=id,mensagem,destino,publico,instancia_id`, { headers: H });
+  if (!r.ok) r = await fetch(`${SB_URL}/rest/v1/automacoes?${query}&select=id,mensagem,destino,publico`, { headers: H });
+  return r.ok ? await r.json() : [];
 }
 
 /* dispara as Automações com gatilho tipo 'tag' quando o lead RECEBE uma
@@ -67,8 +75,7 @@ async function dispararGatilhosTag(contaId, leadRef, etiquetaIdsNovas) {
 
     for (const g of gatilhos) {
       let cfg = {}; try { cfg = JSON.parse(g.config || '{}'); } catch { /* vazio */ }
-      const ra = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true&select=id,mensagem,destino,publico`, { headers: H });
-      const automs = ra.ok ? await ra.json() : [];
+      const automs = await automacoesComInstancia(`conta_id=eq.${contaId}&gatilho_id=eq.${g.id}&ativa=eq.true`);
       for (const am of automs) {
         const alvo = am.destino || lead.whatsapp;
         if (!alvo || !am.mensagem) continue;
@@ -82,15 +89,14 @@ async function dispararGatilhosTag(contaId, leadRef, etiquetaIdsNovas) {
           // atrasados idênticos — uma reaplicação legítima mais tarde cai
           // num balde de minuto novo e agenda normalmente
           const balde = Math.floor(Date.now() / 60000);
-          await fetch(`${SB_URL}/rest/v1/disparos`, {
-            method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
-            body: JSON.stringify({
-              conta_id: contaId, telefone: alvo.replace(/\D/g, ''), lead_ref: leadRef, nome: lead.nome || '',
-              mensagem: texto, enviar_em: new Date(Date.now() + atraso).toISOString(),
-              status: 'pendente', origem: 'automacao:' + am.id,
-              chave_unica: 'atrasado:' + am.id + '|' + leadRef + '|' + balde,
-            }),
-          }).catch(() => {});
+          const nomeInstAm = await nomeInstanciaPorId(am.instancia_id).catch(() => null);
+          await inserirDisparoSeguro(SB_URL, H, {
+            conta_id: contaId, telefone: alvo.replace(/\D/g, ''), lead_ref: leadRef, nome: lead.nome || '',
+            mensagem: texto, enviar_em: new Date(Date.now() + atraso).toISOString(),
+            status: 'pendente', origem: 'automacao:' + am.id,
+            chave_unica: 'atrasado:' + am.id + '|' + leadRef + '|' + balde,
+            instancia_nome: nomeInstAm,
+          }, { Prefer: 'resolution=ignore-duplicates,return=minimal' });
         } else {
           const disparoId = await reivindicarEnvioImediato(SB_URL, H, contaId, am.id, leadRef, lead.nome, alvo, texto);
           if (disparoId === null) continue;   // requisição duplicada, já reivindicado por outra chamada

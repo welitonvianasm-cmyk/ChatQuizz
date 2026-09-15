@@ -95,6 +95,18 @@ async function obterInstanciaPorNome(nomeInstancia) {
   return (await r.json())[0] || null;
 }
 
+/* resolve só o nome técnico (o que enviarTexto/enviarMidia esperam) a
+   partir do id — usado por automações que escolheram um número específico
+   pra disparar (automacoes.instancia_id, ver gatilhos/wa-cron.mjs) em vez
+   do número padrão da conta. */
+export async function nomeInstanciaPorId(id) {
+  if (!id) return null;
+  const r = await fetch(`${SB_URL}/rest/v1/wa_instancias?id=eq.${Number(id) || 0}&select=nome_instancia&limit=1`, { headers: H });
+  if (!r.ok) return null;
+  const rows = await r.json();
+  return (rows[0] && rows[0].nome_instancia) || null;
+}
+
 /* conta_id dono de uma instância pelo nome — usado pelo wa-webhook.mjs pra
    resolver o tenant a partir do campo "instance" do payload da Evolution */
 export async function obterContaPorInstancia(nomeInstancia) {

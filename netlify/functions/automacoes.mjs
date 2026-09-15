@@ -2,9 +2,18 @@
  * AUTOMAÇÕES — mensagens automáticas 100% editáveis (moram no banco).
  *
  *   { token, action:'listar' }                                    → { ok, automacoes }
- *   { token, action:'criar',  nome, gatilho, mensagem, gatilho_id?, publico? }  (admin)
- *   { token, action:'editar', id, nome?, gatilho?, mensagem?, ativa?, gatilho_id?, publico? }  (admin)
+ *   { token, action:'criar',  nome, gatilho, mensagem, gatilho_id?, publico?, instancia_id? }  (admin)
+ *   { token, action:'editar', id, nome?, gatilho?, mensagem?, ativa?, gatilho_id?, publico?, instancia_id? }  (admin)
  *   { token, action:'excluir', id }                               (admin)
+ *
+ * `instancia_id` (opcional, só relevante pra quem tem mais de 1 WhatsApp
+ * conectado — setup-automacoes-instancia.sql) escolhe por qual número os
+ * disparos EM MASSA/AGENDADOS dessa automação saem (gatilho 'agendado',
+ * 'agendamento', 'reuniao_1h', e o atraso de tag/qualificador — todos
+ * passam pela fila, ver netlify/functions/wa-cron.mjs). Vazio/0 = número
+ * padrão da conta, comportamento de sempre. Os disparos IMEDIATOS de tag/
+ * qualificador (sem atraso) NÃO usam isso — continuam saindo pelo número
+ * que já está conversando com o lead (continuidade), de propósito.
  *
  * Gatilhos LEGADOS (continuam funcionando, nada mudou neles): 'reuniao_1h'
  * (lembrete 1h antes da reunião) | 'lead_vip' (alerta de lead prioritário,
@@ -22,6 +31,7 @@
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
 import { limparPublico } from '../_publico.mjs';
+import { obterInstancia } from '../_evolution.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -29,9 +39,11 @@ const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': '
 const AVISO_SQL = 'Falta rodar o setup-whatsapp.sql no Supabase (módulo WhatsApp).';
 const AVISO_SQL_VIP = 'Falta rodar o setup-automacoes-vip.sql no Supabase (colunas do alerta de lead prioritário).';
 const AVISO_SQL_GATILHOS = 'Falta rodar o setup-gatilhos.sql no Supabase (módulo Gatilhos).';
+const AVISO_SQL_INSTANCIA = 'Falta rodar o setup-automacoes-instancia.sql no Supabase (escolha de número por automação).';
 const GATILHOS = ['manual', 'reuniao_1h', 'lead_vip', 'custom'];
 const COLS_VIP = ['destino', 'qualificador_alvo'];   // adicionadas por setup-automacoes-vip.sql, não por setup-whatsapp.sql
 const COLS_GATILHOS = ['gatilho_id', 'publico'];     // adicionadas por setup-gatilhos.sql
+const COLS_INSTANCIA = ['instancia_id'];             // adicionada por setup-automacoes-instancia.sql
 
 // olha a mensagem de erro do Postgres pra apontar a coluna que falta de
 // verdade — sem isso, qualquer erro (mesmo um migration diferente, ainda
@@ -43,6 +55,7 @@ function colunaFaltando(errText) {
 function avisoPara(faltando) {
   if (faltando && COLS_VIP.includes(faltando)) return AVISO_SQL_VIP;
   if (faltando && COLS_GATILHOS.includes(faltando)) return AVISO_SQL_GATILHOS;
+  if (faltando && COLS_INSTANCIA.includes(faltando)) return AVISO_SQL_INSTANCIA;
   return AVISO_SQL;
 }
 
@@ -62,8 +75,17 @@ export default async (req) => {
     const id = Number(body.id) || 0;
 
     if (a === 'listar') {
-      let colsAtivas = 'id,nome,gatilho,mensagem,ativa,destino,qualificador_alvo,gatilho_id,publico,criado_em';
+      let colsAtivas = 'id,nome,gatilho,mensagem,ativa,destino,qualificador_alvo,gatilho_id,publico,instancia_id,criado_em';
       let r = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&select=${colsAtivas}&order=criado_em.asc`, { headers: H });
+      if (!r.ok) {
+        const errText = await r.clone().text().catch(() => '');
+        const faltando = colunaFaltando(errText);
+        if (faltando && COLS_INSTANCIA.includes(faltando)) {
+          // ainda sem setup-automacoes-instancia.sql: lista sem instancia_id
+          colsAtivas = 'id,nome,gatilho,mensagem,ativa,destino,qualificador_alvo,gatilho_id,publico,criado_em';
+          r = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&select=${colsAtivas}&order=criado_em.asc`, { headers: H });
+        }
+      }
       if (!r.ok) {
         const errText = await r.clone().text().catch(() => '');
         const faltando = colunaFaltando(errText);
@@ -88,7 +110,7 @@ export default async (req) => {
         return json({ ok: false, error: avisoPara(colunaFaltando(errText)) });
       }
       let automacoes = await r.json();
-      automacoes = automacoes.map((am) => ({ destino: '', qualificador_alvo: '', gatilho_id: null, publico: '{}', ...am }));
+      automacoes = automacoes.map((am) => ({ destino: '', qualificador_alvo: '', gatilho_id: null, publico: '{}', instancia_id: null, ...am }));
       automacoes.forEach((am) => { try { am.publico = JSON.parse(am.publico || '{}'); } catch { am.publico = {}; } });
       // número de staff é dado sensível — só a administradora vê de verdade
       if (!auth.admin) automacoes = automacoes.map((am) => ({ ...am, destino: am.destino ? '••••••' : '' }));
@@ -129,6 +151,16 @@ export default async (req) => {
         } else {
           patch.gatilho_id = null;
           patch.publico = JSON.stringify({});
+        }
+      }
+      if ('instancia_id' in body) {
+        const instId = Number(body.instancia_id) || 0;
+        if (!instId) {
+          patch.instancia_id = null;   // volta pro número padrão da conta
+        } else {
+          const inst = await obterInstancia(contaId, instId);
+          if (!inst) return json({ ok: false, error: 'Número não encontrado.' });
+          patch.instancia_id = instId;
         }
       }
       if (a === 'criar') patch.conta_id = contaId;

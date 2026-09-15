@@ -1919,6 +1919,9 @@
             <option value="manual">Somente manual</option>
           </select></label>
         </div>
+        <label id="amInstanciaWrap" style="display:none;font-size:11.5px;font-weight:700;max-width:320px;">Enviar por qual número<select id="amInstanciaSel" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"></select>
+          <span class="muted-cell" style="font-weight:400;display:block;margin-top:3px;">Só vale pros disparos em massa/agendados (agendado, agendamento, 1h antes da reunião, e o atraso de tag/qualificador) — os envios imediatos continuam pelo número que já está conversando com o lead.</span>
+        </label>
         <div id="amVipCampos" style="display:none;grid-template-columns:1.4fr 1fr;gap:8px;">
           <label style="font-size:11.5px;font-weight:700;">Qualificador que dispara o alerta<select id="amQualAlvo" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;cursor:pointer;background:var(--surface-input);color:var(--text);"></select></label>
           <label style="font-size:11.5px;font-weight:700;">Avisar este WhatsApp (equipe)<input id="amDestino" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:var(--surface-input);color:var(--text);" placeholder="55DDDNÚMERO"></label>
@@ -3036,7 +3039,7 @@ function navGo(sec) {
     if (CV_ATIVO && !CV_TIMER) { carregarChatCv(true); CV_TIMER = setInterval(() => carregarChatCv(false), 3000); }
   } else if (CV_TIMER) { clearInterval(CV_TIMER); CV_TIMER = null; }   // sai da aba: para de sondar o chat aberto
   if (sec === 'gatilhos') carregarGatilhos();
-  if (sec === 'automacoes') { carregarAutomacoes(); if (!GATILHOS_CACHE_CARREGADO) carregarGatilhosCache(); }
+  if (sec === 'automacoes') { carregarAutomacoes(); if (!GATILHOS_CACHE_CARREGADO) carregarGatilhosCache(); carregarAmInstancias(); }
   if (sec === 'disparos') carregarDisparos();
   if (sec === 'agendaDash') { popularAgAtendenteSel(); renderAgendaCal(); renderAgDia(); }
   if (sec === 'reunioes') { popularAgAtendenteSel(); renderReunioes(); }
@@ -8431,6 +8434,21 @@ function renderAutomacoes() {
   if (!AM_LISTA.length) { const tr = el('tr'); const c = td('Nenhuma automação ainda. Crie a primeira acima, sugestão: o lembrete de 1 hora antes da reunião.'); c.colSpan = 6; c.className = 'muted-cell'; tr.appendChild(c); tb.appendChild(tr); }
   t.appendChild(tb);
 }
+/* número por onde os disparos em massa/agendados dessa automação saem —
+   só aparece pra quem tem mais de 1 WhatsApp conectado (senão é sempre o
+   único que existe, escolher não faz sentido) */
+let AM_INSTANCIAS = [];
+async function carregarAmInstancias() {
+  const r = await waApi({ action: 'instancias_listar' });
+  AM_INSTANCIAS = r.ok ? (r.instancias || []) : [];
+  const mostra = AM_INSTANCIAS.length > 1;
+  $('#amInstanciaWrap').style.display = mostra ? '' : 'none';
+  if (!mostra) return;
+  const sel = $('#amInstanciaSel'); const atual = sel.value; clear(sel);
+  const ph = el('option'); ph.value = ''; ph.textContent = 'Número padrão da conta'; sel.appendChild(ph);
+  AM_INSTANCIAS.forEach((i) => { const o = el('option'); o.value = i.id; o.textContent = i.rotulo || i.nome_instancia; sel.appendChild(o); });
+  if ([...sel.options].some((o) => o.value === atual)) sel.value = atual;
+}
 /* mostra/esconde os campos por tipo de gatilho escolhido: 'lead_vip'
    (legado, qualificador+staff) ou 'custom' (novo, aponta pra um gatilho
    criado em Gestão > Gatilhos, com público-alvo quando ele é 'agendado') */
@@ -8495,6 +8513,7 @@ function amEditar(a) {
   $('#amNome').value = a.nome; $('#amGatilho').value = a.gatilho; $('#amMsg').value = a.mensagem;
   $('#amQualAlvo').value = a.qualificador_alvo || ''; $('#amDestino').value = a.destino || '';
   $('#amDestinoCustom').value = a.gatilho === 'custom' ? (a.destino || '') : '';
+  $('#amInstanciaSel').value = a.instancia_id || '';
   amAtualizarCampos();
   if (a.gatilho === 'custom') {
     $('#amGatilhoIdSel').value = a.gatilho_id || '';
@@ -8511,6 +8530,7 @@ function amEditar(a) {
 function amLimpar() {
   AM_EDIT = null; $('#amNome').value = ''; $('#amMsg').value = ''; $('#amGatilho').value = 'custom';
   $('#amQualAlvo').value = ''; $('#amDestino').value = ''; $('#amDestinoCustom').value = ''; $('#amPublicoValor2').value = '';
+  $('#amInstanciaSel').value = '';
   amAtualizarCampos();
   $('#amSalvar').textContent = 'Salvar automação'; $('#amCancelar').style.display = 'none';
 }
@@ -8519,6 +8539,7 @@ $('#amSalvar').onclick = async () => {
   const gatilho = $('#amGatilho').value;
   const payload = {
     action: AM_EDIT ? 'editar' : 'criar', id: AM_EDIT, nome: $('#amNome').value, gatilho, mensagem: $('#amMsg').value,
+    instancia_id: Number($('#amInstanciaSel').value) || 0,
   };
   if (gatilho === 'lead_vip') {
     payload.qualificador_alvo = $('#amQualAlvo').value;
