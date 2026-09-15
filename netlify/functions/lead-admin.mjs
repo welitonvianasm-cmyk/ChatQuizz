@@ -15,8 +15,12 @@
  * equipe_json (coluna no lead) = { obs, campos:[{k,v}], historico:[{t,quem,txt}] }
  * O histórico é preenchido AUTOMATICAMENTE a cada mudança, com o nome de quem fez.
  *
- * Cancelar o agendamento (agendamento_status:'cancelado') também cancela o
- * lembrete "1h antes" pendente desse lead, se houver (cancelarLembretesPendentes).
+ * Cancelar ou remarcar o agendamento também cancela o(s) lembrete(s) de
+ * reunião pendentes desse lead, se houver — legado "1h antes" e os novos
+ * gatilhos tipo 'agendamento' (cancelarLembretesPendentes). Mudar o
+ * atendente ou o qualificador também reconcilia a fila de disparos
+ * pendentes (netlify/_publico.mjs, reconciliarDisparosPendentes): cancela
+ * o que não bate mais com a condição/filtro que gerou o disparo.
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
 import { dispararMentoriaHub, obterCalcomApiKey } from '../_conexoes.mjs';
@@ -25,6 +29,7 @@ import { moverNoKanban } from '../_kanban.mjs';
 import { marcarPrimeiroAtendimento } from '../_kpi.mjs';
 import { normalizarTelefoneBR } from '../_evolution.mjs';
 import { definirPausaConversa } from '../_agenteIa.mjs';
+import { reconciliarDisparosPendentes } from '../_publico.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -62,14 +67,28 @@ const AVISO_SQL = 'Falta rodar o setup-card.sql no Supabase (coluna de anotaçõ
 const CAL_API = 'https://api.cal.com/v2';
 const CAL_VERSAO = '2024-08-13';
 
-/* cancela o(s) lembrete(s) de reunião ("1h antes") ainda pendentes desse lead —
-   chamado sempre que o agendamento é cancelado ou remarcado, senão o cron
-   (wa-cron.mjs) manda um lembrete de uma reunião que já não vale mais.
-   Não mexe no disparo de roteamento automático (origem 'roteamento_quiz'),
-   que é independente da reunião. Melhor-esforço: nunca derruba a ação principal. */
-async function cancelarLembretesPendentes(refUrl) {
+/* cancela o(s) lembrete(s) de reunião ainda pendentes desse lead — tanto o
+   legado ('reuniao_1h', 1h fixa) quanto os gatilhos NOVOS tipo 'agendamento'
+   (X horas/dias configurável, ver gatilhos.mjs) — chamado sempre que o
+   agendamento é cancelado ou remarcado, senão o cron (wa-cron.mjs) manda um
+   lembrete de uma reunião que já não vale mais (ou vale, mas no horário
+   ERRADO — remarcar muda a data, então cancela aqui e deixa o cron recriar
+   um novo, certinho, no próximo ciclo, já que a leitura de agendamento_em é
+   sempre feita na hora). Não mexe no disparo de roteamento automático
+   (origem 'roteamento_quiz'), que é independente da reunião.
+   Melhor-esforço: nunca derruba a ação principal. */
+async function cancelarLembretesPendentes(contaId, refUrl) {
   try {
-    await fetch(`${SB_URL}/rest/v1/disparos?lead_ref=eq.${refUrl}&status=eq.pendente&origem=eq.reuniao_1h`, {
+    const rg = await fetch(`${SB_URL}/rest/v1/gatilhos?conta_id=eq.${contaId}&tipo=eq.agendamento&select=id`, { headers: H });
+    const gIds = rg.ok ? (await rg.json()).map((g) => g.id) : [];
+    let origens = ['reuniao_1h'];
+    if (gIds.length) {
+      const ra = await fetch(`${SB_URL}/rest/v1/automacoes?conta_id=eq.${contaId}&gatilho_id=in.(${gIds.join(',')})&select=id`, { headers: H });
+      const amIds = ra.ok ? (await ra.json()).map((a) => a.id) : [];
+      origens = origens.concat(amIds.map((id) => 'automacao:' + id));
+    }
+    const filtro = origens.map((o) => `"${o}"`).join(',');
+    await fetch(`${SB_URL}/rest/v1/disparos?lead_ref=eq.${refUrl}&status=eq.pendente&origem=in.(${filtro})`, {
       method: 'DELETE', headers: H,
     });
   } catch { /* melhor-esforço */ }
@@ -340,7 +359,7 @@ export default async (req) => {
       let rg2 = await gravar2();
       if (!rg2.ok) { delete patch2.equipe_json; delete patch2.agendamento_status; delete patch2.agendamento_origem; temColunaEquipe2 = false; rg2 = await gravar2(); }
       if (!rg2.ok) return json({ ok: false, error: viaCalcom ? 'A reunião foi remarcada no Cal.com, mas não consegui salvar aqui no painel. Confira manualmente.' : 'Erro ao salvar.' });
-      await cancelarLembretesPendentes(refUrl);
+      await cancelarLembretesPendentes(contaId, refUrl);
       dispararMentoriaHub(contaId, 'agendamento_reagendado', {
         chatquizzLeadRef: ref, agendamentoEm: emISO2, bookingUid: novoUid,
       });
@@ -615,9 +634,15 @@ export default async (req) => {
       } catch { /* alerta é melhor-esforço; a presença já foi salva */ }
     }
     if (cancelarLembrete) {
-      await cancelarLembretesPendentes(refUrl);
+      await cancelarLembretesPendentes(contaId, refUrl);
       const geId3 = await obterGoogleEventId(contaId, refUrl);
       if (geId3) await removerEventoGoogle(contaId, geId3);
+    }
+    // atendente ou qualificador mudou: pode invalidar um disparo pendente
+    // de uma automação atrasada (gatilho 'qualificador') ou com filtro
+    // publico='atendente' — cancela o que não faz mais sentido mandar
+    if (mudouAtendente || patch.call_track !== undefined) {
+      await reconciliarDisparosPendentes(SB_URL, H, contaId, refUrl);
     }
     // o quadro Kanban do responsável acompanha a mudança (melhor-esforço)
     const atendenteFinal = 'atendente' in c ? patch.atendente : (atual.atendente || '');

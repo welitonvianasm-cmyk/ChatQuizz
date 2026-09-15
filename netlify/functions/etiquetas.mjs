@@ -11,10 +11,16 @@
  *   POST /api/etiquetas { token, action:'lead_listar', lead_ref }     → { ok, etiqueta_ids }
  *   POST /api/etiquetas { token, action:'lead_definir', lead_ref, etiqueta_ids }  → { ok }
  *   POST /api/etiquetas { token, action:'todas_por_lead' }            → { ok, mapa: { lead_ref: [id,...] } }
+ *
+ * 'lead_definir' também RECONCILIA a fila de disparos pendentes desse lead
+ * (netlify/_publico.mjs, reconciliarDisparosPendentes): se uma etiqueta que
+ * disparou um gatilho tipo 'tag' atrasado (ou que era o filtro `publico`
+ * de outra automação) for removida antes do envio, o disparo pendente é
+ * cancelado — não manda uma mensagem que já não faz sentido.
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
 import { enviarWhats } from './whatsapp.mjs';
-import { leadCombinaPublico } from '../_publico.mjs';
+import { leadCombinaPublico, reconciliarDisparosPendentes } from '../_publico.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -155,6 +161,7 @@ export default async (req) => {
       const rAntes = await fetch(`${SB_URL}/rest/v1/lead_etiquetas?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(leadRef)}&select=etiqueta_id`, { headers: H });
       const antesIds = rAntes.ok ? (await rAntes.json()).map((x) => x.etiqueta_id) : [];
       const novas = ids.filter((id) => !antesIds.includes(id));   // só as que entraram AGORA disparam gatilho
+      const removidas = antesIds.filter((id) => !ids.includes(id));
 
       await fetch(`${SB_URL}/rest/v1/lead_etiquetas?conta_id=eq.${contaId}&lead_ref=eq.${encodeURIComponent(leadRef)}`, { method: 'DELETE', headers: H });
       if (ids.length) {
@@ -166,6 +173,10 @@ export default async (req) => {
       // await de propósito (não fire-and-forget): numa function serverless,
       // devolver a resposta ANTES pode matar o processo no meio do envio
       if (novas.length) await dispararGatilhosTag(contaId, leadRef, novas);
+      // etiqueta REMOVIDA pode invalidar um disparo ainda pendente de um
+      // gatilho 'tag' atrasado (ou um filtro publico='etiqueta' de outra
+      // automação) — cancela o que não faz mais sentido mandar
+      if (novas.length || removidas.length) await reconciliarDisparosPendentes(SB_URL, H, contaId, leadRef);
       return json({ ok: true });
     }
 

@@ -27,7 +27,7 @@ import { votar, interpolar, carregarConfigPublicada, respostasLegiveis } from '.
 import { dispararMentoriaHub, obterConexaoMentoriaHub } from '../_conexoes.mjs';
 import { resolverContaPorHost } from '../_tenant.mjs';
 import { enviarWhats } from './whatsapp.mjs';
-import { leadCombinaPublico } from '../_publico.mjs';
+import { leadCombinaPublico, reconciliarDisparosPendentes } from '../_publico.mjs';
 import { sincronizarEventoGoogle } from '../_googleAgenda.mjs';
 import { normalizarTelefoneBR } from '../_evolution.mjs';
 
@@ -231,6 +231,9 @@ export default async (req) => {
       });
       try { await avaliarAlertaVip(SUPABASE_URL, H, contaId, row.lead_ref, row.nome, row.qualificador); } catch (e) { console.error('alerta-vip:', e?.message || e); }
       try { await avaliarAutomacoesQualificador(SUPABASE_URL, H, contaId, row.lead_ref, row.nome, e164, row.qualificador, row.atendente, respostas); } catch (e) { console.error('automacao-qualificador:', e?.message || e); }
+      // refez o quiz e mudou de qualificador? cancela um disparo atrasado
+      // que ainda estivesse pendente pro qualificador ANTIGO (melhor-esforço)
+      try { await reconciliarDisparosPendentes(SUPABASE_URL, H, contaId, row.lead_ref); } catch (e) { console.error('reconciliar-disparos:', e?.message || e); }
     }
     /* Agendamento confirmado pelo embed do Cal.com dentro do próprio quiz —
        reflete na Agenda/Reuniões do MentoriaHub (mesmo chatquizzLeadRef do
