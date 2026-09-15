@@ -16,11 +16,14 @@
  * (netlify/_publico.mjs, reconciliarDisparosPendentes): se uma etiqueta que
  * disparou um gatilho tipo 'tag' atrasado (ou que era o filtro `publico`
  * de outra automação) for removida antes do envio, o disparo pendente é
- * cancelado — não manda uma mensagem que já não faz sentido.
+ * cancelado — não manda uma mensagem que já não faz sentido. O envio
+ * imediato (atraso='imediato') também é protegido contra requisição
+ * duplicada (reivindicarEnvioImediato) — não manda a mesma mensagem 2x se
+ * essa action chegar repetida quase ao mesmo tempo.
  */
 import { temConfig, autenticarToken } from '../_tokens.mjs';
 import { enviarWhats } from './whatsapp.mjs';
-import { leadCombinaPublico, reconciliarDisparosPendentes } from '../_publico.mjs';
+import { leadCombinaPublico, reconciliarDisparosPendentes, reivindicarEnvioImediato, marcarResultadoEnvioImediato } from '../_publico.mjs';
 
 const SB_URL = (process.env.SUPABASE_DIAG_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_DIAG_SERVICE || '';
@@ -74,16 +77,25 @@ async function dispararGatilhosTag(contaId, leadRef, etiquetaIdsNovas) {
         const texto = String(am.mensagem).replaceAll('{{nome}}', nome);
         const atraso = atrasoMs(cfg.atraso);
         if (atraso > 0) {
+          // chave_unica por minuto: protege contra a MESMA requisição
+          // chegando duplicada (duplo-clique, retry) criar 2 disparos
+          // atrasados idênticos — uma reaplicação legítima mais tarde cai
+          // num balde de minuto novo e agenda normalmente
+          const balde = Math.floor(Date.now() / 60000);
           await fetch(`${SB_URL}/rest/v1/disparos`, {
-            method: 'POST', headers: { ...H, Prefer: 'return=minimal' },
+            method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=minimal' },
             body: JSON.stringify({
               conta_id: contaId, telefone: alvo.replace(/\D/g, ''), lead_ref: leadRef, nome: lead.nome || '',
               mensagem: texto, enviar_em: new Date(Date.now() + atraso).toISOString(),
               status: 'pendente', origem: 'automacao:' + am.id,
+              chave_unica: 'atrasado:' + am.id + '|' + leadRef + '|' + balde,
             }),
           }).catch(() => {});
         } else {
-          await enviarWhats(contaId, alvo, texto, 'Automação', leadRef).catch(() => {});
+          const disparoId = await reivindicarEnvioImediato(SB_URL, H, contaId, am.id, leadRef, lead.nome, alvo, texto);
+          if (disparoId === null) continue;   // requisição duplicada, já reivindicado por outra chamada
+          const res = await enviarWhats(contaId, alvo, texto, 'Automação', leadRef).catch((e) => ({ ok: false, error: e && e.message }));
+          await marcarResultadoEnvioImediato(SB_URL, H, disparoId, !!(res && res.ok), res && res.error);
         }
       }
     }

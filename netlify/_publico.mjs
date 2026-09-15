@@ -107,3 +107,49 @@ export async function reconciliarDisparosPendentes(SB_URL, H, contaId, leadRef) 
     await fetch(`${SB_URL}/rest/v1/disparos?id=in.(${idsCancelar.join(',')})&conta_id=eq.${contaId}&status=eq.pendente`, { method: 'DELETE', headers: H });
   } catch { /* reconciliação é melhor-esforço, nunca derruba a ação principal */ }
 }
+
+/* PROTEÇÃO CONTRA ENVIO EM DOBRO — gatilho por evento em modo imediato
+   (tag/qualificador com atraso 'imediato') manda direto (enviarWhats),
+   sem passar pela fila `disparos`, pra não ter atraso nenhum nem perder o
+   registro no histórico da conversa (wa_mensagens). Só que isso deixava
+   sem a proteção "reivindica antes de mandar" que a fila já tem: se a
+   MESMA requisição chegasse duplicada quase ao mesmo tempo (duplo-clique,
+   retry de rede), mandava a mensagem 2x — mesma classe de bug do cron
+   sobreposto, só que do lado do usuário em vez do lado do servidor.
+   Reivindica registrando uma linha em `disparos` com `chave_unica` por
+   minuto (agrupa requisições quase-simultâneas; uma reaplicação LEGÍTIMA
+   mais tarde, tipo tirar e recolocar a tag, cai num balde novo e dispara
+   de novo normalmente) ANTES de mandar de verdade — só quem ganhar a
+   reivindicação (`resolution=ignore-duplicates` deixa passar só 1) manda.
+   Fica registrado em Disparos Agendados como qualquer outro disparo,
+   com status já 'enviado'/'falhou' no fim (nunca fica pendente). */
+export async function reivindicarEnvioImediato(SB_URL, H, contaId, automacaoId, leadRef, nome, telefone, mensagem) {
+  const tel = String(telefone || '').replace(/\D/g, '');
+  if (!tel || !mensagem) return null;
+  const balde = Math.floor(Date.now() / 60000);
+  const chave = 'imediato:' + automacaoId + '|' + (leadRef || tel) + '|' + balde;
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/disparos`, {
+      method: 'POST', headers: { ...H, Prefer: 'resolution=ignore-duplicates,return=representation' },
+      body: JSON.stringify({
+        conta_id: contaId, telefone: tel, lead_ref: leadRef || '', nome: nome || '',
+        mensagem, enviar_em: new Date().toISOString(), status: 'enviando',
+        origem: 'automacao:' + automacaoId, chave_unica: chave,
+      }),
+    });
+    if (!r.ok) return -1;   // Supabase indisponível: não bloqueia o envio (raramente manda 2x é melhor que nunca mandar)
+    const linhas = await r.json().catch(() => []);
+    return linhas.length ? linhas[0].id : null;   // null = outra requisição já reivindicou este minuto
+  } catch { return -1; }
+}
+export async function marcarResultadoEnvioImediato(SB_URL, H, disparoId, ok, erro) {
+  if (!disparoId || disparoId === -1) return;
+  try {
+    await fetch(`${SB_URL}/rest/v1/disparos?id=eq.${disparoId}`, {
+      method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' },
+      body: JSON.stringify(ok
+        ? { status: 'enviado', enviado_em: new Date().toISOString() }
+        : { status: 'falhou', erro: String(erro || '').slice(0, 300) }),
+    });
+  } catch { /* melhor-esforço */ }
+}
