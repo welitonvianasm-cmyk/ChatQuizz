@@ -164,9 +164,22 @@ export default async (req) => {
         }
       }
       if (a === 'criar') patch.conta_id = contaId;
-      const r = a === 'criar'
-        ? await fetch(`${SB_URL}/rest/v1/automacoes`, { method: 'POST', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch) })
-        : await fetch(`${SB_URL}/rest/v1/automacoes?id=eq.${id}&conta_id=eq.${contaId}`, { method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
+      const salvar = () => a === 'criar'
+        ? fetch(`${SB_URL}/rest/v1/automacoes`, { method: 'POST', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch) })
+        : fetch(`${SB_URL}/rest/v1/automacoes?id=eq.${id}&conta_id=eq.${contaId}`, { method: 'PATCH', headers: { ...H, Prefer: 'return=minimal' }, body: JSON.stringify(patch) });
+      let r = await salvar();
+      if (!r.ok) {
+        const errText = await r.clone().text().catch(() => '');
+        const faltando = colunaFaltando(errText);
+        // instancia_id manda em TODA automação agora (mesmo quem nunca usou
+        // esse recurso) — se a conta ainda não rodou o setup-automacoes-
+        // -instancia.sql, não pode travar a edição de automações antigas
+        // por causa de 1 coluna nova opcional; tenta de novo sem ela
+        if (faltando === 'instancia_id' && 'instancia_id' in patch) {
+          delete patch.instancia_id;
+          r = await salvar();
+        }
+      }
       if (!r.ok) {
         const errText = await r.text().catch(() => '');
         console.error('automacoes salvar error:', r.status, errText.slice(0, 200));
